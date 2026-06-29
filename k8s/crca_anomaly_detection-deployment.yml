@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crca-anomaly-detection-deployment
+  namespace: cloudsentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crca-anomaly-detection
+  template:
+    metadata:
+      labels:
+        app: crca-anomaly-detection
+    spec:
+      containers:
+      - name: crca-anomaly-detection
+        image: jojojochem/anomaly_detection_crca:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5023
+        env:
+        - name: CELERY_BROKER_URL
+          value: "redis://redis:6379/1"
+        - name: CELERY_RESULT_BACKEND
+          value: "redis://redis:6379/1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crca-anomaly-detection-service
+  namespace: cloudsentinel
+spec:
+  selector:
+    app: crca-anomaly-detection
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5023

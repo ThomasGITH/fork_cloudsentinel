@@ -1,0 +1,7 @@
+Flask==3.0.3
+Flask-Cors==4.0.1
+celery==5.4.0
+requests==2.31.0
+kubernetes==29.0.0
+pandas==2.2.2
+redis==5.0.6

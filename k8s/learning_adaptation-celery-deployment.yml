@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learning-adaptation-celery-deployment
+  namespace: cloudsentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learning-adaptation-celery
+  template:
+    metadata:
+      labels:
+        app: learning-adaptation-celery
+    spec:
+      containers:
+      - name: learning-adaptation-celery
+        image: jojojochem/learning_adaptation:latest
+        imagePullPolicy: Always
+        command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent"]
+        env:
+        - name: CELERY_BROKER_URL
+          value: "redis://redis:6379/2"
+        - name: CELERY_RESULT_BACKEND
+          value: "redis://redis:6379/2"
+        # resources:
+        #   requests:
+        #     memory: "4Gi"
+        #     cpu: "2"
+        #   limits:
+        #     memory: "8Gi"
+        #     cpu: "4"
