@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudsentinel-detectors"
+version = "0.1.0"
+description = "Shared detector manifest discovery for CloudSentinel"
+requires-python = ">=3.9"
+dependencies = [
+    "PyYAML==6.0.2",
+]
+
+[tool.setuptools.packages.find]
+include = ["detectors*"]
+
+[tool.setuptools.package-data]
+detectors = ["*/manifest.yaml"]

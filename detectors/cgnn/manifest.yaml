@@ -1,0 +1,132 @@
+schema_version: 1
+id: cgnn
+name: CGNN-MHSA-AR
+version: 1.0.0
+description: Detects anomalies in preprocessed multivariate metric time series using the current CGNN-MHSA-AR implementation.
+supported_modalities:
+  - metrics
+input_requirements:
+  training:
+    format: Numeric CSV without a header
+    inputs:
+      - train_array
+      - test_array
+      - anomaly_label_array
+    shape: Multivariate time series with a consistent feature order
+  prediction:
+    format: Numeric CSV without a header
+    inputs:
+      - test_array
+      - trained_model
+  preprocessing:
+    service: data_processing
+    normalization: MinMaxScaler fitted on training data during training
+    sequence_windowing: Performed by the existing CGNN implementation
+training_parameters:
+  lookback:
+    type: integer
+    default: 100
+    minimum: 1
+    description: Number of preceding observations in each input window.
+  spec_res:
+    type: boolean
+    default: false
+    description: Existing special-resolution configuration flag.
+  kernel_size:
+    type: integer
+    default: 7
+    minimum: 1
+    description: Kernel size for the one-dimensional convolution.
+  use_gatv2:
+    type: boolean
+    default: true
+    description: Existing flag passed to the CGNN model configuration.
+  feat_gat_embed_dim:
+    type: integer
+    default: null
+    nullable: true
+    minimum: 1
+    description: Optional feature-attention embedding dimension.
+  time_gat_embed_dim:
+    type: integer
+    default: null
+    nullable: true
+    minimum: 1
+    description: Optional temporal-attention embedding dimension.
+  gru_n_layers:
+    type: integer
+    default: 1
+    minimum: 1
+    description: Number of GRU layers.
+  gru_hid_dim:
+    type: integer
+    default: 150
+    minimum: 1
+    description: GRU hidden dimension.
+  fc_n_layers:
+    type: integer
+    default: 3
+    minimum: 1
+    description: Number of fully connected forecasting layers.
+  fc_hid_dim:
+    type: integer
+    default: 150
+    minimum: 1
+    description: Hidden dimension of the forecasting network.
+  alpha:
+    type: number
+    default: 0.2
+    description: Negative slope used by the configured activation.
+  epochs:
+    type: integer
+    default: 1
+    minimum: 1
+    description: Number of training epochs.
+  val_split:
+    type: number
+    default: 0.1
+    minimum: 0
+    maximum: 1
+    description: Fraction of training windows allocated to validation.
+  bs:
+    type: integer
+    default: 256
+    minimum: 1
+    description: Training batch size.
+  init_lr:
+    type: number
+    default: 0.001
+    minimum: 0
+    description: Initial optimizer learning rate.
+  shuffle_dataset:
+    type: boolean
+    default: true
+    description: Whether window indices are shuffled before the validation split.
+  dropout:
+    type: number
+    default: 0.4
+    minimum: 0
+    maximum: 1
+    description: Dropout probability used by the model.
+  use_cuda:
+    type: boolean
+    default: true
+    description: Whether CUDA may be used when available.
+  print_every:
+    type: integer
+    default: 1
+    minimum: 1
+    description: Epoch interval for progress output.
+  log_tensorboard:
+    type: boolean
+    default: true
+    description: Whether training metrics are written to TensorBoard.
+  feature_importance:
+    type: boolean
+    default: false
+    description: Whether permutation feature importance is calculated after training.
+  comment:
+    type: string
+    default: ""
+    description: Optional user comment stored with the training configuration.
+entry_point: detectors.cgnn.adapter:CGNNAdapter
