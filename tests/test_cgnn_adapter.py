@@ -212,13 +212,15 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
                 "phase_b_tasks", REPOSITORY_ROOT / "learning_adaptation" / "tasks.py"
             )
             self.assertNotIn("detectors.cgnn.adapter", sys.modules)
-            adapter_module = importlib.import_module("detectors.cgnn.adapter")
             task_context = types.SimpleNamespace(update_state=Mock(), retry=Mock())
             model_config = {"dataset": "sample", "id": "run-1", "feature_importance": False}
             train_result = (model_config, None)
+            adapter = types.SimpleNamespace(
+                train=Mock(return_value=train_result),
+                evaluate=Mock(return_value="evaluation"),
+            )
             with (
-                patch.object(adapter_module.CGNNAdapter, "train", return_value=train_result) as train,
-                patch.object(adapter_module.CGNNAdapter, "evaluate", return_value="evaluation") as evaluate,
+                patch.object(module.registry, "get_adapter", return_value=adapter) as get_adapter,
                 patch.object(module.os, "makedirs"),
                 patch("builtins.open", mock_open()),
             ):
@@ -231,11 +233,15 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
                 )
 
         self.assertEqual(result, "Training Successful")
-        train.assert_called_once()
-        evaluate.assert_called_once()
-        self.assertEqual(train.call_args.args[0], {"dataset": "sample"})
-        self.assertIs(evaluate.call_args.args[0], model_config)
-        self.assertIs(train.call_args.kwargs["progress_callback"], evaluate.call_args.kwargs["progress_callback"])
+        get_adapter.assert_called_once_with("cgnn")
+        adapter.train.assert_called_once()
+        adapter.evaluate.assert_called_once()
+        self.assertEqual(adapter.train.call_args.args[0], {"dataset": "sample"})
+        self.assertIs(adapter.evaluate.call_args.args[0], model_config)
+        self.assertIs(
+            adapter.train.call_args.kwargs["progress_callback"],
+            adapter.evaluate.call_args.kwargs["progress_callback"],
+        )
 
     def test_detection_flow_calls_adapter_predict(self):
         config_stub = types.ModuleType("config")
@@ -254,7 +260,8 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
             os.chdir(directory)
             try:
                 Path("results").mkdir()
-                with patch.object(module.CGNNAdapter, "predict", return_value=12.5) as predict:
+                adapter = types.SimpleNamespace(predict=Mock(return_value=12.5))
+                with patch.object(module.registry, "get_adapter", return_value=adapter) as get_adapter:
                     response = module.app.test_client().post(
                         "/detect_anomalies",
                         data={
@@ -285,7 +292,8 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_data(as_text=True), "success")
-        predict.assert_called_once_with(expected_test_data, "saved-model")
+        get_adapter.assert_called_once_with("cgnn")
+        adapter.predict.assert_called_once_with(expected_test_data, "saved-model")
         self.assertEqual(result_data["results"]["0"]["percentage"], 12.5)
 
 

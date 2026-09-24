@@ -6,6 +6,7 @@ import logging
 import traceback
 import numpy as np
 from celery import Celery, Task
+from detectors import registry
 
 # Configure and initialize Celery
 celery = Celery(__name__, backend='redis://redis:6379/2', broker='redis://redis:6379/2')
@@ -53,10 +54,10 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
     Raises:
         Exception: Retries the task if an exception occurs.
     """
-    from detectors.cgnn.adapter import CGNNAdapter
-
     try:
         logger.info("Starting the training process.")
+
+        adapter = registry.get_adapter("cgnn")
 
         # Update task state to EVALUATING
         self.update_state(state='INITIATING', meta='Initiating training')
@@ -73,7 +74,7 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
                 self.update_state(state=progress_state, meta=message)
 
         # Train the model
-        model_config, feature_importance = CGNNAdapter.train(
+        model_config, feature_importance = adapter.train(
             train_info['data'],
             np.array(train_array, dtype=np.float32),
             np.array(test_array, dtype=np.float32),
@@ -89,7 +90,7 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
         logger.info("Starting the evaluation process.")
 
         # Evaluate the model
-        CGNNAdapter.evaluate(
+        adapter.evaluate(
             model_config,
             np.array(train_array, dtype=np.float32),
             np.array(test_array, dtype=np.float32),

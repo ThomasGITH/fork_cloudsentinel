@@ -1,8 +1,8 @@
 # Detector registry
 
-Phase A introduced manifest discovery. Phase B adds a thin CGNN adapter while preserving the existing CGNN implementation and service contracts. A detector is discovered when a direct child of the `detectors` directory contains a `manifest.yaml` file.
+Phase A introduced manifest discovery. Phase B added a thin CGNN adapter while preserving the existing CGNN implementation and service contracts. Phase C resolves adapters generically from each manifest entry point. A detector is discovered when a direct child of the `detectors` directory contains a `manifest.yaml` file.
 
-The registry uses `yaml.safe_load`, limits each manifest to 1 MB, rejects paths that resolve outside the configured detector directory, validates required fields and parameter defaults, and rejects duplicate detector IDs. Discovery validates the `entry_point` string but deliberately does not import it. The adapter also keeps its legacy imports inside `train`, `evaluate`, and `predict`, so manifest listing does not load CGNN runtime code.
+The registry uses `yaml.safe_load`, limits each manifest to 1 MB, rejects paths that resolve outside the configured detector directory, validates required fields and parameter defaults, and rejects duplicate detector IDs. Discovery validates the `entry_point` string but deliberately does not import it. `get_adapter(detector_id)` imports that entry point only when execution needs the adapter, then validates the minimal `train`, `evaluate`, and `predict` contract. The adapter keeps its legacy imports inside those methods, so manifest listing does not load adapter or CGNN runtime code.
 
 Schema version 1 requires:
 
@@ -55,5 +55,5 @@ docker build -f anomaly_detection/cgnn/Dockerfile -t anomaly_detection_cgnn .
 Run the focused tests with:
 
 ```shell
-python -m unittest tests.test_detectors tests.test_cgnn_adapter
+python -m unittest tests.test_detectors tests.test_detector_resolver tests.test_cgnn_adapter
 ```

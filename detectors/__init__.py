@@ -1,5 +1,25 @@
-"""Manifest discovery for CloudSentinel detector plugins."""
+"""Discovery and adapter resolution for CloudSentinel detector plugins."""
 
-from .registry import ManifestValidationError, discover_detectors, load_manifest
+from .contracts import DetectorAdapter
+from .registry import (
+    AdapterContractError,
+    AdapterImportError,
+    InvalidEntryPointError,
+    ManifestValidationError,
+    UnknownDetectorError,
+    discover_detectors,
+    get_adapter,
+    load_manifest,
+)
 
-__all__ = ["ManifestValidationError", "discover_detectors", "load_manifest"]
+__all__ = [
+    "AdapterContractError",
+    "AdapterImportError",
+    "DetectorAdapter",
+    "InvalidEntryPointError",
+    "ManifestValidationError",
+    "UnknownDetectorError",
+    "discover_detectors",
+    "get_adapter",
+    "load_manifest",
+]

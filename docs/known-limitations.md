@@ -1,6 +1,6 @@
 # Existing technical limitations
 
-These limitations predate the detector plugin work and remain intentionally unchanged through Phase B:
+These limitations predate the detector plugin work and remain intentionally unchanged through Phase C:
 
 - Training and evaluation do not consistently interpret boolean configuration values: some paths use booleans while others compare values with the string `"True"`.
 - Training configuration is stored in a shared relative `config.json`, so concurrent runs can affect one another.
@@ -9,4 +9,4 @@ These limitations predate the detector plugin work and remain intentionally unch
 - Training labels have inconsistent boolean/string handling for the anomaly-sequence option.
 - The manual detection upload supplies less request metadata than the monitoring-oriented `/detect_anomalies` route reads.
 - The Kubernetes learning-adaptation API and Celery worker do not declare shared persistent model storage.
-- Plugin discovery still supports only the bundled CGNN detector. Loading arbitrary third-party entry points through the registry is outside Phase B.
+- Only the bundled CGNN detector is present. The registry can resolve manifest entry points, but plugin trust, isolation, dependency management, and installation are not implemented.

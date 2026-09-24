@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
 import re
 from typing import Any
 
 import yaml
+
+from .contracts import DetectorAdapter
 
 
 SUPPORTED_SCHEMA_VERSION = 1
@@ -31,6 +34,22 @@ ENTRY_POINT_PATTERN = re.compile(
 
 class ManifestValidationError(ValueError):
     """Raised when a detector manifest is unsafe or violates the schema."""
+
+
+class UnknownDetectorError(LookupError):
+    """Raised when an adapter is requested for an unknown detector ID."""
+
+
+class InvalidEntryPointError(ManifestValidationError):
+    """Raised when a manifest entry point cannot identify an adapter object."""
+
+
+class AdapterImportError(ImportError):
+    """Raised when an adapter entry-point module cannot be imported."""
+
+
+class AdapterContractError(TypeError):
+    """Raised when a resolved adapter does not implement the required operations."""
 
 
 def _fail(path: Path, message: str) -> ManifestValidationError:
@@ -87,7 +106,9 @@ def validate_manifest(manifest: Any, path: Path) -> dict[str, Any]:
     if not ID_PATTERN.fullmatch(manifest["id"]):
         raise _fail(path, "'id' must use lowercase letters, digits, hyphens, or underscores")
     if not ENTRY_POINT_PATTERN.fullmatch(manifest["entry_point"]):
-        raise _fail(path, "'entry_point' must have the form 'python.module:attribute'")
+        raise InvalidEntryPointError(
+            f"{path}: 'entry_point' must have the form 'python.module:attribute'"
+        )
 
     modalities = manifest["supported_modalities"]
     if (
@@ -165,3 +186,67 @@ def discover_detectors(detector_dir: str | Path | None = None) -> list[dict[str,
         seen_ids[detector_id] = path
         manifests.append(manifest)
     return manifests
+
+
+def get_adapter(
+    detector_id: str,
+    detector_dir: str | Path | None = None,
+) -> DetectorAdapter:
+    """Resolve one detector adapter from its manifest without eager plugin imports."""
+    manifest = next(
+        (
+            candidate
+            for candidate in discover_detectors(detector_dir)
+            if candidate["id"] == detector_id
+        ),
+        None,
+    )
+    if manifest is None:
+        raise UnknownDetectorError(f"Unknown detector id: {detector_id!r}")
+
+    entry_point = manifest["entry_point"]
+    if not ENTRY_POINT_PATTERN.fullmatch(entry_point):
+        raise InvalidEntryPointError(
+            f"Detector {detector_id!r} has invalid entry point {entry_point!r}"
+        )
+    module_name, attribute_name = entry_point.split(":", 1)
+
+    try:
+        module = import_module(module_name)
+    except Exception as exc:
+        raise AdapterImportError(
+            f"Could not import adapter module {module_name!r} for detector {detector_id!r}: {exc}"
+        ) from exc
+
+    try:
+        adapter_class = getattr(module, attribute_name)
+    except AttributeError as exc:
+        raise InvalidEntryPointError(
+            f"Adapter entry point {entry_point!r} for detector {detector_id!r} does not exist"
+        ) from exc
+
+    if not isinstance(adapter_class, type):
+        raise InvalidEntryPointError(
+            f"Adapter entry point {entry_point!r} for detector {detector_id!r} must resolve to a class"
+        )
+
+    try:
+        adapter = adapter_class()
+    except Exception as exc:
+        raise AdapterContractError(
+            f"Adapter {entry_point!r} for detector {detector_id!r} could not be instantiated: {exc}"
+        ) from exc
+
+    if not isinstance(adapter, DetectorAdapter):
+        missing_operations = [
+            operation
+            for operation in ("train", "evaluate", "predict")
+            if not callable(getattr(adapter, operation, None))
+        ]
+        details = ", ".join(missing_operations) or "invalid operation definitions"
+        raise AdapterContractError(
+            f"Adapter {entry_point!r} for detector {detector_id!r} does not satisfy "
+            f"DetectorAdapter: {details}"
+        )
+
+    return adapter
