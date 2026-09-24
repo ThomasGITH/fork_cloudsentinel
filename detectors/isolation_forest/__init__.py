@@ -1,0 +1,2 @@
+"""Isolation Forest detector plugin."""
+

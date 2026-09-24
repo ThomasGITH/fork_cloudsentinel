@@ -29,7 +29,10 @@ class DetectorRegistryTests(unittest.TestCase):
 
     def test_discovers_current_cgnn_manifest(self):
         manifests = discover_detectors(REPOSITORY_ROOT / "detectors")
-        self.assertEqual([manifest["id"] for manifest in manifests], ["cgnn"])
+        self.assertEqual(
+            [manifest["id"] for manifest in manifests],
+            ["cgnn", "isolation-forest"],
+        )
         self.assertEqual(manifests[0]["schema_version"], 1)
         self.assertEqual(manifests[0]["entry_point"], "detectors.cgnn.adapter:CGNNAdapter")
 
@@ -95,12 +98,18 @@ class DetectorRegistryTests(unittest.TestCase):
         flask = importlib.import_module("flask")
         app = flask.Flask(__name__)
         app.register_blueprint(create_detectors_blueprint(REPOSITORY_ROOT / "detectors"))
+        modules_before_request = set(sys.modules)
 
         response = app.test_client().get("/detectors")
+        modules_loaded_by_request = set(sys.modules).difference(modules_before_request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()["detectors"][0]["id"], "cgnn")
-        self.assertNotIn("detectors.cgnn.adapter", sys.modules)
+        self.assertEqual(
+            [manifest["id"] for manifest in response.get_json()["detectors"]],
+            ["cgnn", "isolation-forest"],
+        )
+        self.assertNotIn("detectors.cgnn.adapter", modules_loaded_by_request)
+        self.assertNotIn("detectors.isolation_forest.adapter", modules_loaded_by_request)
 
 
 if __name__ == "__main__":

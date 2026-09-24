@@ -1,0 +1,59 @@
+schema_version: 1
+id: isolation-forest
+name: Isolation Forest
+version: 1.0.0
+description: Detects anomalous independent timestamp observations in multivariate metrics using Isolation Forest.
+supported_modalities:
+  - metrics
+input_requirements:
+  training:
+    format: Numeric two-dimensional matrix
+    shape: [n_samples, n_features]
+    observation: One independent timestamp observation per row
+    feature_identity: Stable positional feature order
+    timestamps_included: false
+    labels_required: false
+    finite_values_required: true
+  evaluation:
+    format: Numeric two-dimensional matrix
+    feature_order_must_match_training: true
+    labels:
+      normal: 0
+      anomaly: 1
+  prediction:
+    format: Numeric two-dimensional matrix
+    feature_order_must_match_training: true
+  sequence_processing:
+    lookback: false
+    windowing: false
+training_parameters:
+  n_estimators:
+    type: integer
+    default: 100
+    description: Number of isolation trees.
+  max_samples:
+    type: string
+    default: auto
+    description: Number of training observations sampled for each tree.
+  contamination:
+    type: string
+    default: auto
+    description: Automatic strategy for determining the binary anomaly threshold.
+  max_features:
+    type: number
+    default: 1.0
+    description: Fraction of features sampled for each tree.
+  bootstrap:
+    type: boolean
+    default: false
+    description: Whether individual trees use bootstrap samples.
+  random_state:
+    type: integer
+    default: 42
+    description: Seed for deterministic model construction.
+  n_jobs:
+    type: integer
+    default: 1
+    description: Number of parallel jobs used by Isolation Forest.
+entry_point: detectors.isolation_forest.adapter:IsolationForestAdapter
+
