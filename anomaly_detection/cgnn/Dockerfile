@@ -2,20 +2,26 @@
 FROM python:3.12-slim
 
 # Set environment variables
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the requirements file into the container first
-COPY requirements.txt .
+# Build this image from the repository root:
+# docker build -f anomaly_detection/cgnn/Dockerfile .
+COPY anomaly_detection/cgnn/requirements.txt ./requirements.txt
 
 # Install the required packages
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Install the shared detector package and its manifest data.
+COPY pyproject.toml ./shared/pyproject.toml
+COPY detectors ./shared/detectors
+RUN pip install --no-cache-dir ./shared
+
 # Copy the rest of the application code into the container
-COPY . .
+COPY anomaly_detection/cgnn .
 
 EXPOSE 5013
 

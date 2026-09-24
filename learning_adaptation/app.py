@@ -15,7 +15,6 @@ from tasks import train_and_evaluate_task  # Import the task
 from detectors.api import create_detectors_blueprint
 
 from cgnn.config import set_config, get_config, set_initial_config
-from cgnn.evaluate_prediction import predict_and_evaluate
 
 # Initialize Flask app and configure CORS
 app = Flask(__name__)

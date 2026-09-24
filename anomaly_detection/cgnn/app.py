@@ -11,8 +11,8 @@ import requests
 from collections import OrderedDict
 from flask_cors import CORS
 
+from detectors.cgnn.adapter import CGNNAdapter
 from config import set_config, get_config, set_initial_config
-from predict import load_model_and_predict
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -33,7 +33,7 @@ def detect_anomalies():
         test_info_json = request.form.get('test_info')
         test_info = json.loads(test_info_json)
         model = test_info['data']['model']
-        anomaly_result = load_model_and_predict(test_data, model)
+        anomaly_result = CGNNAdapter.predict(test_data, model)
         crca_threshold = test_info['data']['crca_threshold']
         iteration = test_info['data']['iteration']
         task_id = test_info['task_id']

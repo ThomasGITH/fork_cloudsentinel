@@ -1,8 +1,8 @@
 # Detector registry
 
-Phase A introduces manifest discovery without changing the existing CGNN training or detection paths. A detector is discovered when a direct child of the `detectors` directory contains a `manifest.yaml` file.
+Phase A introduced manifest discovery. Phase B adds a thin CGNN adapter while preserving the existing CGNN implementation and service contracts. A detector is discovered when a direct child of the `detectors` directory contains a `manifest.yaml` file.
 
-The registry uses `yaml.safe_load`, limits each manifest to 1 MB, rejects paths that resolve outside the configured detector directory, validates required fields and parameter defaults, and rejects duplicate detector IDs. Discovery validates the `entry_point` string but deliberately does not import it.
+The registry uses `yaml.safe_load`, limits each manifest to 1 MB, rejects paths that resolve outside the configured detector directory, validates required fields and parameter defaults, and rejects duplicate detector IDs. Discovery validates the `entry_point` string but deliberately does not import it. The adapter also keeps its legacy imports inside `train`, `evaluate`, and `predict`, so manifest listing does not load CGNN runtime code.
 
 Schema version 1 requires:
 
@@ -46,8 +46,14 @@ Build the learning-adaptation image from the repository root so the shared packa
 docker build -f learning_adaptation/Dockerfile -t learning_adaptation .
 ```
 
+Build the CGNN detection image from the same repository-root context:
+
+```shell
+docker build -f anomaly_detection/cgnn/Dockerfile -t anomaly_detection_cgnn .
+```
+
 Run the focused tests with:
 
 ```shell
-python -m unittest tests.test_detectors
+python -m unittest tests.test_detectors tests.test_cgnn_adapter
 ```
