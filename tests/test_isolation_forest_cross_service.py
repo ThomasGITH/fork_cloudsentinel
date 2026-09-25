@@ -88,7 +88,16 @@ class IsolationForestCrossServiceTests(unittest.TestCase):
                                     "detector_id": "isolation-forest",
                                     "model": "roundtrip-model",
                                     "iteration": "0",
-                                }
+                                    "start_time": 1718738837,
+                                    "end_time": 1718739437,
+                                    "containers": ["service-a"],
+                                    "metrics": ["cpu", "memory"],
+                                    "data_interval": 60,
+                                    "crca_threshold": 100.0,
+                                    "crca_pods": ["service-a-pod"],
+                                },
+                                "task_id": "roundtrip-task",
+                                "settings": {},
                             }
                         )
                     },
@@ -102,6 +111,14 @@ class IsolationForestCrossServiceTests(unittest.TestCase):
                 self.assertEqual(result["iteration"], "0")
                 self.assertGreaterEqual(result["percentage"], 0.0)
                 self.assertLessEqual(result["percentage"], 100.0)
+                result_path = (
+                    root
+                    / "detection-results"
+                    / "roundtrip-task"
+                    / "isolation_forest_results.json"
+                )
+                stored = json.loads(result_path.read_text(encoding="utf-8"))
+                self.assertEqual(stored["results"]["0"]["percentage"], result["percentage"])
             finally:
                 server.shutdown()
                 server.server_close()

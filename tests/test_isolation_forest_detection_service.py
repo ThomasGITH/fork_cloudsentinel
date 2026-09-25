@@ -6,9 +6,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
+import requests
 
 from anomaly_detection.isolation_forest.app import create_app
 from detectors.registry import get_adapter
@@ -109,18 +110,38 @@ class IsolationForestDetectionServiceTests(unittest.TestCase):
             content_type="multipart/form-data",
         )
 
-    def detect(self, matrix, model_id="model-1", iteration="0"):
+    def detect(
+        self,
+        matrix,
+        model_id="model-1",
+        iteration="0",
+        task_id="monitor-1",
+        **data_overrides,
+    ):
+        data = {
+            "detector_id": "isolation-forest",
+            "model": model_id,
+            "iteration": iteration,
+            "start_time": 1718738837,
+            "end_time": 1718739437,
+            "containers": ["service-a"],
+            "metrics": ["cpu", "memory"],
+            "data_interval": 60,
+            "crca_threshold": 100.0,
+            "crca_pods": ["service-a-pod"],
+        }
+        data.update(data_overrides)
         return self.client.post(
             "/detect_anomalies",
             data={
                 "test_array": csv_file(matrix),
                 "test_info": json.dumps(
                     {
-                        "data": {
-                            "detector_id": "isolation-forest",
-                            "model": model_id,
-                            "iteration": iteration,
-                        }
+                        "task_id": task_id,
+                        "settings": {
+                            "API_DATA_INGESTION_URL": "http://data-ingestion.test"
+                        },
+                        "data": data,
                     }
                 ),
             },
@@ -276,6 +297,13 @@ assert 'joblib' not in sys.modules
         self.assertLessEqual(normal_result["percentage"], 100.0)
         self.assertGreaterEqual(anomalous_result["percentage"], normal_result["percentage"])
         self.assertLessEqual(anomalous_result["percentage"], 100.0)
+        result_file = self.results_root / "monitor-1" / "isolation_forest_results.json"
+        stored = json.loads(result_file.read_text(encoding="utf-8"))
+        self.assertEqual(set(stored["results"]), {"0", "1"})
+        self.assertEqual(stored["detector_id"], "isolation-forest")
+        self.assertNotIn("binary_predictions", json.dumps(stored))
+        self.assertNotIn("anomaly_scores", json.dumps(stored))
+        self.assertNotIn("test_array", json.dumps(stored))
         self.assertEqual(resolver.call_count, 2)
         resolver.assert_called_with("isolation-forest")
 
@@ -309,6 +337,281 @@ assert 'joblib' not in sys.modules
         response = self.detect(self.normal_test)
         self.assertEqual(response.status_code, 400)
         self.assertIn("metadata detector_id", response.get_json()["error"])
+
+    def test_detection_at_threshold_stores_compact_result_without_rca(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        from anomaly_detection.isolation_forest import app as service_module
+
+        adapter = Mock()
+        adapter.predict.return_value = {
+            "binary_predictions": [1, 0],
+            "anomaly_scores": [0.8, -0.2],
+            "anomaly_percentage": 5.0,
+        }
+        with patch.object(
+            service_module.registry, "get_adapter", return_value=adapter
+        ), patch(
+            "anomaly_detection.isolation_forest.rca.requests.post"
+        ) as rca_post:
+            response = self.detect(
+                [[8.0, 8.0], [0.0, 0.0]],
+                crca_threshold=5.0,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["crca_task_id"], None)
+        rca_post.assert_not_called()
+        result_path = self.results_root / "monitor-1" / "isolation_forest_results.json"
+        stored = json.loads(result_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            stored,
+            {
+                "detector_id": "isolation-forest",
+                "model": "model-1",
+                "start_time": 1718738837,
+                "containers": ["service-a"],
+                "metrics": ["cpu", "memory"],
+                "step": 60,
+                "crca_threshold": 5.0,
+                "results": {
+                    "0": {
+                        "start_time": 1718738837,
+                        "end_time": 1718739437,
+                        "percentage": 5.0,
+                        "anomaly_count": 1,
+                        "observation_count": 2,
+                        "crca_task_id": None,
+                    }
+                },
+            },
+        )
+        serialized = json.dumps(stored)
+        for forbidden in ("binary_predictions", "anomaly_scores", "test_array"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_detection_above_threshold_triggers_compatible_rca_payload(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        from anomaly_detection.isolation_forest import app as service_module
+
+        adapter = Mock()
+        adapter.predict.return_value = {
+            "binary_predictions": [1, 0],
+            "anomaly_scores": [0.8, -0.2],
+            "anomaly_percentage": 20.0,
+        }
+        rca_response = Mock(status_code=202, text="")
+        rca_response.json.return_value = {"task_id": "rca-task-1"}
+        with patch.object(
+            service_module.registry, "get_adapter", return_value=adapter
+        ), patch(
+            "anomaly_detection.isolation_forest.rca.requests.post",
+            return_value=rca_response,
+        ) as rca_post:
+            response = self.detect(
+                [[8.0, 8.0], [0.0, 0.0]],
+                crca_threshold=5.0,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["crca_task_id"], "rca-task-1")
+        rca_post.assert_called_once()
+        call = rca_post.call_args
+        self.assertEqual(
+            call.args[0], "http://data-ingestion.test/anomaly_rca"
+        )
+        self.assertEqual(call.kwargs["timeout"], (5.0, 60.0))
+        self.assertEqual(
+            json.loads(call.kwargs["data"]["crca_data"]),
+            {
+                "settings": {
+                    "API_DATA_INGESTION_URL": "http://data-ingestion.test"
+                },
+                "data": {
+                    "task_id": "monitor-1",
+                    "start_time": 1718738837,
+                    "end_time": 1718739437,
+                    "crca_pods": ["service-a-pod"],
+                    "metrics": ["cpu", "memory"],
+                    "step": 60,
+                },
+            },
+        )
+        stored = json.loads(
+            (
+                self.results_root
+                / "monitor-1"
+                / "isolation_forest_results.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(stored["results"]["0"]["crca_task_id"], "rca-task-1")
+
+    def test_rca_failure_is_stored_and_returned_without_losing_prediction(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        from anomaly_detection.isolation_forest import app as service_module
+
+        adapter = Mock()
+        adapter.predict.return_value = {
+            "binary_predictions": [1, 0],
+            "anomaly_scores": [0.8, -0.2],
+            "anomaly_percentage": 20.0,
+        }
+        result_path = self.results_root / "monitor-1" / "isolation_forest_results.json"
+
+        def fail_rca_after_result_was_stored(*_args, **_kwargs):
+            self.assertTrue(result_path.is_file())
+            preliminary = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(preliminary["results"]["0"]["percentage"], 20.0)
+            raise requests.Timeout("RCA timed out")
+
+        with patch.object(
+            service_module.registry, "get_adapter", return_value=adapter
+        ), patch(
+            "anomaly_detection.isolation_forest.rca.requests.post",
+            side_effect=fail_rca_after_result_was_stored,
+        ):
+            response = self.detect(
+                [[8.0, 8.0], [0.0, 0.0]],
+                crca_threshold=5.0,
+            )
+
+        self.assertEqual(response.status_code, 502)
+        body = response.get_json()
+        self.assertEqual(body["status"], "rca_failed")
+        self.assertEqual(body["percentage"], 20.0)
+        self.assertIsNone(body["crca_task_id"])
+        self.assertIn("timed out", body["rca_error"])
+        stored = json.loads(result_path.read_text(encoding="utf-8"))
+        result = stored["results"]["0"]
+        self.assertEqual(result["percentage"], 20.0)
+        self.assertIsNone(result["crca_task_id"])
+        self.assertIn("timed out", result["crca_error"])
+
+    def test_iterations_append_and_duplicate_iteration_is_rejected(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        from anomaly_detection.isolation_forest import app as service_module
+
+        adapter = Mock()
+        adapter.predict.return_value = {
+            "binary_predictions": [0, 0],
+            "anomaly_scores": [-0.2, -0.1],
+            "anomaly_percentage": 0.0,
+        }
+        with patch.object(
+            service_module.registry, "get_adapter", return_value=adapter
+        ):
+            first = self.detect([[0.0, 0.0], [0.1, 0.1]], iteration="0")
+            second = self.detect([[0.0, 0.0], [0.1, 0.1]], iteration="1")
+            duplicate = self.detect([[0.0, 0.0], [0.1, 0.1]], iteration="1")
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(duplicate.status_code, 409)
+        self.assertIn("already exists", duplicate.get_json()["error"])
+        stored = json.loads(
+            (
+                self.results_root
+                / "monitor-1"
+                / "isolation_forest_results.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(set(stored["results"]), {"0", "1"})
+        self.assertEqual(adapter.predict.call_count, 2)
+
+    def test_failed_atomic_write_leaves_no_partial_result_file(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        from anomaly_detection.isolation_forest import app as service_module
+
+        adapter = Mock()
+        adapter.predict.return_value = {
+            "binary_predictions": [0],
+            "anomaly_scores": [-0.2],
+            "anomaly_percentage": 0.0,
+        }
+        with patch.object(
+            service_module.registry, "get_adapter", return_value=adapter
+        ), patch(
+            "anomaly_detection.isolation_forest.results.os.replace",
+            side_effect=OSError("disk write failed"),
+        ):
+            response = self.detect([[0.0, 0.0]])
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("atomically store", response.get_json()["error"])
+        task_directory = self.results_root / "monitor-1"
+        self.assertFalse((task_directory / "isolation_forest_results.json").exists())
+        self.assertEqual(list(task_directory.glob("*.tmp")), [])
+
+    def test_extended_test_info_validation_rejects_unsafe_values(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        invalid_cases = (
+            ({"iteration": "bad/iteration"}, "iteration"),
+            ({"end_time": 1, "start_time": 2}, "end_time"),
+            ({"data_interval": 0}, "data_interval"),
+            ({"crca_threshold": 101}, "crca_threshold"),
+            ({"containers": "service-a"}, "containers"),
+            ({"metrics": [""]}, "metrics"),
+            ({"crca_pods": [1]}, "crca_pods"),
+        )
+        for overrides, expected_error in invalid_cases:
+            with self.subTest(overrides=overrides):
+                task_id = overrides.get("task_id", "validation-task")
+                data_overrides = {
+                    key: value for key, value in overrides.items() if key != "task_id"
+                }
+                response = self.detect(
+                    [[0.0, 0.0]],
+                    task_id=task_id,
+                    **data_overrides,
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(expected_error, response.get_json()["error"])
+
+    def test_task_id_path_safety_rejects_unsafe_directory_names(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        escaped_directory = self.results_root.parent / "escaped-task"
+        unsafe_task_ids = (
+            "",
+            ".",
+            "..",
+            "../escaped-task",
+            "safe/../../escaped-task",
+            "nested/task",
+            r"nested\task",
+            str(escaped_directory),
+        )
+        for task_id in unsafe_task_ids:
+            with self.subTest(task_id=task_id):
+                response = self.detect([[0.0, 0.0]], task_id=task_id)
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("task_id", response.get_json()["error"])
+                self.assertFalse(escaped_directory.exists())
+
+        valid_response = self.detect(
+            [[0.0, 0.0]], task_id="safe.Task_1-2"
+        )
+        self.assertEqual(valid_response.status_code, 200)
+        result_file = (
+            self.results_root
+            / "safe.Task_1-2"
+            / "isolation_forest_results.json"
+        )
+        self.assertTrue(result_file.is_file())
+        self.assertTrue(result_file.resolve().is_relative_to(self.results_root.resolve()))
+
+    def test_task_directory_symlink_cannot_escape_results_root(self):
+        self.assertEqual(self.upload_model().status_code, 200)
+        outside_directory = self.results_root.parent / "outside-results"
+        outside_directory.mkdir()
+        self.results_root.mkdir()
+        (self.results_root / "linked-task").symlink_to(
+            outside_directory, target_is_directory=True
+        )
+
+        response = self.detect([[0.0, 0.0]], task_id="linked-task")
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("outside IF_RESULTS_STORAGE_ROOT", response.get_json()["error"])
+        self.assertEqual(list(outside_directory.iterdir()), [])
 
 
 if __name__ == "__main__":
