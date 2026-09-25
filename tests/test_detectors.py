@@ -86,10 +86,12 @@ class DetectorRegistryTests(unittest.TestCase):
 
     def test_discovery_does_not_import_detector_or_runtime_modules(self):
         blocked = ("torch", "celery", "tasks", "cgnn", "anomaly_detection", "learning_adaptation")
+        modules_before_discovery = set(sys.modules)
         discover_detectors(REPOSITORY_ROOT / "detectors")
+        modules_loaded_by_discovery = set(sys.modules).difference(modules_before_discovery)
         unexpected = sorted(
             name
-            for name in sys.modules
+            for name in modules_loaded_by_discovery
             if name in blocked or name.startswith(tuple(f"{item}." for item in blocked))
         )
         self.assertEqual(unexpected, [])
