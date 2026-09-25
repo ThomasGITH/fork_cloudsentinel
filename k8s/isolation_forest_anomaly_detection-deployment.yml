@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: isolation-forest-detection-pvc
+  namespace: cloudsentinel
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: isolation-forest-anomaly-detection-deployment
+  namespace: cloudsentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: isolation-forest-anomaly-detection
+  template:
+    metadata:
+      labels:
+        app: isolation-forest-anomaly-detection
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: isolation-forest-anomaly-detection
+          image: jojojochem/anomaly_detection_isolation_forest:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+          ports:
+            - name: http
+              containerPort: 5014
+          env:
+            - name: IF_MODEL_STORAGE_ROOT
+              value: /app/storage/trained_models
+            - name: IF_RESULTS_STORAGE_ROOT
+              value: /app/storage/results
+            - name: IF_MAX_UPLOAD_BYTES
+              value: "104857600"
+          volumeMounts:
+            - name: isolation-forest-storage
+              mountPath: /app/storage
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+      volumes:
+        - name: isolation-forest-storage
+          persistentVolumeClaim:
+            claimName: isolation-forest-detection-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: isolation-forest-anomaly-detection-service
+  namespace: cloudsentinel
+spec:
+  type: ClusterIP
+  selector:
+    app: isolation-forest-anomaly-detection
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
