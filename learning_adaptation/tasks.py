@@ -3,12 +3,28 @@
 import os
 import json
 import logging
+import shutil
 import traceback
 from pathlib import Path
 import numpy as np
 from celery import Celery, Task
 from detectors import registry
 from detectors.isolation_forest.training_request import validate_model_id
+try:
+    from learning_adaptation.isolation_forest_promotion import (
+        IsolationForestPromotionError,
+        promote_isolation_forest_model,
+    )
+except ModuleNotFoundError as exc:  # The service image copies this module beside tasks.py.
+    if exc.name not in {
+        "learning_adaptation",
+        "learning_adaptation.isolation_forest_promotion",
+    }:
+        raise
+    from isolation_forest_promotion import (
+        IsolationForestPromotionError,
+        promote_isolation_forest_model,
+    )
 
 # Configure and initialize Celery
 celery = Celery(__name__, backend='redis://redis:6379/2', broker='redis://redis:6379/2')
@@ -143,7 +159,10 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
         raise self.retry(exc=e, countdown=60)
 
 
-@celery.task(bind=True)
+@celery.task(
+    bind=True,
+    dont_autoretry_for=(IsolationForestPromotionError,),
+)
 def train_and_evaluate_isolation_forest_task(
     self,
     train_array,
@@ -173,6 +192,24 @@ def train_and_evaluate_isolation_forest_task(
         for key in ISOLATION_FOREST_EVALUATION_KEYS
     }
 
+    self.update_state(
+        state='PROMOTING', meta='Promoting the Isolation Forest model'
+    )
+    promotion = promote_isolation_forest_model(artifact_dir, model_id)
+
+    try:
+        shutil.rmtree(artifact_dir)
+    except OSError as exc:
+        logger.warning(
+            "Isolation Forest model %s was promoted, but local artifact cleanup failed: %s",
+            model_id,
+            exc,
+        )
+
+    self.update_state(
+        state='COMPLETED', meta='Isolation Forest training and promotion completed'
+    )
+
     return {
         "status": "completed",
         "detector_id": "isolation-forest",
@@ -181,4 +218,5 @@ def train_and_evaluate_isolation_forest_task(
         "training_parameters": metadata["training_parameters"],
         "n_features": metadata["n_features"],
         "evaluation": compact_evaluation,
+        "promotion": promotion,
     }

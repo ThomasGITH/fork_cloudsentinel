@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import io
 import json
 import os
@@ -10,6 +11,13 @@ import unittest
 from unittest.mock import Mock, patch
 
 import numpy as np
+import requests
+
+from learning_adaptation.isolation_forest_promotion import (
+    ARTIFACT_FILES,
+    IsolationForestPromotionError,
+    promote_isolation_forest_model,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -49,7 +57,11 @@ class FakeCeleryApp:
         self.conf = FakeConfig()
 
     def task(self, *args, **kwargs):
-        return lambda function: function
+        def decorate(function):
+            function.celery_task_options = kwargs
+            return function
+
+        return decorate
 
 
 def celery_stub():
@@ -67,6 +79,40 @@ def config_stubs():
     config.get_config = Mock(return_value={})
     config.set_initial_config = Mock()
     return package, config
+
+
+class FakePromotionResponse:
+    def __init__(self, status_code=200, payload=None, text=""):
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text
+
+    def json(self):
+        if isinstance(self._payload, Exception):
+            raise self._payload
+        return self._payload
+
+
+def available_response(model_id="model-1", **overrides):
+    payload = {
+        "status": "available",
+        "detector_id": "isolation-forest",
+        "model_id": model_id,
+    }
+    payload.update(overrides)
+    return FakePromotionResponse(payload=payload)
+
+
+def write_placeholder_artifacts(directory):
+    directory.mkdir(parents=True, exist_ok=True)
+    contents = {
+        "model.joblib": b"binary-model-content",
+        "model_metadata.json": b'{"detector_id":"isolation-forest"}',
+        "model_evaluation.json": b'{"f1":1.0}',
+    }
+    for filename, content in contents.items():
+        (directory / filename).write_bytes(content)
+    return contents
 
 
 class IsolationForestTrainingRouteTests(unittest.TestCase):
@@ -205,8 +251,12 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
             key: index
             for index, key in enumerate(self.module.ISOLATION_FOREST_EVALUATION_KEYS)
         }
+        def train(_train, artifact_dir, **_kwargs):
+            write_placeholder_artifacts(artifact_dir)
+            return metadata
+
         adapter = types.SimpleNamespace(
-            train=Mock(return_value=metadata),
+            train=Mock(side_effect=train),
             evaluate=Mock(return_value=evaluation),
         )
         task_context = types.SimpleNamespace(update_state=Mock())
@@ -219,7 +269,15 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
             )
         ), patch.object(
             self.module.registry, "get_adapter", return_value=adapter
-        ) as resolver:
+        ) as resolver, patch.object(
+            self.module,
+            "promote_isolation_forest_model",
+            return_value={
+                "status": "available",
+                "detector_id": "isolation-forest",
+                "model_id": "model-1",
+            },
+        ) as promotion:
             result = self.module.train_and_evaluate_isolation_forest_task(
                 task_context,
                 [[0.0, 0.0], [0.1, 0.1]],
@@ -235,11 +293,82 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
         expected_dir = Path(directory) / "isolation-forest" / "model-1"
         self.assertEqual(adapter.train.call_args.args[1], expected_dir)
         self.assertEqual(adapter.evaluate.call_args.args[2], expected_dir)
+        promotion.assert_called_once_with(expected_dir, "model-1")
         self.assertEqual(result["artifact_dir"], "isolation-forest/model-1")
+        self.assertEqual(result["promotion"]["status"], "available")
         self.assertEqual(
             [call.kwargs["state"] for call in task_context.update_state.call_args_list],
-            ["INITIATING", "TRAINING", "EVALUATING"],
+            ["INITIATING", "TRAINING", "EVALUATING", "PROMOTING", "COMPLETED"],
         )
+
+    def test_promotion_retry_reuses_artifacts_without_retraining(self):
+        metadata = {
+            "training_parameters": {"n_estimators": 100},
+            "n_features": 2,
+        }
+        evaluation = {
+            key: index
+            for index, key in enumerate(self.module.ISOLATION_FOREST_EVALUATION_KEYS)
+        }
+
+        def train(_train, artifact_dir, **_kwargs):
+            write_placeholder_artifacts(artifact_dir)
+            return metadata
+
+        adapter = types.SimpleNamespace(
+            train=Mock(side_effect=train),
+            evaluate=Mock(return_value=evaluation),
+        )
+        task_context = types.SimpleNamespace(update_state=Mock())
+        attempts = []
+
+        def lose_first_response(_url, *, data, files, timeout):
+            attempts.append(
+                {
+                    "data": dict(data),
+                    "files": {
+                        field: (value[0], value[1].read())
+                        for field, value in files.items()
+                    },
+                    "timeout": timeout,
+                }
+            )
+            if len(attempts) == 1:
+                raise requests.Timeout("response lost after installation")
+            return available_response("model-1", idempotent=True)
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            self.module,
+            "ISOLATION_FOREST_ARTIFACT_ROOT",
+            Path(directory) / "isolation-forest",
+        ), patch.object(
+            self.module.registry, "get_adapter", return_value=adapter
+        ), patch(
+            "learning_adaptation.isolation_forest_promotion.requests.post",
+            side_effect=lose_first_response,
+        ):
+            artifact_dir = Path(directory) / "isolation-forest" / "model-1"
+            result = self.module.train_and_evaluate_isolation_forest_task(
+                task_context,
+                [[0.0, 0.0], [0.1, 0.1]],
+                [[2.0, 2.0]],
+                [1],
+                {"n_estimators": 100},
+                "model-1",
+            )
+            self.assertFalse(artifact_dir.exists())
+
+        adapter.train.assert_called_once()
+        adapter.evaluate.assert_called_once()
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(attempts[0], attempts[1])
+        self.assertEqual(result["promotion"]["status"], "available")
+
+    def test_promotion_failure_is_excluded_from_full_celery_autoretry(self):
+        excluded = self.module.train_and_evaluate_isolation_forest_task.celery_task_options[
+            "dont_autoretry_for"
+        ]
+        self.assertIn(self.module.IsolationForestPromotionError, excluded)
 
     def test_real_task_run_writes_artifacts_and_returns_compact_json(self):
         train, test, labels = synthetic_data()
@@ -254,26 +383,51 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
             "n_jobs": 1,
         }
 
+        uploaded = {}
+
+        def capture_upload(url, *, data, files, timeout):
+            uploaded["url"] = url
+            uploaded["data"] = dict(data)
+            uploaded["timeout"] = timeout
+            uploaded["files"] = {
+                field: {
+                    "filename": value[0],
+                    "content": value[1].read(),
+                    "content_type": value[2],
+                }
+                for field, value in files.items()
+            }
+            return available_response("real-model", idempotent=True)
+
         with tempfile.TemporaryDirectory() as directory, patch.object(
             self.module,
             "ISOLATION_FOREST_ARTIFACT_ROOT",
             Path(directory) / "isolation-forest",
+        ), patch(
+            "learning_adaptation.isolation_forest_promotion.requests.post",
+            side_effect=capture_upload,
         ):
-            result = self.module.train_and_evaluate_isolation_forest_task(
-                task_context,
-                train.tolist(),
-                test.tolist(),
-                labels.tolist(),
-                parameters,
-                "real-model",
-            )
             artifact_dir = Path(directory) / "isolation-forest" / "real-model"
-            self.assertTrue((artifact_dir / "model.joblib").is_file())
-            self.assertTrue((artifact_dir / "model_metadata.json").is_file())
-            self.assertTrue((artifact_dir / "model_evaluation.json").is_file())
-            stored_evaluation = json.loads(
-                (artifact_dir / "model_evaluation.json").read_text(encoding="utf-8")
-            )
+            with patch.dict(
+                os.environ,
+                {
+                    "API_ISOLATION_FOREST_ANOMALY_DETECTION_URL":
+                        "http://if-detection.test:5014/"
+                },
+            ):
+                result = self.module.train_and_evaluate_isolation_forest_task(
+                    task_context,
+                    train.tolist(),
+                    test.tolist(),
+                    labels.tolist(),
+                    parameters,
+                    "real-model",
+                )
+            self.assertFalse(artifact_dir.exists())
+
+        stored_evaluation = json.loads(
+            uploaded["files"]["evaluation"]["content"].decode("utf-8")
+        )
 
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["detector_id"], "isolation-forest")
@@ -281,12 +435,36 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
         self.assertEqual(result["artifact_dir"], "isolation-forest/real-model")
         self.assertEqual(result["training_parameters"], parameters)
         self.assertEqual(result["n_features"], 2)
+        self.assertEqual(
+            result["promotion"],
+            {
+                "status": "available",
+                "detector_id": "isolation-forest",
+                "model_id": "real-model",
+            },
+        )
         self.assertNotIn("binary_predictions", result["evaluation"])
         self.assertNotIn("anomaly_scores", result["evaluation"])
         self.assertIn("binary_predictions", stored_evaluation)
         self.assertIn("anomaly_scores", stored_evaluation)
         json.dumps(result)
         self.assertLess(len(json.dumps(result)), 2_000)
+        self.assertEqual(
+            uploaded["url"], "http://if-detection.test:5014/save_model"
+        )
+        self.assertEqual(uploaded["timeout"], (5.0, 60.0))
+        self.assertEqual(
+            {field: item["filename"] for field, item in uploaded["files"].items()},
+            ARTIFACT_FILES,
+        )
+        self.assertTrue(uploaded["files"]["model"]["content"])
+        for field in ARTIFACT_FILES:
+            expected_digest = hashlib.sha256(
+                uploaded["files"][field]["content"]
+            ).hexdigest()
+            self.assertEqual(uploaded["data"][f"{field}_sha256"], expected_digest)
+        self.assertEqual(uploaded["data"]["detector_id"], "isolation-forest")
+        self.assertEqual(uploaded["data"]["model_id"], "real-model")
 
     def test_task_does_not_hide_adapter_errors(self):
         failure = RuntimeError("training failed")
@@ -305,6 +483,243 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
                     "failed-model",
                 )
         self.assertIs(raised.exception, failure)
+
+    def test_failed_promotion_preserves_local_artifacts(self):
+        metadata = {
+            "training_parameters": {"n_estimators": 100},
+            "n_features": 2,
+        }
+        evaluation = {
+            key: index
+            for index, key in enumerate(self.module.ISOLATION_FOREST_EVALUATION_KEYS)
+        }
+
+        def write_artifacts(_train, artifact_dir, **_kwargs):
+            write_placeholder_artifacts(artifact_dir)
+            return metadata
+
+        adapter = types.SimpleNamespace(
+            train=Mock(side_effect=write_artifacts),
+            evaluate=Mock(return_value=evaluation),
+        )
+        task_context = types.SimpleNamespace(update_state=Mock())
+        failure = IsolationForestPromotionError("remote unavailable")
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            self.module,
+            "ISOLATION_FOREST_ARTIFACT_ROOT",
+            Path(directory) / "isolation-forest",
+        ), patch.object(
+            self.module.registry, "get_adapter", return_value=adapter
+        ), patch.object(
+            self.module,
+            "promote_isolation_forest_model",
+            side_effect=failure,
+        ):
+            artifact_dir = Path(directory) / "isolation-forest" / "model-1"
+            with self.assertRaises(IsolationForestPromotionError) as raised:
+                self.module.train_and_evaluate_isolation_forest_task(
+                    task_context,
+                    [[0.0, 0.0], [0.1, 0.1]],
+                    [[2.0, 2.0]],
+                    [1],
+                    {"n_estimators": 100},
+                    "model-1",
+                )
+            self.assertTrue(artifact_dir.is_dir())
+            self.assertEqual(
+                sorted(path.name for path in artifact_dir.iterdir()),
+                sorted(ARTIFACT_FILES.values()),
+            )
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(
+            [call.kwargs["state"] for call in task_context.update_state.call_args_list],
+            ["INITIATING", "TRAINING", "EVALUATING", "PROMOTING"],
+        )
+
+    def test_cleanup_failure_does_not_reverse_confirmed_promotion(self):
+        metadata = {
+            "training_parameters": {"n_estimators": 100},
+            "n_features": 2,
+        }
+        evaluation = {
+            key: index
+            for index, key in enumerate(self.module.ISOLATION_FOREST_EVALUATION_KEYS)
+        }
+        adapter = types.SimpleNamespace(
+            train=Mock(return_value=metadata),
+            evaluate=Mock(return_value=evaluation),
+        )
+        task_context = types.SimpleNamespace(update_state=Mock())
+        promotion = {
+            "status": "available",
+            "detector_id": "isolation-forest",
+            "model_id": "model-1",
+        }
+
+        with patch.object(
+            self.module.registry, "get_adapter", return_value=adapter
+        ), patch.object(
+            self.module,
+            "promote_isolation_forest_model",
+            return_value=promotion,
+        ), patch.object(
+            self.module.shutil,
+            "rmtree",
+            side_effect=OSError("cleanup denied"),
+        ):
+            with self.assertLogs(self.module.logger, level="WARNING") as logs:
+                result = self.module.train_and_evaluate_isolation_forest_task(
+                    task_context,
+                    [[0.0, 0.0], [0.1, 0.1]],
+                    [[2.0, 2.0]],
+                    [1],
+                    {"n_estimators": 100},
+                    "model-1",
+                )
+
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["promotion"], promotion)
+        self.assertIn("cleanup failed", logs.output[0])
+
+
+class IsolationForestPromotionTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.artifact_dir = Path(self.temporary_directory.name) / "model-1"
+        self.contents = write_placeholder_artifacts(self.artifact_dir)
+
+    def tearDown(self):
+        self.temporary_directory.cleanup()
+
+    def test_binary_multipart_fields_checksums_and_idempotent_response(self):
+        captured = {}
+
+        def capture(url, *, data, files, timeout):
+            captured["url"] = url
+            captured["data"] = dict(data)
+            captured["timeout"] = timeout
+            captured["files"] = {
+                field: (value[0], value[1].read(), value[2])
+                for field, value in files.items()
+            }
+            return available_response("model-1", idempotent=True)
+
+        with patch(
+            "learning_adaptation.isolation_forest_promotion.requests.post",
+            side_effect=capture,
+        ):
+            result = promote_isolation_forest_model(
+                self.artifact_dir,
+                "model-1",
+                service_url="http://detector.test/base/",
+            )
+
+        self.assertEqual(
+            result,
+            {
+                "status": "available",
+                "detector_id": "isolation-forest",
+                "model_id": "model-1",
+            },
+        )
+        self.assertEqual(captured["url"], "http://detector.test/base/save_model")
+        self.assertEqual(captured["timeout"], (5.0, 60.0))
+        self.assertEqual(captured["data"]["detector_id"], "isolation-forest")
+        self.assertEqual(captured["data"]["model_id"], "model-1")
+        for field, filename in ARTIFACT_FILES.items():
+            uploaded_name, uploaded_content, _content_type = captured["files"][field]
+            self.assertEqual(uploaded_name, filename)
+            self.assertEqual(uploaded_content, self.contents[filename])
+            self.assertEqual(
+                captured["data"][f"{field}_sha256"],
+                hashlib.sha256(self.contents[filename]).hexdigest(),
+            )
+
+    def test_missing_artifact_is_a_targeted_promotion_failure(self):
+        (self.artifact_dir / "model.joblib").unlink()
+        with self.assertRaisesRegex(
+            IsolationForestPromotionError, "missing model.joblib"
+        ):
+            promote_isolation_forest_model(
+                self.artifact_dir, "model-1", service_url="http://detector.test"
+            )
+
+    def test_http_errors_are_promotion_failures_and_preserve_artifacts(self):
+        for status_code in (400, 409, 500):
+            with self.subTest(status_code=status_code), patch(
+                "learning_adaptation.isolation_forest_promotion.requests.post",
+                return_value=FakePromotionResponse(
+                    status_code=status_code, payload={"error": "rejected"}, text="rejected"
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    IsolationForestPromotionError, f"HTTP {status_code}"
+                ):
+                    promote_isolation_forest_model(
+                        self.artifact_dir,
+                        "model-1",
+                        service_url="http://detector.test",
+                    )
+                self.assertTrue(self.artifact_dir.is_dir())
+
+    def test_invalid_json_is_a_promotion_failure(self):
+        with patch(
+            "learning_adaptation.isolation_forest_promotion.requests.post",
+            return_value=FakePromotionResponse(payload=ValueError("not JSON")),
+        ), self.assertRaisesRegex(IsolationForestPromotionError, "invalid JSON"):
+            promote_isolation_forest_model(
+                self.artifact_dir, "model-1", service_url="http://detector.test"
+            )
+
+    def test_timeout_and_network_failures_are_promotion_failures(self):
+        for failure in (
+            requests.Timeout("timed out"),
+            requests.ConnectionError("connection refused"),
+        ):
+            with self.subTest(failure=type(failure).__name__), patch(
+                "learning_adaptation.isolation_forest_promotion.requests.post",
+                side_effect=failure,
+            ) as transport, self.assertRaisesRegex(
+                IsolationForestPromotionError, "promotion request failed"
+            ):
+                promote_isolation_forest_model(
+                    self.artifact_dir,
+                    "model-1",
+                    service_url="http://detector.test",
+                )
+            self.assertEqual(transport.call_count, 2)
+            self.assertTrue(self.artifact_dir.is_dir())
+
+    def test_remote_identity_and_status_mismatches_are_rejected(self):
+        invalid_payloads = (
+            {
+                "status": "pending",
+                "detector_id": "isolation-forest",
+                "model_id": "model-1",
+            },
+            {
+                "status": "available",
+                "detector_id": "cgnn",
+                "model_id": "model-1",
+            },
+            {
+                "status": "available",
+                "detector_id": "isolation-forest",
+                "model_id": "other-model",
+            },
+        )
+        expected_errors = ("availability", "detector_id mismatch", "model_id mismatch")
+        for payload, expected_error in zip(invalid_payloads, expected_errors):
+            with self.subTest(payload=payload), patch(
+                "learning_adaptation.isolation_forest_promotion.requests.post",
+                return_value=FakePromotionResponse(payload=payload),
+            ), self.assertRaisesRegex(IsolationForestPromotionError, expected_error):
+                promote_isolation_forest_model(
+                    self.artifact_dir,
+                    "model-1",
+                    service_url="http://detector.test",
+                )
 
 
 if __name__ == "__main__":

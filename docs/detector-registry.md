@@ -57,3 +57,11 @@ Run the focused tests with:
 ```shell
 python -m unittest tests.test_detectors tests.test_detector_resolver tests.test_cgnn_adapter
 ```
+
+Isolation Forest training workers promote completed models to the detection
+service configured by `API_ISOLATION_FOREST_ANOMALY_DETECTION_URL`. Local
+development defaults to `http://127.0.0.1:5014`. The IF-C4 Celery deployment
+must set this variable to the Isolation Forest detection-service base URL.
+Promotion makes at most two HTTP attempts with the same local artifacts and
+checksums. If both attempts fail, the task fails without a full Celery training
+retry and retains the artifacts for a later manual promotion retry.
