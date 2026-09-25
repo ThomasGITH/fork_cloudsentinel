@@ -23,10 +23,27 @@ from detectors.isolation_forest.training_request import (
 
 from cgnn.config import set_config, get_config, set_initial_config
 
+try:
+    from learning_adaptation.training_runs_api import (
+        configure_training_run_defaults,
+        create_training_runs_blueprint,
+    )
+except ModuleNotFoundError as exc:  # The service image copies modules into /app.
+    if exc.name not in {
+        "learning_adaptation",
+        "learning_adaptation.training_runs_api",
+    }:
+        raise
+    from training_runs_api import (
+        configure_training_run_defaults,
+        create_training_runs_blueprint,
+    )
+
 # Initialize Flask app and configure CORS
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.register_blueprint(create_detectors_blueprint())
+configure_training_run_defaults(app)
 
 # Set the environment variable
 os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
@@ -46,6 +63,13 @@ celery.conf.update(
     worker_cancel_long_running_tasks_on_connection_loss=True,
     task_acks_late=True,  # If you are using late acknowledgments
     worker_prefetch_multiplier=1,  # Example configuration to avoid over-fetching
+)
+app.register_blueprint(
+    create_training_runs_blueprint(
+        train_and_evaluate_task,
+        train_and_evaluate_isolation_forest_task,
+        status_reader=lambda task_id: celery.AsyncResult(task_id),
+    )
 )
 
 # Configure logging

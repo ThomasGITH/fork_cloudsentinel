@@ -1,2 +1,4 @@
 /env_adaptation
 **/__pycache__
+/dataset_snapshots/
+/training_runs/
