@@ -160,6 +160,7 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
         submitted_task.apply_async.return_value = types.SimpleNamespace(id="task-123")
         tasks_stub = types.ModuleType("tasks")
         tasks_stub.train_and_evaluate_task = submitted_task
+        tasks_stub.train_and_evaluate_isolation_forest_task = Mock()
         celery_stub = types.ModuleType("celery")
         celery_stub.Celery = FakeCeleryApp
         config_stub = types.ModuleType("cgnn.config")

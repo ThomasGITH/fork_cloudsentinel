@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import traceback
+import uuid
 import requests
 import torch
 import shutil
@@ -10,9 +11,15 @@ import pandas as pd
 import numpy as np
 from flask_cors import CORS
 from celery import Celery
-from tasks import train_and_evaluate_task  # Import the task
+from tasks import train_and_evaluate_isolation_forest_task, train_and_evaluate_task
 
 from detectors.api import create_detectors_blueprint
+from detectors.isolation_forest.training_request import (
+    IsolationForestRequestError,
+    validate_model_id,
+    validate_training_data,
+    validate_training_parameters,
+)
 
 from cgnn.config import set_config, get_config, set_initial_config
 
@@ -80,6 +87,62 @@ def cgnn_train_models():
     except Exception as e:
         logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/isolation_forest_train_model', methods=['POST'])
+def isolation_forest_train_model():
+    """Validate and enqueue an Isolation Forest train-and-evaluate run."""
+    required_files = ('train_array', 'test_array', 'anomaly_label_array')
+    missing_files = [name for name in required_files if name not in request.files]
+    if missing_files:
+        return jsonify({
+            "error": f"missing required file(s): {', '.join(missing_files)}"
+        }), 400
+
+    try:
+        train_array = pd.read_csv(
+            request.files['train_array'], header=None, skip_blank_lines=False
+        ).to_numpy()
+        test_array = pd.read_csv(
+            request.files['test_array'], header=None, skip_blank_lines=False
+        ).to_numpy()
+        anomaly_label_array = pd.read_csv(
+            request.files['anomaly_label_array'], header=None, skip_blank_lines=False
+        ).to_numpy()
+
+        train_array, test_array, anomaly_label_array = validate_training_data(
+            train_array, test_array, anomaly_label_array
+        )
+
+        raw_parameters = request.form.get('training_parameters')
+        try:
+            submitted_parameters = json.loads(raw_parameters) if raw_parameters else None
+        except json.JSONDecodeError as exc:
+            raise IsolationForestRequestError(
+                "training_parameters must contain valid JSON"
+            ) from exc
+        training_parameters = validate_training_parameters(submitted_parameters)
+
+        submitted_model_id = request.form.get('model_id')
+        model_id = validate_model_id(submitted_model_id or uuid.uuid4().hex)
+    except IsolationForestRequestError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, UnicodeError, ValueError) as exc:
+        return jsonify({"error": f"invalid training CSV: {exc}"}), 400
+
+    task = train_and_evaluate_isolation_forest_task.apply_async(
+        args=[
+            train_array.tolist(),
+            test_array.tolist(),
+            anomaly_label_array.tolist(),
+            training_parameters,
+            model_id,
+        ]
+    )
+    logger.info(
+        "Task %s started for Isolation Forest model %s", task.id, model_id
+    )
+    return jsonify({"task_id": task.id}), 202
 
 
 @app.route('/get_status/<task_id>', methods=['GET'])
