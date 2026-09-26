@@ -36,3 +36,34 @@ preview rows.
 The file backend remains intended for local development and tests. API and
 worker processes must share `CATALOGUE_STORAGE_ROOT`; multi-replica locking and
 object storage remain future work.
+
+## Versioning, ground truth, and partitions
+
+DC-4 adds explicit version and annotation operations:
+
+- `POST /datasets/{dataset_id}/versions` creates a new draft from a selected
+  existing version and optional source, workload, or partition overrides.
+- `GET /datasets/{dataset_id}/versions/{version}` reads one exact version.
+- `PATCH /datasets/{dataset_id}` updates only logical display metadata and
+  records a metadata revision.
+- `POST /datasets/{dataset_id}/versions/{version}/incidents` appends a validated
+  incident window to an available version.
+- `POST /datasets/{dataset_id}/versions/{version}/labels` stores manual
+  row-level labels or derives them from incident windows.
+- `POST /datasets/{dataset_id}/versions/{version}/partitions` stores an explicit
+  `none`, `predefined`, or `time_range` partition definition.
+
+Incident, label, and partition files live below `overlays/{version}`. They do
+not rewrite the immutable Prometheus request, resolved-query provenance,
+canonical observations, checksums, timestamps, or feature order. Label
+artifacts always use `0 = normal` and `1 = anomaly`; an existing label artifact
+cannot be overwritten. Partition checksums exclude generated IDs and creation
+timestamps, so identical definitions have identical checksums.
+
+Usability is reported separately for `unsupervised_training` and
+`labeled_evaluation`. An available numeric matrix can support unsupervised
+training without labels. Labeled evaluation additionally requires an explicit
+train/test partition and label coverage. The current CGNN and Isolation Forest
+training tasks still require their existing train/test/label inputs; catalogue
+usability does not yet dispatch those tasks because TrainingRun integration is
+outside DC-4.

@@ -224,6 +224,11 @@ class LegacyDatasetProjector:
             "version": 1,
             "status": status,
             "created_at": created_at,
+            "workload_context": {
+                "workload_intensity": None,
+                "dominant_workload_characteristic": None,
+                "anomaly_scenario": "Unknown",
+            },
             "source": {
                 "type": "legacy",
                 "prometheus_source_id": None,

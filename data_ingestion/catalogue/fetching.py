@@ -747,7 +747,13 @@ def execute_catalogue_fetch(
                 if target_value not in resolved_targets[key]:
                     resolved_targets[key].append(target_value)
         version["source"]["resolved_targets"] = resolved_targets
+        lineage = {
+            key: version.get("provenance", {})[key]
+            for key in ("copied_from_version", "origin")
+            if key in version.get("provenance", {})
+        }
         version["provenance"] = {
+            **lineage,
             "configuration_frozen": True,
             "resolved_queries": assembled["provenance_executions"],
             "query_results": [

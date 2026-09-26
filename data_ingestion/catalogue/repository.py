@@ -37,6 +37,23 @@ def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
         raise
 
 
+def atomic_write_bytes(path: Path, value: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as target:
+            target.write(value)
+            target.flush()
+            os.fsync(target.fileno())
+        os.replace(temporary_path, path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
 class FileCatalogueRepository:
     def __init__(self, root: str | Path):
         self.root = Path(root).resolve()
@@ -81,6 +98,10 @@ class FileCatalogueRepository:
         return self._safe_child(
             dataset_id, "fetch_attempts", f"{version:06d}", f"{attempt_id}.json"
         )
+
+    def overlay_directory(self, dataset_id: str, version: int) -> Path:
+        version = validate_version(version)
+        return self._safe_child(dataset_id, "overlays", f"{version:06d}")
 
     def create(self, record: dict[str, Any], version: dict[str, Any]) -> None:
         dataset_id = validate_identifier(record.get("dataset_id"))
@@ -138,6 +159,25 @@ class FileCatalogueRepository:
         if record.get("dataset_id") != validate_identifier(dataset_id):
             raise CatalogueValidationError("dataset record identity does not match")
         atomic_write_json(self._dataset_directory(dataset_id) / "dataset.json", record)
+
+    def create_version(
+        self, dataset_id: str, record: dict[str, Any], version: dict[str, Any]
+    ) -> None:
+        dataset_id = validate_identifier(dataset_id)
+        version_number = validate_version(version.get("version"))
+        if version.get("dataset_id") != dataset_id or record.get("dataset_id") != dataset_id:
+            raise CatalogueValidationError("dataset and version identities do not match")
+        path = self._version_path(dataset_id, version_number)
+        if path.exists():
+            raise DatasetAlreadyExistsError(
+                f"dataset version already exists: {dataset_id!r} version {version_number}"
+            )
+        atomic_write_json(path, version)
+        try:
+            self.update_record(dataset_id, record)
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
 
     def promote_staging(self, dataset_id: str, version: int, attempt_id: str) -> Path:
         staging = self.staging_directory(dataset_id, version, attempt_id)

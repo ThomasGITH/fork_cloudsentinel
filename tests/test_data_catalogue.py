@@ -401,6 +401,11 @@ class DataIngestionAppRegistrationTests(unittest.TestCase):
         self.assertIn("/datasets/<dataset_id>/versions/<int:version>/fetch", routes)
         self.assertIn("/datasets/<dataset_id>/fetch-status", routes)
         self.assertIn("/datasets/<dataset_id>/preview", routes)
+        self.assertIn("/datasets/<dataset_id>/versions", routes)
+        self.assertIn("/datasets/<dataset_id>/versions/<int:version>", routes)
+        self.assertIn("/datasets/<dataset_id>/versions/<int:version>/incidents", routes)
+        self.assertIn("/datasets/<dataset_id>/versions/<int:version>/labels", routes)
+        self.assertIn("/datasets/<dataset_id>/versions/<int:version>/partitions", routes)
 
     def test_worker_entrypoint_registers_catalogue_fetch_task_with_real_celery(self):
         repository_root = Path(__file__).resolve().parents[1]

@@ -21,6 +21,15 @@ from .fetching import (
     validate_fetch_request,
 )
 from .models import build_draft_dataset
+from .lifecycle import (
+    CatalogueConflictError,
+    add_incident,
+    add_row_labels,
+    calculate_usability,
+    create_dataset_version,
+    set_partition,
+    update_dataset_metadata,
+)
 from .repository import (
     DatasetAlreadyExistsError,
     DatasetNotFoundError,
@@ -91,7 +100,12 @@ def _summary(record: dict[str, Any], version: dict[str, Any]) -> dict[str, Any]:
         "end_time": source.get("end_time"),
         "partition_mode": version["partition"]["mode"],
         "validation_warning_count": len(version["validation"].get("warnings", [])),
+        **calculate_usability(version),
     }
+
+
+def _detail_with_usability(detail: dict[str, Any]) -> dict[str, Any]:
+    return {**detail, **calculate_usability(detail["version"])}
 
 
 def create_catalogue_blueprint() -> Blueprint:
@@ -188,7 +202,7 @@ def create_catalogue_blueprint() -> Blueprint:
             validate_identifier(dataset_id)
             repository, projector = components()
             projector.project_all()
-            return jsonify(repository.read_detail(dataset_id)), 200
+            return jsonify(_detail_with_usability(repository.read_detail(dataset_id))), 200
         except CatalogueValidationError as exc:
             return jsonify({"error": str(exc)}), 400
         except DatasetNotFoundError as exc:
@@ -204,11 +218,103 @@ def create_catalogue_blueprint() -> Blueprint:
             repository, projector = components()
             projector.project_all()
             repository.create(record, version)
-            return jsonify(repository.read_detail(record["dataset_id"])), 201
+            return jsonify(_detail_with_usability(repository.read_detail(record["dataset_id"]))), 201
         except (BadRequest, CatalogueValidationError) as exc:
             return jsonify({"error": str(exc)}), 400
         except DatasetAlreadyExistsError as exc:
             return jsonify({"error": str(exc)}), 409
+
+    @blueprint.get("/datasets/<dataset_id>/versions/<int:version>")
+    def get_dataset_version(dataset_id: str, version: int):
+        try:
+            validate_identifier(dataset_id)
+            validate_version(version)
+            repository, _projector = components()
+            stored = repository.read_version(dataset_id, version)
+            return jsonify({**stored, **calculate_usability(stored)})
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+
+    @blueprint.post("/datasets/<dataset_id>/versions")
+    def create_version(dataset_id: str):
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            repository, _projector = components()
+            detail = create_dataset_version(
+                repository, dataset_id, request.get_json(silent=False)
+            )
+            return jsonify(_detail_with_usability(detail)), 201
+        except (BadRequest, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+        except DatasetAlreadyExistsError as exc:
+            return jsonify({"error": str(exc)}), 409
+
+    @blueprint.patch("/datasets/<dataset_id>")
+    def patch_dataset(dataset_id: str):
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            repository, _projector = components()
+            detail = update_dataset_metadata(
+                repository, dataset_id, request.get_json(silent=False)
+            )
+            return jsonify(_detail_with_usability(detail))
+        except (BadRequest, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+
+    @blueprint.post("/datasets/<dataset_id>/versions/<int:version>/incidents")
+    def create_incident(dataset_id: str, version: int):
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            repository, _projector = components()
+            incident = add_incident(
+                repository, dataset_id, version, request.get_json(silent=False)
+            )
+            return jsonify(incident), 201
+        except (BadRequest, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+
+    @blueprint.post("/datasets/<dataset_id>/versions/<int:version>/labels")
+    def create_labels(dataset_id: str, version: int):
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            repository, _projector = components()
+            labels = add_row_labels(
+                repository, dataset_id, version, request.get_json(silent=False)
+            )
+            return jsonify(labels), 201
+        except (BadRequest, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except CatalogueConflictError as exc:
+            return jsonify({"error": str(exc)}), 409
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+
+    @blueprint.post("/datasets/<dataset_id>/versions/<int:version>/partitions")
+    def create_partition(dataset_id: str, version: int):
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            repository, _projector = components()
+            partition = set_partition(
+                repository, dataset_id, version, request.get_json(silent=False)
+            )
+            return jsonify(partition), 201
+        except (BadRequest, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
 
     @blueprint.post("/datasets/<dataset_id>/versions/<int:version>/fetch")
     def fetch_dataset(dataset_id: str, version: int):

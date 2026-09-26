@@ -8,6 +8,7 @@ import json
 from pathlib import PurePosixPath
 import re
 from typing import Any
+import uuid
 
 
 SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -143,7 +144,7 @@ def _validate_predefined_part(value: Any, field: str) -> dict[str, Any]:
     }
 
 
-def _partition_checksum(value: dict[str, Any]) -> str:
+def partition_checksum(value: dict[str, Any]) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
@@ -180,7 +181,7 @@ def validate_partition(value: Any | None) -> dict[str, Any]:
         gap = value.get("gap_seconds", 0)
         if isinstance(gap, bool) or not isinstance(gap, int) or gap < 0:
             raise CatalogueValidationError("partition.gap_seconds must be a non-negative integer")
-        if test_start < train_end:
+        if test_start <= train_end:
             raise CatalogueValidationError("partition train and test ranges must not overlap")
         if (test_start - train_end).total_seconds() < gap:
             raise CatalogueValidationError(
@@ -201,7 +202,38 @@ def validate_partition(value: Any | None) -> dict[str, Any]:
         raise CatalogueValidationError(
             "partition.mode must be one of: none, predefined, time_range"
         )
-    result["checksum"] = _partition_checksum(result)
+    result["checksum"] = partition_checksum(result)
+    return result
+
+
+def validate_tags(value: Any | None) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in value
+    ):
+        raise CatalogueValidationError("tags must be a list of non-empty strings")
+    return sorted(set(item.strip() for item in value))
+
+
+def validate_annotations(value: Any | None) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise CatalogueValidationError("ground_truth_annotations must be a list")
+    result = []
+    for index, item in enumerate(value):
+        item = require_object(item, f"ground_truth_annotations[{index}]")
+        normalized = {
+            "annotation": require_string(
+                item.get("annotation"), f"ground_truth_annotations[{index}].annotation"
+            )
+        }
+        if item.get("source") is not None:
+            normalized["source"] = require_string(
+                item["source"], f"ground_truth_annotations[{index}].source"
+            )
+        result.append(normalized)
     return result
 
 
@@ -320,12 +352,31 @@ def validate_incidents(value: Any | None) -> list[dict[str, Any]]:
             raise CatalogueValidationError(
                 f"ground_truth.known_incident_windows[{index}] start_time must be before end_time"
             )
-        normalized = {"start_time": start_value, "end_time": end_value}
-        for field in ("scenario", "annotation"):
-            if incident.get(field) is not None:
-                normalized[field] = require_string(
-                    incident[field], f"ground_truth.known_incident_windows[{index}].{field}"
-                )
+        scenario = incident.get("scenario", "Unknown")
+        if scenario not in ANOMALY_SCENARIOS:
+            raise CatalogueValidationError(
+                f"ground_truth.known_incident_windows[{index}].scenario must be one of: "
+                f"{', '.join(sorted(ANOMALY_SCENARIOS))}"
+            )
+        normalized = {
+            "incident_id": validate_identifier(
+                incident.get("incident_id") or f"incident-{uuid.uuid4().hex}",
+                f"ground_truth.known_incident_windows[{index}].incident_id",
+            ),
+            "start_time": start_value,
+            "end_time": end_value,
+            "scenario": scenario,
+            "annotation": require_string(
+                incident.get("annotation", ""),
+                f"ground_truth.known_incident_windows[{index}].annotation",
+                allow_empty=True,
+            ),
+            "source": require_string(
+                incident.get("source", "catalogue_request"),
+                f"ground_truth.known_incident_windows[{index}].source",
+            ),
+            "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        }
         for field in ("affected_services", "affected_metrics"):
             items = incident.get(field, [])
             if not isinstance(items, list) or any(not isinstance(item, str) for item in items):

@@ -29,7 +29,7 @@ def new_dataset_id() -> str:
     return f"ds_{uuid.uuid4().hex}"
 
 
-def _validate_source(value: Any) -> tuple[dict[str, Any], datetime, datetime]:
+def validate_source(value: Any) -> tuple[dict[str, Any], datetime, datetime]:
     source = require_object(value, "source")
     forbidden = {"url", "base_url", "prometheus_url", "credentials", "token"} & set(source)
     if forbidden:
@@ -102,10 +102,30 @@ def build_draft_dataset(payload: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     )
     purpose = validate_purpose(payload.get("purpose"))
     workload_context = validate_workload_context(payload.get("workload_context"))
-    source, source_start, source_end = _validate_source(payload.get("source"))
+    source, source_start, source_end = validate_source(payload.get("source"))
     partition = validate_partition(payload.get("partition"))
     _validate_partition_within_source(partition, source_start, source_end)
     ground_truth = validate_ground_truth(payload.get("ground_truth"))
+    incidents = ground_truth["known_incident_windows"]
+    for incident in incidents:
+        _value, incident_start = validate_timestamp(
+            incident["start_time"], "ground_truth incident start_time"
+        )
+        _value, incident_end = validate_timestamp(
+            incident["end_time"], "ground_truth incident end_time"
+        )
+        if incident_start < source_start or incident_end > source_end:
+            raise CatalogueValidationError(
+                "ground_truth incident range must be inside the source time window"
+            )
+    ordered_incidents = sorted(
+        incidents, key=lambda item: (item["start_time"], item["end_time"], item["incident_id"])
+    )
+    for previous, current in zip(ordered_incidents, ordered_incidents[1:]):
+        previous_end = validate_timestamp(previous["end_time"], "incident end_time")[1]
+        current_start = validate_timestamp(current["start_time"], "incident start_time")[1]
+        if current_start < previous_end:
+            raise CatalogueValidationError("ground_truth incident windows must not overlap")
     created_at = utc_now()
 
     technical_schema = {
@@ -126,6 +146,7 @@ def build_draft_dataset(payload: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         "version": 1,
         "status": "draft",
         "created_at": created_at,
+        "workload_context": workload_context,
         "source": source,
         "provenance": {
             "configuration_frozen": False,
@@ -138,7 +159,7 @@ def build_draft_dataset(payload: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         "artifacts": {},
         "checksums": {},
         "ground_truth": ground_truth,
-        "incident_context": ground_truth["known_incident_windows"],
+        "incident_context": incidents,
         "partition": partition,
         "validation": {"status": "not_run", "warnings": [], "errors": []},
     }
@@ -153,6 +174,9 @@ def build_draft_dataset(payload: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         "created_at": created_at,
         "created_by": None,
         "metadata_revision": 1,
+        "metadata_history": [],
+        "tags": [],
+        "ground_truth_annotations": [],
         "latest_version": 1,
         "workload_context": workload_context,
         "ground_truth": {
