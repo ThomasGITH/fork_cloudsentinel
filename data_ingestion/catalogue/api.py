@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 import uuid
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 from werkzeug.exceptions import BadRequest
 
 from .legacy import LegacyDatasetProjector
@@ -21,6 +21,10 @@ from .fetching import (
     validate_fetch_request,
 )
 from .models import build_draft_dataset
+from .materialization import (
+    CatalogueMaterializationError,
+    materialize_training_bundle,
+)
 from .lifecycle import (
     CatalogueConflictError,
     add_incident,
@@ -413,6 +417,47 @@ def create_catalogue_blueprint() -> Blueprint:
         except DatasetNotFoundError as exc:
             return jsonify({"error": str(exc)}), 404
         except CatalogueFetchError as exc:
+            return jsonify({"error": str(exc)}), 409
+
+    @blueprint.get(
+        "/datasets/<dataset_id>/versions/<int:version>/partitions/"
+        "<partition_id>/training-bundle"
+    )
+    def training_bundle(dataset_id: str, version: int, partition_id: str):
+        try:
+            repository, projector = components()
+            projector.project_all()
+            bundle_path, manifest = materialize_training_bundle(
+                repository,
+                current_app.config["LEGACY_DATASETS_ROOT"],
+                dataset_id,
+                version,
+                partition_id,
+            )
+
+            def generate():
+                try:
+                    with bundle_path.open("rb") as source:
+                        for chunk in iter(lambda: source.read(64 * 1024), b""):
+                            yield chunk
+                finally:
+                    import shutil
+
+                    shutil.rmtree(bundle_path.parent, ignore_errors=True)
+
+            response = Response(
+                stream_with_context(generate()), mimetype="application/zip"
+            )
+            response.headers["Content-Disposition"] = (
+                f'attachment; filename="{dataset_id}-v{version}-{partition_id}.zip"'
+            )
+            response.headers["X-Partition-SHA256"] = manifest["partition_checksum"]
+            return response
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+        except (CatalogueMaterializationError, OSError, ValueError) as exc:
             return jsonify({"error": str(exc)}), 409
 
     return blueprint

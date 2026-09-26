@@ -22,6 +22,11 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _legacy_partition_id(dataset_id: str, version: int, checksum: str) -> str:
+    identity = f"{dataset_id}:{version}:{checksum}".encode("utf-8")
+    return f"legacy-{hashlib.sha256(identity).hexdigest()[:32]}"
+
+
 def _csv_facts(path: Path, name: str) -> dict[str, Any]:
     rows = 0
     columns = None
@@ -69,7 +74,19 @@ class LegacyDatasetProjector:
             except CatalogueValidationError:
                 continue
             try:
-                self.repository.read_record(dataset_id)
+                record = self.repository.read_record(dataset_id)
+                version = self.repository.read_version(dataset_id, record["latest_version"])
+                partition = version.get("partition", {})
+                if (
+                    version.get("source", {}).get("type") == "legacy"
+                    and partition.get("mode") == "predefined"
+                    and not partition.get("partition_id")
+                    and isinstance(partition.get("checksum"), str)
+                ):
+                    partition["partition_id"] = _legacy_partition_id(
+                        dataset_id, version["version"], partition["checksum"]
+                    )
+                    self.repository.update_version(dataset_id, version["version"], version)
                 continue
             except LookupError:
                 pass
@@ -213,6 +230,12 @@ class LegacyDatasetProjector:
                 },
             }
         partition = validate_partition(partition_value)
+        # Legacy datasets have no authored DC-4 partition artifact. Give their
+        # projected predefined partition a stable identity so callers can pin
+        # an exact partition without relying on an implicit "active" value.
+        partition["partition_id"] = _legacy_partition_id(
+            dataset_id, 1, partition["checksum"]
+        )
         ground_truth = {
             "labels_available": labels_available,
             "label_semantics": {"0": "normal", "1": "anomaly"} if labels_available else {},

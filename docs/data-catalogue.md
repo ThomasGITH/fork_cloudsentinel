@@ -67,3 +67,18 @@ train/test partition and label coverage. The current CGNN and Isolation Forest
 training tasks still require their existing train/test/label inputs; catalogue
 usability does not yet dispatch those tasks because TrainingRun integration is
 outside DC-4.
+
+## Training materialization
+
+DC-5 exposes an exact available partition through
+`GET /datasets/{dataset_id}/versions/{version}/partitions/{partition_id}/training-bundle`.
+The streamed ZIP contains `manifest.json`, `train.csv`, `test.csv`, and
+`labels.csv`. The manifest pins the dataset version, partition checksum,
+feature order and its hash, label source, source artifact hashes, row counts,
+and the SHA-256 and byte size of every emitted CSV. Materialization verifies
+the immutable source artifacts before returning data and performs no scaling,
+imputation, windowing, or detector preprocessing.
+
+Legacy predefined partitions receive a deterministic `partition_id` derived
+from dataset ID, version, and partition checksum. Existing projected records
+are backfilled on projection; the original legacy CSV files remain unchanged.

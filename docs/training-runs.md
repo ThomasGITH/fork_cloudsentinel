@@ -25,3 +25,30 @@ CGNN still uses process-global `config.json`. IF-D2 permits only one CGNN child
 per run and does not make concurrent CGNN runs safe. True CGNN parallelism
 requires process isolation, request-scoped configuration, and dedicated worker
 queues.
+
+DC-5 additionally accepts an exact catalogue source:
+
+```json
+{
+  "dataset": {
+    "source": "catalogue",
+    "dataset_id": "ds_...",
+    "version": 3,
+    "partition_id": "partition-..."
+  },
+  "detectors": [{"detector_id": "isolation-forest", "parameters": {}}]
+}
+```
+
+The learning service downloads the binary bundle from `API_DATA_CATALOGUE_URL`,
+verifies its manifest and file hashes, and atomically creates the same immutable
+snapshot shape used by existing datasets. Catalogue identity, partition and
+feature-order hashes, label provenance, source hashes, and observation counts
+are stored in both snapshot and run metadata.
+
+Catalogue or bundle-integrity failures stop the run before dispatch. A
+detector-specific compatibility failure is stored as `validation_failed` on
+that child while compatible siblings are dispatched. CGNN feature importance
+is unavailable for catalogue data because arbitrary PromQL feature names do
+not provide a trustworthy container-by-metric mapping; legacy CGNN behavior is
+unchanged.

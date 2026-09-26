@@ -155,6 +155,79 @@ class DatasetSnapshotStore:
             shutil.rmtree(staging_directory, ignore_errors=True)
             raise
 
+    def create_catalogue(self, source: dict[str, Any]) -> dict[str, Any]:
+        """Install an already verified catalogue materialization immutably."""
+        manifest = source["manifest"]
+        dataset_id = validate_identifier(manifest.get("dataset_id"), "dataset.dataset_id")
+        snapshot_id = new_identifier("snapshot")
+        self.snapshot_root.mkdir(parents=True, exist_ok=True)
+        final_directory = self.snapshot_root / snapshot_id
+        staging_directory = Path(
+            tempfile.mkdtemp(prefix=f".{snapshot_id}.", dir=self.snapshot_root)
+        )
+        try:
+            file_metadata = {}
+            for logical_name, destination_name in (
+                ("train", "train.csv"),
+                ("test", "test.csv"),
+                ("labels", "labels.csv"),
+            ):
+                destination = staging_directory / destination_name
+                shutil.copyfile(source["files"][logical_name], destination)
+                expected = manifest["files"][destination_name]["sha256"]
+                actual = sha256_file(destination)
+                if actual != expected:
+                    raise TrainingRunValidationError(
+                        f"catalogue {destination_name} changed during snapshot creation"
+                    )
+                file_metadata[logical_name] = {
+                    "filename": destination_name,
+                    "sha256": actual,
+                    "bytes": destination.stat().st_size,
+                }
+            combined_digest = hashlib.sha256()
+            for logical_name in ("train", "test", "labels"):
+                combined_digest.update(file_metadata[logical_name]["sha256"].encode("ascii"))
+            provenance = {
+                key: manifest[key]
+                for key in (
+                    "dataset_id",
+                    "dataset_version",
+                    "partition_id",
+                    "partition_checksum",
+                    "partition_mode",
+                    "feature_order",
+                    "feature_order_sha256",
+                    "label_source",
+                    "counts",
+                    "source_artifact_checksums",
+                    "provenance_reference",
+                )
+            }
+            metadata = {
+                "schema_version": 2,
+                "snapshot_id": snapshot_id,
+                "source": {
+                    "type": "catalogue",
+                    "dataset_id": dataset_id,
+                    "version": manifest["dataset_version"],
+                    "partition_id": manifest["partition_id"],
+                },
+                "sha256": combined_digest.hexdigest(),
+                "files": file_metadata,
+                "dataset_details": source["details"],
+                "catalogue_provenance": provenance,
+            }
+            atomic_write_json(staging_directory / "snapshot.json", metadata)
+            os.replace(staging_directory, final_directory)
+            for path in final_directory.iterdir():
+                if path.is_file():
+                    path.chmod(0o444)
+            return {**metadata, "directory": final_directory}
+        except Exception:
+            shutil.rmtree(staging_directory, ignore_errors=True)
+            raise
+
     def remove(self, snapshot_id: str) -> None:
         snapshot_id = validate_identifier(snapshot_id, "snapshot_id")
         directory = (self.snapshot_root / snapshot_id).resolve()

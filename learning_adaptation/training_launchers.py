@@ -63,6 +63,17 @@ class CGNNTrainingLauncher:
             raise TrainingRunValidationError(
                 "CGNN labels must have the same number of observations as test data"
             )
+        if snapshot.get("source", {}).get("type") == "catalogue":
+            lookback = parameters["lookback"]
+            if len(train) <= lookback or len(test) <= lookback:
+                raise TrainingRunValidationError(
+                    "CGNN catalogue partition needs more train and test observations "
+                    f"than lookback={lookback}"
+                )
+            if parameters.get("feature_importance"):
+                raise TrainingRunValidationError(
+                    "CGNN feature importance is unavailable for arbitrary catalogue features"
+                )
 
         # This deliberately mirrors data_processing.cgnn_preprocess.normalize_data.
         from sklearn.preprocessing import MinMaxScaler
