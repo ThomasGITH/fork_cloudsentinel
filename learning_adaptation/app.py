@@ -49,14 +49,21 @@ configure_training_run_defaults(app)
 os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
 
 # Configure and initialize Celery
-app.config['broker_url'] = 'redis://redis:6379/2'
-app.config['result_backend'] = 'redis://redis:6379/2'
+app.config['broker_url'] = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/2')
+app.config['result_backend'] = os.getenv(
+    'CELERY_RESULT_BACKEND', 'redis://redis:6379/2'
+)
 
 # testing purposes
 # app.config['broker_url'] = 'redis://localhost:6379/2'
 # app.config['result_backend'] = 'redis://localhost:6379/2'
 
-celery = Celery(app.import_name, backend=app.config['result_backend'], broker=app.config['broker_url'])
+celery = Celery(
+    app.import_name,
+    backend=app.config['result_backend'],
+    broker=app.config['broker_url'],
+    include=['tasks'],
+)
 celery.conf.update(
     app.config,
     broker_connection_retry_on_startup=True,
@@ -210,7 +217,7 @@ def get_available_models():
         json: A dictionary of models with their parameters, configuration, and evaluation.
     """
     try:
-        model_dir = 'trained_models_temp'
+        model_dir = os.getenv('TRAINED_MODELS_TEMP_ROOT', 'trained_models_temp')
         models = {}
         for model_name in os.listdir(model_dir):
             model_path = os.path.join(model_dir, model_name)
@@ -242,7 +249,10 @@ def save_to_detection_module():
     try:
         model_info_json = request.form.get('model_info')
         model_info = json.loads(model_info_json)
-        path = f"trained_models_temp/{next(iter(model_info['data']))}"
+        path = os.path.join(
+            os.getenv('TRAINED_MODELS_TEMP_ROOT', 'trained_models_temp'),
+            next(iter(model_info['data'])),
+        )
         model = torch.load(path+'/model.pt', map_location='cpu')
         json_data = {key: value.tolist() for key, value in model.items()}
         model_json = json.dumps(json_data, indent=2)

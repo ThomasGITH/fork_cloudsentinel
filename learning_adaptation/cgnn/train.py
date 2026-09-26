@@ -28,7 +28,8 @@ def train(dataset_config, train_array, test_array, anomaly_label_array, progress
     print(config)
     print(train_array.shape, test_array.shape, anomaly_label_array.shape, anomaly_label_array)
 
-    save_path = f"trained_models_temp/{config['dataset']}_{id}"
+    model_root = os.getenv("TRAINED_MODELS_TEMP_ROOT", "trained_models_temp")
+    save_path = os.path.join(model_root, f"{config['dataset']}_{id}")
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 

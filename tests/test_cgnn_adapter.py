@@ -4,6 +4,7 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import types
@@ -20,6 +21,45 @@ def load_module(name, path):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+class LearningWorkerRuntimeConfigurationTests(unittest.TestCase):
+    def test_worker_entrypoint_uses_environment_and_registers_training_tasks(self):
+        code = """
+import app
+import tasks
+assert app.app.config['broker_url'] == 'redis://infra-test.invalid:6379/2'
+assert app.app.config['result_backend'] == 'redis://infra-test.invalid:6379/2'
+assert str(tasks.TRAINED_MODELS_TEMP_ROOT) == '/tmp/infra-trained-models'
+assert 'tasks.train_and_evaluate_task' in app.celery.tasks
+assert 'tasks.train_and_evaluate_isolation_forest_task' in app.celery.tasks
+health = app.app.test_client().get('/healthz')
+assert health.status_code == 200
+assert health.get_json() == {'status': 'healthy'}
+print('learning_registry_check=PASS')
+"""
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "PYTHONPATH": os.pathsep.join(
+                    filter(None, [str(REPOSITORY_ROOT), environment.get("PYTHONPATH")])
+                ),
+                "CELERY_BROKER_URL": "redis://infra-test.invalid:6379/2",
+                "CELERY_RESULT_BACKEND": "redis://infra-test.invalid:6379/2",
+                "TRAINED_MODELS_TEMP_ROOT": "/tmp/infra-trained-models",
+            }
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=REPOSITORY_ROOT / "learning_adaptation",
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("learning_registry_check=PASS", result.stdout)
 
 
 class FakeConfig:
@@ -146,6 +186,7 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
         fake_cors = types.ModuleType("flask_cors")
         fake_cors.CORS = lambda *args, **kwargs: None
         fake_requests = types.ModuleType("requests")
+        fake_requests.get = Mock()
         fake_torch = types.ModuleType("torch")
         return {
             "numpy": fake_numpy,

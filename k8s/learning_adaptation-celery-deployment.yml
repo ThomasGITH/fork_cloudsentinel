@@ -13,22 +13,39 @@ spec:
       labels:
         app: learning-adaptation-celery
     spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation-celery
-        image: jojojochem/learning_adaptation:latest
-        imagePullPolicy: Always
-        command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent"]
+        image: jojojochem/learning_adaptation:dc-infra-1
+        imagePullPolicy: IfNotPresent
+        command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent", "--concurrency=1"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
         env:
+        - name: TRAINED_MODELS_TEMP_ROOT
+          value: "/app/storage/trained_models_temp"
         - name: CELERY_BROKER_URL
-          value: "redis://redis:6379/2"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://redis:6379/2"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: API_ISOLATION_FOREST_ANOMALY_DETECTION_URL
-          value: "http://isolation-forest-anomaly-detection-service.cloudsentinel.svc.cluster.local"
-        # resources:
-        #   requests:
-        #     memory: "4Gi"
-        #     cpu: "2"
-        #   limits:
-        #     memory: "8Gi"
-        #     cpu: "4"
+          value: "http://isolation-forest-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
+        volumeMounts:
+        - name: learning-storage
+          mountPath: /app/storage
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+      volumes:
+      - name: learning-storage
+        persistentVolumeClaim:
+          claimName: learning-adaptation-pvc

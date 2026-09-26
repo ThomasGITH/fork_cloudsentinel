@@ -5,6 +5,7 @@ import json
 import traceback
 import time
 import uuid
+import os
 from celery import Celery
 from kubernetes import client, config
 from flask_cors import CORS
@@ -32,14 +33,20 @@ configure_catalogue_defaults(app)
 app.register_blueprint(create_catalogue_blueprint())
 
 # Configure and initialize Celery
-app.config['broker_url'] = 'redis://redis:6379/0'
-app.config['result_backend'] = 'redis://redis:6379/0'
+app.config['broker_url'] = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+app.config['result_backend'] = os.getenv(
+    'CELERY_RESULT_BACKEND', 'redis://redis:6379/0'
+)
 
 # testing purposes
 # app.config['broker_url'] = 'redis://localhost:6379/0'
 # app.config['result_backend'] = 'redis://localhost:6379/0'
 
-celery = Celery(app.name, broker=app.config['broker_url'])
+celery = Celery(
+    app.name,
+    broker=app.config['broker_url'],
+    backend=app.config['result_backend'],
+)
 celery.conf.update(
     app.config,
     broker_connection_retry_on_startup=True,
@@ -82,6 +89,12 @@ redis_client = redis.StrictRedis(host='redis', port=6379, db=0)
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+@app.route('/healthz', methods=['GET'])
+def health_check():
+    """Report process health without touching external dependencies."""
+    return jsonify({"status": "healthy"}), 200
 
 # Command to run the Celery worker:
 # celery -A app.celery worker --loglevel=info

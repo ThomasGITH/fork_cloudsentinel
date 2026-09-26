@@ -14,17 +14,53 @@ spec:
         app: data-ingestion
     spec:
       serviceAccountName: data-ingestion-sa  # Ensure this is set correctly
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: data-ingestion
-        image: jojojochem/data_ingestion:latest
-        imagePullPolicy: Always
+        image: jojojochem/data_ingestion:dc-infra-1
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
         ports:
-        - containerPort: 5001
+        - name: http
+          containerPort: 5001
         env:
+        - name: CATALOGUE_STORAGE_ROOT
+          value: "/app/storage/catalogue"
+        - name: CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL
+          value: "http://prometheus-server.monitoring.svc.cluster.local:80"
         - name: CELERY_BROKER_URL
-          value: "redis://redis:6379/0"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://redis:6379/0"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
+        volumeMounts:
+        - name: catalogue-storage
+          mountPath: /app/storage
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 6
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 2
+          failureThreshold: 3
+      volumes:
+      - name: catalogue-storage
+        persistentVolumeClaim:
+          claimName: data-catalogue-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -37,7 +73,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 5001
+      targetPort: http
 ---
 apiVersion: v1
 kind: ServiceAccount

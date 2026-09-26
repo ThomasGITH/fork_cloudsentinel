@@ -13,13 +13,33 @@ spec:
       labels:
         app: celery-worker
     spec:
+      serviceAccountName: data-ingestion-sa
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: celery-worker
-        image: jojojochem/data_ingestion:latest
-        imagePullPolicy: Always
-        command: ["celery", "-A", "app.celery", "worker", "--loglevel=info"]
+        image: jojojochem/data_ingestion:dc-infra-1
+        imagePullPolicy: IfNotPresent
+        command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "--concurrency=1"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
         env:
+        - name: CATALOGUE_STORAGE_ROOT
+          value: "/app/storage/catalogue"
+        - name: CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL
+          value: "http://prometheus-server.monitoring.svc.cluster.local:80"
         - name: CELERY_BROKER_URL
-          value: "redis://redis:6379/0"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://redis:6379/0"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
+        volumeMounts:
+        - name: catalogue-storage
+          mountPath: /app/storage
+      volumes:
+      - name: catalogue-storage
+        persistentVolumeClaim:
+          claimName: data-catalogue-pvc

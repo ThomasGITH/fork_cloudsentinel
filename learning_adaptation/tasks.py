@@ -27,7 +27,11 @@ except ModuleNotFoundError as exc:  # The service image copies this module besid
     )
 
 # Configure and initialize Celery
-celery = Celery(__name__, backend='redis://redis:6379/2', broker='redis://redis:6379/2')
+celery = Celery(
+    __name__,
+    backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/2'),
+    broker=os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/2'),
+)
 
 # testing purposes
 # celery = Celery(__name__, backend='redis://localhost:6379/2', broker='redis://localhost:6379/2')
@@ -53,7 +57,10 @@ celery.conf.update(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-ISOLATION_FOREST_ARTIFACT_ROOT = Path("trained_models_temp") / "isolation-forest"
+TRAINED_MODELS_TEMP_ROOT = Path(
+    os.getenv("TRAINED_MODELS_TEMP_ROOT", "trained_models_temp")
+)
+ISOLATION_FOREST_ARTIFACT_ROOT = TRAINED_MODELS_TEMP_ROOT / "isolation-forest"
 ISOLATION_FOREST_EVALUATION_KEYS = (
     "precision",
     "recall",
@@ -148,9 +155,11 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
         print(train_info['data'])
 
         # Save model parameters
-        model_dir = f"trained_models_temp/{model_config['dataset']}_{model_config['id']}"
+        model_dir = TRAINED_MODELS_TEMP_ROOT / (
+            f"{model_config['dataset']}_{model_config['id']}"
+        )
         os.makedirs(model_dir, exist_ok=True)
-        with open(f"{model_dir}/model_params.json", "w") as f:
+        with open(model_dir / "model_params.json", "w") as f:
             json.dump(train_info['data'], f, indent=2)
 
         return "Training Successful"

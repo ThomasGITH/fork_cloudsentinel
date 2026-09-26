@@ -1,4 +1,5 @@
 import torch
+import os
 from cgnn.config import set_config, get_config, set_initial_config
 from cgnn.utils import create_data_loaders, SlidingWindowDataset
 from cgnn.mtad_gat import MTAD_GAT
@@ -6,7 +7,10 @@ from cgnn.prediction import Predictor
 
 
 def predict_and_evaluate(model_config, train_array, test_array, anomaly_label_array, progress_callback=None, save_output=True):
-    model_path = f"trained_models_temp/{model_config['dataset']}_{model_config['id']}"
+    model_root = os.getenv("TRAINED_MODELS_TEMP_ROOT", "trained_models_temp")
+    model_path = os.path.join(
+        model_root, f"{model_config['dataset']}_{model_config['id']}"
+    )
 
     print(f'Using model from {model_path}')
     set_initial_config()

@@ -423,12 +423,19 @@ assert registered.run.__module__ == 'app'
 assert registered.run.__name__ == 'fetch_catalogue_dataset_task'
 assert 'app.monitoring_task' in app.celery.tasks
 assert app.app.extensions['catalogue_fetch_dispatch'] is app._dispatch_catalogue_fetch
+assert app.app.config['broker_url'] == 'redis://infra-test.invalid:6379/0'
+assert app.app.config['result_backend'] == 'redis://infra-test.invalid:6379/0'
+health = app.app.test_client().get('/healthz')
+assert health.status_code == 200
+assert health.get_json() == {'status': 'healthy'}
 print('registry_check=PASS')
 """
         environment = os.environ.copy()
         environment["PYTHONPATH"] = os.pathsep.join(
             filter(None, [str(repository_root), environment.get("PYTHONPATH")])
         )
+        environment["CELERY_BROKER_URL"] = "redis://infra-test.invalid:6379/0"
+        environment["CELERY_RESULT_BACKEND"] = "redis://infra-test.invalid:6379/0"
         result = subprocess.run(
             [sys.executable, "-c", code],
             cwd=repository_root / "data_ingestion",

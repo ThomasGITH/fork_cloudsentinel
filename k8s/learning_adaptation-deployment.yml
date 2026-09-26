@@ -13,17 +13,57 @@ spec:
       labels:
         app: learning-adaptation
     spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:latest
-        imagePullPolicy: Always
+        image: jojojochem/learning_adaptation:dc-infra-1
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
         ports:
-        - containerPort: 5005
+        - name: http
+          containerPort: 5005
         env:
+        - name: API_DATA_CATALOGUE_URL
+          value: "http://data-ingestion-service.cloudsentinel.svc.cluster.local:80"
+        - name: DATASET_SNAPSHOT_STORAGE_ROOT
+          value: "/app/storage/dataset_snapshots"
+        - name: TRAINING_RUN_STORAGE_ROOT
+          value: "/app/storage/training_runs"
+        - name: TRAINED_MODELS_TEMP_ROOT
+          value: "/app/storage/trained_models_temp"
         - name: CELERY_BROKER_URL
-          value: "redis://redis:6379/2"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://redis:6379/2"
+          value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
+        volumeMounts:
+        - name: learning-storage
+          mountPath: /app/storage
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 6
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 2
+          failureThreshold: 3
+      volumes:
+      - name: learning-storage
+        persistentVolumeClaim:
+          claimName: learning-adaptation-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -36,4 +76,4 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 5005
+      targetPort: http
