@@ -31,6 +31,11 @@ def new_dataset_id() -> str:
 
 def _validate_source(value: Any) -> tuple[dict[str, Any], datetime, datetime]:
     source = require_object(value, "source")
+    forbidden = {"url", "base_url", "prometheus_url", "credentials", "token"} & set(source)
+    if forbidden:
+        raise CatalogueValidationError(
+            "source must reference a server-configured prometheus_source_id; URLs and credentials are not accepted"
+        )
     if source.get("type", "prometheus") != "prometheus":
         raise CatalogueValidationError("source.type must be 'prometheus' for new datasets")
     source_id = validate_identifier(

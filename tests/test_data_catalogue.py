@@ -1,7 +1,9 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import types
@@ -396,6 +398,43 @@ class DataIngestionAppRegistrationTests(unittest.TestCase):
         routes = {rule.rule for rule in module.app.url_map.iter_rules()}
         self.assertIn("/datasets", routes)
         self.assertIn("/datasets/<dataset_id>", routes)
+        self.assertIn("/datasets/<dataset_id>/versions/<int:version>/fetch", routes)
+        self.assertIn("/datasets/<dataset_id>/fetch-status", routes)
+        self.assertIn("/datasets/<dataset_id>/preview", routes)
+
+    def test_worker_entrypoint_registers_catalogue_fetch_task_with_real_celery(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        code = """
+import sys
+import types
+kubernetes = types.ModuleType('kubernetes')
+kubernetes.client = types.SimpleNamespace()
+kubernetes.config = types.SimpleNamespace(ConfigException=Exception)
+sys.modules['kubernetes'] = kubernetes
+import app
+registered = app.celery.tasks['fetch_catalogue_dataset_task']
+assert registered.name == 'fetch_catalogue_dataset_task'
+assert registered.run.__module__ == 'app'
+assert registered.run.__name__ == 'fetch_catalogue_dataset_task'
+assert 'app.monitoring_task' in app.celery.tasks
+assert app.app.extensions['catalogue_fetch_dispatch'] is app._dispatch_catalogue_fetch
+print('registry_check=PASS')
+"""
+        environment = os.environ.copy()
+        environment["PYTHONPATH"] = os.pathsep.join(
+            filter(None, [str(repository_root), environment.get("PYTHONPATH")])
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=repository_root / "data_ingestion",
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("registry_check=PASS", result.stdout)
 
 
 if __name__ == "__main__":

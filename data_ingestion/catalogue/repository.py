@@ -57,6 +57,31 @@ class FileCatalogueRepository:
             raise CatalogueValidationError("version resolves outside dataset storage")
         return path
 
+    def _safe_child(self, dataset_id: str, *parts: str) -> Path:
+        directory = self._dataset_directory(dataset_id)
+        path = directory.joinpath(*parts).resolve()
+        if not path.is_relative_to(directory):
+            raise CatalogueValidationError("catalogue path resolves outside dataset storage")
+        return path
+
+    def artifact_directory(self, dataset_id: str, version: int) -> Path:
+        version = validate_version(version)
+        return self._safe_child(dataset_id, "artifacts", f"{version:06d}")
+
+    def staging_directory(self, dataset_id: str, version: int, attempt_id: str) -> Path:
+        version = validate_version(version)
+        attempt_id = validate_identifier(attempt_id, "attempt_id")
+        return self._safe_child(
+            dataset_id, ".staging", f"{version:06d}-{attempt_id}"
+        )
+
+    def attempt_path(self, dataset_id: str, version: int, attempt_id: str) -> Path:
+        version = validate_version(version)
+        attempt_id = validate_identifier(attempt_id, "attempt_id")
+        return self._safe_child(
+            dataset_id, "fetch_attempts", f"{version:06d}", f"{attempt_id}.json"
+        )
+
     def create(self, record: dict[str, Any], version: dict[str, Any]) -> None:
         dataset_id = validate_identifier(record.get("dataset_id"))
         if version.get("dataset_id") != dataset_id:
@@ -91,6 +116,39 @@ class FileCatalogueRepository:
         record = self.read_record(dataset_id)
         version = self.read_version(dataset_id, record["latest_version"])
         return {**record, "version": version}
+
+    def write_attempt(
+        self, dataset_id: str, version: int, attempt_id: str, value: dict[str, Any]
+    ) -> None:
+        atomic_write_json(self.attempt_path(dataset_id, version, attempt_id), value)
+
+    def read_attempt(self, dataset_id: str, version: int, attempt_id: str) -> dict[str, Any]:
+        return self._read_json(
+            self.attempt_path(dataset_id, version, attempt_id), dataset_id
+        )
+
+    def update_version(self, dataset_id: str, version_number: int, version: dict[str, Any]) -> None:
+        if version.get("dataset_id") != validate_identifier(dataset_id):
+            raise CatalogueValidationError("dataset and version identities do not match")
+        if version.get("version") != validate_version(version_number):
+            raise CatalogueValidationError("version identities do not match")
+        atomic_write_json(self._version_path(dataset_id, version_number), version)
+
+    def update_record(self, dataset_id: str, record: dict[str, Any]) -> None:
+        if record.get("dataset_id") != validate_identifier(dataset_id):
+            raise CatalogueValidationError("dataset record identity does not match")
+        atomic_write_json(self._dataset_directory(dataset_id) / "dataset.json", record)
+
+    def promote_staging(self, dataset_id: str, version: int, attempt_id: str) -> Path:
+        staging = self.staging_directory(dataset_id, version, attempt_id)
+        active = self.artifact_directory(dataset_id, version)
+        if not staging.is_dir():
+            raise RuntimeError("catalogue staging directory is missing")
+        if active.exists():
+            raise RuntimeError("catalogue version already has active artifacts")
+        active.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(staging, active)
+        return active
 
     def list_records(self) -> list[dict[str, Any]]:
         if not self.datasets_root.is_dir():

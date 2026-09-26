@@ -233,14 +233,19 @@ def validate_queries(value: Any | None) -> list[dict[str, Any]]:
         if query_id in seen:
             raise CatalogueValidationError(f"duplicate query_id: {query_id!r}")
         seen.add(query_id)
+        template = query.get("promql_template", query.get("promql"))
         normalized = {
             "query_id": query_id,
             "display_name": require_string(
                 query.get("display_name"), f"source.queries[{index}].display_name"
             ),
-            "promql": require_string(query.get("promql"), f"source.queries[{index}].promql"),
+            "promql_template": require_string(
+                template, f"source.queries[{index}].promql_template"
+            ),
             "status": "not_executed",
         }
+        # Retain the DC-2 field as an alias for existing catalogue clients.
+        normalized["promql"] = normalized["promql_template"]
         for optional in ("feature_name", "expected_modality", "expected_result_type"):
             if query.get(optional) is not None:
                 normalized[optional] = require_string(
@@ -253,6 +258,46 @@ def validate_queries(value: Any | None) -> list[dict[str, Any]]:
         if not isinstance(parameters, dict):
             raise CatalogueValidationError(f"source.queries[{index}].parameters must be an object")
         normalized["parameters"] = parameters
+        execution_mode = query.get("execution_mode", "single")
+        if execution_mode not in {"single", "per_target"}:
+            raise CatalogueValidationError(
+                f"source.queries[{index}].execution_mode must be single or per_target"
+            )
+        normalized["execution_mode"] = execution_mode
+        target_type = query.get("target_type")
+        if target_type is not None:
+            if target_type not in {"pod", "service"}:
+                raise CatalogueValidationError(
+                    f"source.queries[{index}].target_type must be pod or service"
+                )
+            normalized["target_type"] = target_type
+        if execution_mode == "per_target" and target_type is None:
+            raise CatalogueValidationError(
+                f"source.queries[{index}].target_type is required for per_target mode"
+            )
+        identity_labels = query.get("identity_labels", [])
+        if not isinstance(identity_labels, list) or any(
+            not isinstance(label, str) or not label.strip() for label in identity_labels
+        ):
+            raise CatalogueValidationError(
+                f"source.queries[{index}].identity_labels must be a list of non-empty strings"
+            )
+        normalized["identity_labels"] = sorted(set(label.strip() for label in identity_labels))
+        target_context = query.get("target_context", {})
+        if not isinstance(target_context, dict):
+            raise CatalogueValidationError(
+                f"source.queries[{index}].target_context must be an object"
+            )
+        unknown_context = set(target_context) - {"pod", "service"}
+        if unknown_context or any(
+            not isinstance(item, str) or not item.strip() for item in target_context.values()
+        ):
+            raise CatalogueValidationError(
+                f"source.queries[{index}].target_context may contain pod and service strings"
+            )
+        normalized["target_context"] = {
+            key: target_context[key].strip() for key in sorted(target_context)
+        }
         result.append(normalized)
     return result
 

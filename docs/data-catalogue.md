@@ -15,7 +15,24 @@ separate, checksummed definitions with mode `none`, `predefined`, or
 `time_range`. No implicit split is created. Legacy files remain in place and
 are represented through safe relative artifact references and SHA-256 hashes.
 
-The file backend is intended for local development and tests. API and worker
-pods will need shared storage or object storage before DC-3 adds background
-Prometheus fetch-and-save tasks. DC-3 will also add the fetch endpoint and
-status transitions; no fetch endpoint exists in DC-2.
+DC-3 adds a one-shot Celery fetch through
+`POST /datasets/{dataset_id}/versions/{version}/fetch`. The caller supplies a
+server-side `prometheus_source_id`; it cannot supply a Prometheus URL or
+credentials. `GET /datasets/{dataset_id}/fetch-status?version=...` reports the
+attempt phase and compact error state. Available versions can be sampled with
+`GET /datasets/{dataset_id}/preview?version=...&limit=...`.
+
+Fetch artifacts are staged below the dataset directory and promoted to
+`artifacts/{version}` only after query execution, canonical UTC-grid assembly,
+validation, and checksumming succeed. Missing values remain empty. No fill,
+scaling, detector preprocessing, or automatic train/test split is performed.
+
+The source map and fetch limits use Flask configuration. The default source is
+`cluster-default`, configured by `CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL`.
+Limits cover query count and length, time window, sampling interval,
+theoretical samples, returned series, response bytes, retries, timeouts, and
+preview rows.
+
+The file backend remains intended for local development and tests. API and
+worker processes must share `CATALOGUE_STORAGE_ROOT`; multi-replica locking and
+object storage remain future work.

@@ -18,10 +18,12 @@ try:
         configure_catalogue_defaults,
         create_catalogue_blueprint,
     )
+    from data_ingestion.catalogue.fetching import execute_catalogue_fetch
 except ModuleNotFoundError as exc:  # The service image copies catalogue beside app.py.
     if exc.name not in {"data_ingestion", "data_ingestion.catalogue"}:
         raise
     from catalogue import configure_catalogue_defaults, create_catalogue_blueprint
+    from catalogue.fetching import execute_catalogue_fetch
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -45,6 +47,34 @@ celery.conf.update(
     task_acks_late=True,  # If you are using late acknowledgments
     worker_prefetch_multiplier=1,  # Example configuration to avoid over-fetching
 )
+
+
+@celery.task(bind=True, name="fetch_catalogue_dataset_task")
+def fetch_catalogue_dataset_task(self, dataset_id, version, attempt_id):
+    """Fetch one immutable catalogue version; this task never schedules itself."""
+
+    def report_progress(phase, completed, total):
+        self.update_state(
+            state=phase.upper(),
+            meta={"phase": phase, "completed": completed, "total": total},
+        )
+
+    return execute_catalogue_fetch(
+        dataset_id,
+        version,
+        attempt_id,
+        dict(app.config),
+        progress_callback=report_progress,
+    )
+
+
+def _dispatch_catalogue_fetch(dataset_id, version, attempt_id, task_id):
+    return fetch_catalogue_dataset_task.apply_async(
+        args=[dataset_id, version, attempt_id], task_id=task_id
+    )
+
+
+app.extensions["catalogue_fetch_dispatch"] = _dispatch_catalogue_fetch
 
 # Configure Redis
 redis_client = redis.StrictRedis(host='redis', port=6379, db=0)

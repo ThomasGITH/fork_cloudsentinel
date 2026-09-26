@@ -6,11 +6,20 @@ import math
 import os
 from pathlib import Path
 from typing import Any
+import uuid
 
 from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 from .legacy import LegacyDatasetProjector
+from .fetching import (
+    CatalogueFetchError,
+    FetchLimits,
+    fail_fetch_attempt,
+    read_preview,
+    start_fetch_attempt,
+    validate_fetch_request,
+)
 from .models import build_draft_dataset
 from .repository import (
     DatasetAlreadyExistsError,
@@ -24,6 +33,7 @@ from .validation import (
     WORKLOAD_CHARACTERISTICS,
     WORKLOAD_INTENSITIES,
     validate_identifier,
+    validate_version,
 )
 
 
@@ -200,6 +210,105 @@ def create_catalogue_blueprint() -> Blueprint:
         except DatasetAlreadyExistsError as exc:
             return jsonify({"error": str(exc)}), 409
 
+    @blueprint.post("/datasets/<dataset_id>/versions/<int:version>/fetch")
+    def fetch_dataset(dataset_id: str, version: int):
+        try:
+            validate_identifier(dataset_id)
+            validate_version(version)
+            repository, _projector = components()
+            stored_version = repository.read_version(dataset_id, version)
+            executions = validate_fetch_request(stored_version, dict(current_app.config))
+            dispatcher = current_app.extensions.get("catalogue_fetch_dispatch")
+            if dispatcher is None:
+                return jsonify({"error": "catalogue fetch dispatcher is unavailable"}), 503
+            attempt_id = f"attempt-{uuid.uuid4().hex}"
+            task_id = f"catalogue-fetch-{uuid.uuid4().hex}"
+            start_fetch_attempt(
+                repository,
+                dataset_id,
+                version,
+                attempt_id,
+                task_id,
+                len(executions),
+            )
+            try:
+                dispatcher(dataset_id, version, attempt_id, task_id)
+            except Exception as exc:
+                fail_fetch_attempt(repository, dataset_id, version, attempt_id, exc)
+                return jsonify({"error": "catalogue fetch task could not be dispatched"}), 503
+            return (
+                jsonify(
+                    {
+                        "dataset_id": dataset_id,
+                        "version": version,
+                        "status": "fetching",
+                        "fetch_task_id": task_id,
+                        "attempt_id": attempt_id,
+                    }
+                ),
+                202,
+            )
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+
+    @blueprint.get("/datasets/<dataset_id>/fetch-status")
+    def fetch_status(dataset_id: str):
+        try:
+            validate_identifier(dataset_id)
+            raw_version = request.args.get("version")
+            if raw_version is None:
+                raise CatalogueValidationError("version query parameter is required")
+            try:
+                version_number = int(raw_version)
+            except ValueError as exc:
+                raise CatalogueValidationError("version must be a positive integer") from exc
+            validate_version(version_number)
+            repository, _projector = components()
+            version = repository.read_version(dataset_id, version_number)
+            fetch = version.get("fetch") or {}
+            return jsonify(
+                {
+                    "dataset_id": dataset_id,
+                    "version": version_number,
+                    "status": version["status"],
+                    "phase": fetch.get("phase", version["status"]),
+                    "fetch_task_id": fetch.get("task_id"),
+                    "attempt_id": fetch.get("attempt_id"),
+                    "progress": fetch.get("progress", {"completed": 0, "total": 0}),
+                    "warnings": fetch.get("warnings", []),
+                    "error": fetch.get("error"),
+                }
+            )
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+
+    @blueprint.get("/datasets/<dataset_id>/preview")
+    def preview_dataset(dataset_id: str):
+        try:
+            validate_identifier(dataset_id)
+            raw_version = request.args.get("version")
+            if raw_version is None:
+                raise CatalogueValidationError("version query parameter is required")
+            try:
+                version_number = int(raw_version)
+            except ValueError as exc:
+                raise CatalogueValidationError("version must be a positive integer") from exc
+            validate_version(version_number)
+            maximum = FetchLimits.from_config(dict(current_app.config)).maximum_preview_rows
+            limit = _positive_integer(request.args.get("limit"), "limit", min(20, maximum), maximum)
+            repository, _projector = components()
+            return jsonify(read_preview(repository, dataset_id, version_number, limit))
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+        except CatalogueFetchError as exc:
+            return jsonify({"error": str(exc)}), 409
+
     return blueprint
 
 
@@ -211,6 +320,30 @@ def configure_catalogue_defaults(app: Any) -> None:
             str(Path(app.root_path) / "catalogue_storage"),
         ),
     )
+    app.config.setdefault(
+        "CATALOGUE_PROMETHEUS_SOURCES",
+        {
+            "cluster-default": os.getenv(
+                "CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL",
+                "http://prometheus-server.monitoring.svc.cluster.local:80",
+            )
+        },
+    )
+    defaults = {
+        "CATALOGUE_MAX_QUERY_COUNT": 25,
+        "CATALOGUE_MAX_QUERY_LENGTH": 10000,
+        "CATALOGUE_MAX_WINDOW_SECONDS": 31 * 24 * 60 * 60,
+        "CATALOGUE_MIN_SAMPLING_INTERVAL_SECONDS": 5,
+        "CATALOGUE_MAX_THEORETICAL_SAMPLES": 2_000_000,
+        "CATALOGUE_MAX_SERIES": 1000,
+        "CATALOGUE_MAX_RESPONSE_BYTES": 25 * 1024 * 1024,
+        "CATALOGUE_MAX_PREVIEW_ROWS": 100,
+        "CATALOGUE_CONNECT_TIMEOUT_SECONDS": 5.0,
+        "CATALOGUE_READ_TIMEOUT_SECONDS": 30.0,
+        "CATALOGUE_MAX_RETRIES": 2,
+    }
+    for key, value in defaults.items():
+        app.config.setdefault(key, value)
     app.config.setdefault(
         "LEGACY_DATASETS_ROOT",
         os.getenv(
