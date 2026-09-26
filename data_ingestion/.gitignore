@@ -2,3 +2,4 @@
 /prometheus_setup
 **/__pycache__
 app copy.py
+/catalogue_storage/

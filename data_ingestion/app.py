@@ -13,9 +13,21 @@ import redis
 from data_collector import collect_crca_data, fetch_metrics
 from config import set_initial_metric_config, get_config, set_config
 
+try:
+    from data_ingestion.catalogue import (
+        configure_catalogue_defaults,
+        create_catalogue_blueprint,
+    )
+except ModuleNotFoundError as exc:  # The service image copies catalogue beside app.py.
+    if exc.name not in {"data_ingestion", "data_ingestion.catalogue"}:
+        raise
+    from catalogue import configure_catalogue_defaults, create_catalogue_blueprint
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+configure_catalogue_defaults(app)
+app.register_blueprint(create_catalogue_blueprint())
 
 # Configure and initialize Celery
 app.config['broker_url'] = 'redis://redis:6379/0'
