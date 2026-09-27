@@ -41,10 +41,10 @@ spec:
         resources:
           requests:
             memory: "4Gi"
-            cpu: "2"
+            cpu: "500m"
           limits:
             memory: "8Gi"
-            cpu: "4"
+            cpu: "2"
       volumes:
       - name: learning-storage
         persistentVolumeClaim:
