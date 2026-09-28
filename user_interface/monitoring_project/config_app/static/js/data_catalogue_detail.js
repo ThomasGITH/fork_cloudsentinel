@@ -61,13 +61,24 @@
         table.className = "table table-sm table-striped mb-0";
         const head = document.createElement("thead");
         const row = document.createElement("tr");
-        ["timestamp"].concat(data.feature_names || []).forEach(function (name) { const cell = document.createElement("th"); cell.scope = "col"; cell.textContent = name; row.appendChild(cell); });
+        const featureNames = data.feature_names || [];
+        ["timestamp"].concat(featureNames).forEach(function (name) { const cell = document.createElement("th"); cell.scope = "col"; cell.textContent = name; row.appendChild(cell); });
         head.appendChild(row); table.appendChild(head);
         const body = document.createElement("tbody");
         (data.rows || []).forEach(function (item) {
           const tr = document.createElement("tr");
-          const values = [item.timestamp].concat(item.values || []);
-          values.forEach(function (value, index) { const td = document.createElement("td"); td.textContent = value == null ? "missing" : String(value); if (index > 0 && item.missing && item.missing[index - 1]) td.className = "table-warning"; tr.appendChild(td); });
+          const timestampCell = document.createElement("td");
+          timestampCell.textContent = item.timestamp == null ? "missing" : String(item.timestamp);
+          tr.appendChild(timestampCell);
+          const values = item.values || {};
+          const missing = item.missing || {};
+          featureNames.forEach(function (featureName) {
+            const value = values[featureName];
+            const td = document.createElement("td");
+            td.textContent = value == null ? "missing" : String(value);
+            if (missing[featureName] || value == null) td.className = "table-warning";
+            tr.appendChild(td);
+          });
           body.appendChild(tr);
         });
         table.appendChild(body); preview.replaceChildren(table);

@@ -146,9 +146,19 @@ class DataCatalogueUiTests(SimpleTestCase):
         status = self.client.get(reverse("data_catalogue_fetch_status", args=["ds_demo"]), {"version": 1})
         self.assertEqual(status.status_code, 200)
         self.assertNotIn("artifact", status.json())
-        self.client_api.preview.return_value = {"feature_names": ["cpu"], "rows": [{"timestamp": "2026-01-01T00:00:00Z", "values": [1.0], "missing": [False]}]}
+        self.client_api.preview.return_value = {
+            "feature_names": ["cpu", "memory"],
+            "rows": [
+                {
+                    "timestamp": "2026-01-01T00:00:00Z",
+                    "values": {"cpu": 1.0, "memory": None},
+                    "missing": {"cpu": False, "memory": True},
+                }
+            ],
+        }
         preview = self.client.get(reverse("data_catalogue_preview", args=["ds_demo"]), {"version": 1, "limit": 10})
         self.assertEqual(preview.status_code, 200)
+        self.assertEqual(preview.json(), self.client_api.preview.return_value)
         self.client_api.preview.assert_called_once_with("ds_demo", 1, 10)
 
     def test_incident_label_partition_and_version_payloads(self):
