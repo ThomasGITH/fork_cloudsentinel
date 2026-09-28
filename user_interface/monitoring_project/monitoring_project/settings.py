@@ -33,7 +33,7 @@ API_DATA_PROCESSING_URL = os.getenv('API_DATA_PROCESSING_URL', 'http://data-proc
 API_CRCA_ANOMALY_DETECTION_URL = os.getenv('API_CRCA_ANOMALY_DETECTION_URL', 'http://crca-anomaly-detection-service.cloudsentinel.svc.cluster.local:80')
 API_CGNN_ANOMALY_DETECTION_URL = os.getenv('API_CGNN_ANOMALY_DETECTION_URL', 'http://cgnn-anomaly-detection-service.cloudsentinel.svc.cluster.local:80')
 API_LEARNING_ADAPTATION_URL = os.getenv('API_LEARNING_ADAPTATION_URL', 'http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80')
-PROMETHEUS_URL = os.getenv('PROMETHEUS_URL', 'http://prometheus-server.monitoring.svc.cluster.local:80')
+PROMETHEUS_URL = os.getenv('PROMETHEUS_URL', 'http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090')
 
 CLUSTER_NAMESPACE = os.getenv('CLUSTER_NAMESPACE', 'kube-system')
 

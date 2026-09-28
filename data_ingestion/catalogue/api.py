@@ -476,7 +476,7 @@ def configure_catalogue_defaults(app: Any) -> None:
         {
             "cluster-default": os.getenv(
                 "CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL",
-                "http://prometheus-server.monitoring.svc.cluster.local:80",
+                "http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090",
             )
         },
     )
