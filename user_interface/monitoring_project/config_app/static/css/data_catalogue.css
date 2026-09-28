@@ -1,0 +1,34 @@
+.catalogue-page { width: min(1500px, 100%); margin: 0 auto; }
+.catalogue-hero { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.catalogue-muted { color: #607080; }
+.catalogue-card { border: 0; box-shadow: 0 2px 12px rgba(25, 47, 68, .08); }
+.catalogue-section-title { font-family: Montserrat, sans-serif; font-size: 1.1rem; font-weight: 700; }
+.catalogue-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; overflow-wrap: anywhere; }
+.status-badge { display: inline-block; padding: .3rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 700; text-transform: capitalize; }
+.status-draft { background: #e9ecef; color: #34404b; }
+.status-fetching, .status-validating { background: #fff1c2; color: #694f00; }
+.status-available { background: #d7f3df; color: #17602d; }
+.status-failed { background: #f8d7da; color: #842029; }
+.readiness-supported { color: #17602d; }
+.readiness-blocked { color: #842029; }
+.filter-panel label, .catalogue-form label { font-weight: 600; }
+.query-card { border-left: 4px solid #004080; }
+.query-card legend { font-size: 1rem; font-weight: 700; }
+.query-remove { white-space: nowrap; }
+.sticky-actions { position: sticky; bottom: 0; z-index: 3; background: rgba(244,246,249,.96); border-top: 1px solid #dce2e8; padding: 1rem 0; }
+.detail-tabs .nav-link { color: #334e68; }
+.detail-tabs .nav-link.active { color: #004080; font-weight: 700; }
+.definition-grid { display: grid; grid-template-columns: minmax(150px, .35fr) 1fr; gap: .55rem 1rem; }
+.definition-grid dt { color: #5d6b78; }
+.definition-grid dd { overflow-wrap: anywhere; }
+.feature-list { max-height: 16rem; overflow-y: auto; }
+.preview-wrap { max-height: 30rem; overflow: auto; }
+.checksum { display: inline-block; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; white-space: nowrap; }
+.poll-progress { min-width: 12rem; }
+.form-help { color: #607080; font-size: .875rem; }
+.required-mark::after { content: " *"; color: #a71d2a; }
+@media (max-width: 767.98px) {
+  .definition-grid { grid-template-columns: 1fr; gap: .1rem; }
+  .definition-grid dd { margin-bottom: .8rem; }
+  .catalogue-table td, .catalogue-table th { min-width: 9rem; }
+}

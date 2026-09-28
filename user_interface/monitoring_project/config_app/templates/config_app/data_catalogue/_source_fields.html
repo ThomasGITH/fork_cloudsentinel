@@ -1,0 +1,17 @@
+<div class="card catalogue-card mb-4">
+  <div class="card-body">
+    <h2 class="catalogue-section-title">Prometheus source</h2>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label">Source</label><input class="form-control" value="cluster-default" readonly aria-readonly="true"></div>
+      <div class="col-md-4"><label for="application" class="form-label">Application</label><input id="application" name="application" class="form-control" value="{{ submitted.application|default:source.application|default:'' }}"></div>
+      <div class="col-md-4"><label for="namespace" class="form-label required-mark">Namespace</label><input id="namespace" name="namespace" class="form-control" required value="{{ submitted.namespace|default:source.namespace|default:'' }}"></div>
+      <div class="col-md-4"><label for="services" class="form-label">Services</label><textarea id="services" name="services" class="form-control" rows="2" placeholder="One per line or comma separated">{{ submitted.services|default:source.services|default:'' }}</textarea></div>
+      <div class="col-md-4"><label for="pods" class="form-label">Pods</label><textarea id="pods" name="pods" class="form-control" rows="2" placeholder="One per line or comma separated">{{ submitted.pods|default:source.pods|default:'' }}</textarea></div>
+      <div class="col-md-4"><label for="label_selectors" class="form-label">Label selectors</label><textarea id="label_selectors" name="label_selectors" class="form-control" rows="2" placeholder="app=checkout">{{ submitted.label_selectors|default:source.label_selectors|default:'' }}</textarea></div>
+      <div class="col-md-4"><label for="start_time" class="form-label required-mark">Start time (UTC)</label><input id="start_time" name="start_time" type="datetime-local" data-utc-target="start_time_utc" data-initial="{{ source.start_time|default:'' }}" class="form-control" required value="{{ submitted.start_time|default:'' }}"><input id="start_time_utc" name="start_time_utc" type="hidden"></div>
+      <div class="col-md-4"><label for="end_time" class="form-label required-mark">End time (UTC)</label><input id="end_time" name="end_time" type="datetime-local" data-utc-target="end_time_utc" data-initial="{{ source.end_time|default:'' }}" class="form-control" required value="{{ submitted.end_time|default:'' }}"><input id="end_time_utc" name="end_time_utc" type="hidden"></div>
+      <div class="col-md-4"><label for="sampling_interval_seconds" class="form-label required-mark">Sampling interval (seconds)</label><input id="sampling_interval_seconds" name="sampling_interval_seconds" type="number" min="1" class="form-control" required value="{{ submitted.sampling_interval_seconds|default:source.sampling_interval_seconds|default:60 }}"></div>
+    </div>
+  </div>
+</div>
+<div class="card catalogue-card mb-4"><div class="card-body">{% include "config_app/data_catalogue/_query_editor.html" %}</div></div>

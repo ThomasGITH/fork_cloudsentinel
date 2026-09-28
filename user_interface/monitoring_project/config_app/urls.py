@@ -8,9 +8,34 @@ from .views.monitoring import monitoring, monitoring_home, monitoring_overview, 
 from .views.api import get_settings
 from .views.task_results import (get_results, training_result, fetch_cgnn_results, fetch_crca_task_details,
                                  fetch_active_tasks, stop_task, fetch_results, delete_result, check_status)
+from .views.data_catalogue import (
+    data_catalogue_derive_labels,
+    data_catalogue_detail,
+    data_catalogue_fetch,
+    data_catalogue_fetch_status,
+    data_catalogue_incident,
+    data_catalogue_metadata,
+    data_catalogue_new,
+    data_catalogue_new_version,
+    data_catalogue_overview,
+    data_catalogue_partition,
+    data_catalogue_preview,
+)
 
 urlpatterns = [
     path('', home, name='home'),
+
+    path('data-catalogue/', data_catalogue_overview, name='data_catalogue_overview'),
+    path('data-catalogue/new/', data_catalogue_new, name='data_catalogue_new'),
+    path('data-catalogue/<str:dataset_id>/fetch-status/', data_catalogue_fetch_status, name='data_catalogue_fetch_status'),
+    path('data-catalogue/<str:dataset_id>/preview/', data_catalogue_preview, name='data_catalogue_preview'),
+    path('data-catalogue/<str:dataset_id>/metadata/', data_catalogue_metadata, name='data_catalogue_metadata'),
+    path('data-catalogue/<str:dataset_id>/versions/new/', data_catalogue_new_version, name='data_catalogue_new_version'),
+    path('data-catalogue/<str:dataset_id>/versions/<int:version>/fetch/', data_catalogue_fetch, name='data_catalogue_fetch'),
+    path('data-catalogue/<str:dataset_id>/versions/<int:version>/incidents/', data_catalogue_incident, name='data_catalogue_incident'),
+    path('data-catalogue/<str:dataset_id>/versions/<int:version>/derive-labels/', data_catalogue_derive_labels, name='data_catalogue_derive_labels'),
+    path('data-catalogue/<str:dataset_id>/versions/<int:version>/partitions/', data_catalogue_partition, name='data_catalogue_partition'),
+    path('data-catalogue/<str:dataset_id>/', data_catalogue_detail, name='data_catalogue_detail'),
 
     path('config/', config, name='config'),
     path('config-cgnn/', config_cgnn, name='config_cgnn'),

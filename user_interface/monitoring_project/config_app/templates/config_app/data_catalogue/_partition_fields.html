@@ -1,0 +1,17 @@
+<div class="card catalogue-card mb-4">
+  <div class="card-body">
+    <h2 class="catalogue-section-title">Partition</h2>
+    <p class="form-help">No split is created automatically. Define exact time ranges or leave the version unpartitioned.</p>
+    <div class="mb-3"><label for="partition_mode" class="form-label">Partition mode</label><select id="partition_mode" name="partition_mode" class="form-select"><option value="none"{% if submitted.partition_mode != 'time_range' and partition.mode != 'time_range' %} selected{% endif %}>None</option><option value="time_range"{% if submitted.partition_mode == 'time_range' or not submitted and partition.mode == 'time_range' %} selected{% endif %}>Explicit time range</option></select></div>
+    <div data-partition-fields hidden>
+      <div class="row g-3">
+        <div class="col-md-6"><label for="train_start_time" class="form-label required-mark">Train start (UTC)</label><input id="train_start_time" name="train_start_time" type="datetime-local" data-utc-target="train_start_time_utc" data-initial="{{ partition.train.start_time|default:'' }}" class="form-control" value="{{ submitted.train_start_time|default:'' }}"><input id="train_start_time_utc" name="train_start_time_utc" type="hidden"></div>
+        <div class="col-md-6"><label for="train_end_time" class="form-label required-mark">Train end (UTC)</label><input id="train_end_time" name="train_end_time" type="datetime-local" data-utc-target="train_end_time_utc" data-initial="{{ partition.train.end_time|default:'' }}" class="form-control" value="{{ submitted.train_end_time|default:'' }}"><input id="train_end_time_utc" name="train_end_time_utc" type="hidden"></div>
+        <div class="col-md-6"><label for="test_start_time" class="form-label required-mark">Test start (UTC)</label><input id="test_start_time" name="test_start_time" type="datetime-local" data-utc-target="test_start_time_utc" data-initial="{{ partition.test.start_time|default:'' }}" class="form-control" value="{{ submitted.test_start_time|default:'' }}"><input id="test_start_time_utc" name="test_start_time_utc" type="hidden"></div>
+        <div class="col-md-6"><label for="test_end_time" class="form-label required-mark">Test end (UTC)</label><input id="test_end_time" name="test_end_time" type="datetime-local" data-utc-target="test_end_time_utc" data-initial="{{ partition.test.end_time|default:'' }}" class="form-control" value="{{ submitted.test_end_time|default:'' }}"><input id="test_end_time_utc" name="test_end_time_utc" type="hidden"></div>
+        <div class="col-md-4"><label for="gap_seconds" class="form-label">Gap (seconds)</label><input id="gap_seconds" name="gap_seconds" type="number" min="0" class="form-control" value="{{ submitted.gap_seconds|default:partition.gap_seconds|default:0 }}"></div>
+        <div class="col-md-8 d-flex align-items-end"><div class="form-check mb-2"><input id="labeled_evaluation" name="labeled_evaluation" class="form-check-input" type="checkbox"{% if submitted.labeled_evaluation %} checked{% endif %}><label for="labeled_evaluation" class="form-check-label">Require labels for evaluation</label></div></div>
+      </div>
+    </div>
+  </div>
+</div>

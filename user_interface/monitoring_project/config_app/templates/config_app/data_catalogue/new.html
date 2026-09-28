@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Add dataset | CloudSentinel{% endblock %}
+{% block extra_head %}<link href="{% static 'css/data_catalogue.css' %}" rel="stylesheet">{% endblock %}
+{% block content %}
+<main class="catalogue-page container-fluid py-3">
+  <div class="catalogue-hero mb-4"><div><h1>Add dataset</h1><p class="catalogue-muted mb-0">Describe a reproducible Prometheus dataset, then save it as a draft or fetch it.</p></div></div>
+  {% if error %}<div class="alert alert-danger" role="alert"><strong>Dataset was not saved.</strong> {{ error }}</div>{% endif %}
+  <form method="post" class="catalogue-form" id="dataset-form">{% csrf_token %}
+    <div class="card catalogue-card mb-4"><div class="card-body">
+      <h2 class="catalogue-section-title">Dataset details</h2><div class="row g-3">
+        <div class="col-md-6"><label for="display_name" class="form-label required-mark">Display name</label><input id="display_name" name="display_name" class="form-control" required value="{{ submitted.display_name|default:'' }}"></div>
+        <div class="col-md-6"><label for="purpose_other" class="form-label">Other purpose</label><input id="purpose_other" name="purpose_other" class="form-control" value="{{ submitted.purpose_other|default:'' }}"></div>
+        <div class="col-12"><label for="description" class="form-label">Description</label><textarea id="description" name="description" class="form-control" rows="3">{{ submitted.description|default:'' }}</textarea></div>
+        <div class="col-12"><span class="form-label d-block required-mark">Purpose</span><div class="d-flex flex-wrap gap-3"><div class="form-check"><input id="purpose-training" name="purpose" value="training" type="checkbox" class="form-check-input"><label for="purpose-training" class="form-check-label">Training</label></div><div class="form-check"><input id="purpose-evaluation" name="purpose" value="evaluation" type="checkbox" class="form-check-input"><label for="purpose-evaluation" class="form-check-label">Evaluation</label></div></div></div>
+      </div>
+    </div></div>
+    {% include "config_app/data_catalogue/_source_fields.html" %}
+    <div class="card catalogue-card mb-4"><div class="card-body"><h2 class="catalogue-section-title">Workload context</h2><div class="row g-3">
+      <div class="col-md-4"><label for="workload_intensity" class="form-label required-mark">Workload intensity</label><select id="workload_intensity" name="workload_intensity" class="form-select" required>{% for item in workload_intensities %}<option{% if submitted.workload_intensity == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label for="dominant_workload_characteristic" class="form-label required-mark">Dominant characteristic</label><select id="dominant_workload_characteristic" name="dominant_workload_characteristic" class="form-select" required>{% for item in workload_characteristics %}<option{% if submitted.dominant_workload_characteristic == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label for="anomaly_scenario" class="form-label required-mark">Anomaly scenario</label><select id="anomaly_scenario" name="anomaly_scenario" class="form-select" required>{% for item in anomaly_scenarios %}<option{% if submitted.anomaly_scenario == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    </div></div></div>
+    <div class="card catalogue-card mb-4"><div class="card-body"><h2 class="catalogue-section-title">Ground truth (optional)</h2><p class="form-help">An incident window records context. It does not claim that row-level labels already exist.</p><div class="row g-3">
+      <div class="col-md-6"><label for="incident_start_time" class="form-label">Incident start (UTC)</label><input id="incident_start_time" name="incident_start_time" type="datetime-local" data-utc-target="incident_start_time_utc" class="form-control"><input id="incident_start_time_utc" name="incident_start_time_utc" type="hidden"></div>
+      <div class="col-md-6"><label for="incident_end_time" class="form-label">Incident end (UTC)</label><input id="incident_end_time" name="incident_end_time" type="datetime-local" data-utc-target="incident_end_time_utc" class="form-control"><input id="incident_end_time_utc" name="incident_end_time_utc" type="hidden"></div>
+      <div class="col-md-4"><label for="incident_scenario" class="form-label">Scenario</label><select id="incident_scenario" name="incident_scenario" class="form-select">{% for item in anomaly_scenarios %}<option>{{ item }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label for="incident_services" class="form-label">Affected services</label><input id="incident_services" name="incident_services" class="form-control"></div>
+      <div class="col-md-4"><label for="incident_metrics" class="form-label">Affected metrics</label><input id="incident_metrics" name="incident_metrics" class="form-control"></div>
+      <div class="col-12"><label for="incident_annotation" class="form-label">Annotation</label><textarea id="incident_annotation" name="incident_annotation" class="form-control" rows="2"></textarea></div>
+    </div></div></div>
+    {% include "config_app/data_catalogue/_partition_fields.html" %}
+    <div class="sticky-actions d-flex justify-content-end gap-2"><a href="{% url 'data_catalogue_overview' %}" class="btn btn-outline-secondary">Cancel</a><button name="action" value="save" class="btn btn-outline-primary">Save draft</button><button name="action" value="save_and_fetch" class="btn btn-primary">Save draft and fetch</button></div>
+  </form>
+</main>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/data_catalogue_form.js' %}"></script>{% endblock %}

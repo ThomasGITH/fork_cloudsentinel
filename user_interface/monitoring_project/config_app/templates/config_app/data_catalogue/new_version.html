@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}New dataset version | CloudSentinel{% endblock %}
+{% block extra_head %}<link href="{% static 'css/data_catalogue.css' %}" rel="stylesheet">{% endblock %}
+{% block content %}
+<main class="catalogue-page container-fluid py-3">
+  {% if not dataset %}<div class="alert alert-danger"><h1 class="h4">Cannot create version</h1><p>{{ error }}</p><a class="btn btn-outline-danger" href="{% url 'data_catalogue_overview' %}">Back to catalogue</a></div>
+  {% else %}
+  <div class="catalogue-hero mb-4"><div><h1>Create new version</h1><p class="catalogue-muted mb-0">Copying version {{ copy_from }} of {{ dataset.display_name }}. The source version remains immutable.</p></div></div>
+  {% if error %}<div class="alert alert-danger" role="alert"><strong>Version was not created.</strong> {{ error }}</div>{% endif %}
+  <form method="post" class="catalogue-form">{% csrf_token %}
+    {% include "config_app/data_catalogue/_source_fields.html" %}
+    <div class="card catalogue-card mb-4"><div class="card-body"><h2 class="catalogue-section-title">Workload context</h2><div class="row g-3">
+      <div class="col-md-4"><label class="form-label">Workload intensity</label><select name="workload_intensity" class="form-select">{% for item in workload_intensities %}<option{% if submitted.workload_intensity == item or not submitted and source_version.workload_context.workload_intensity == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label class="form-label">Dominant characteristic</label><select name="dominant_workload_characteristic" class="form-select">{% for item in workload_characteristics %}<option{% if submitted.dominant_workload_characteristic == item or not submitted and source_version.workload_context.dominant_workload_characteristic == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label class="form-label">Anomaly scenario</label><select name="anomaly_scenario" class="form-select">{% for item in anomaly_scenarios %}<option{% if submitted.anomaly_scenario == item or not submitted and source_version.workload_context.anomaly_scenario == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    </div></div></div>
+    {% include "config_app/data_catalogue/_partition_fields.html" %}
+    <div class="sticky-actions d-flex justify-content-end gap-2"><a class="btn btn-outline-secondary" href="{% url 'data_catalogue_detail' dataset.dataset_id %}?version={{ copy_from }}">Cancel</a><button class="btn btn-primary">Create draft version</button></div>
+  </form>
+  {% endif %}
+</main>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/data_catalogue_form.js' %}"></script>{% endblock %}
