@@ -87,6 +87,18 @@ def validate_model_record(record: Any) -> dict[str, Any]:
         "promotion",
     ):
         _object(record[field], field)
+    if "artifact" in record:
+        artifact = _object(record["artifact"], "artifact")
+        if not isinstance(artifact.get("format"), str) or not artifact["format"]:
+            raise ModelRecordError("artifact.format must be a non-empty string")
+        safe_artifact_reference = artifact.get("safe_reference")
+        if safe_artifact_reference is not None:
+            try:
+                validate_identifier(safe_artifact_reference, "artifact.safe_reference")
+            except TrainingRunValidationError as exc:
+                raise ModelRecordError(str(exc)) from exc
+    if "model_metadata" in record:
+        _object(record["model_metadata"], "model_metadata")
     if record["promotion"].get("status") not in PROMOTION_STATUSES:
         raise ModelRecordError("unsupported promotion status")
     safe_reference = record["promotion"].get("safe_reference")

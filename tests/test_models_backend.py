@@ -41,7 +41,7 @@ class ModelsBackendTests(unittest.TestCase):
         )
         self.app.register_blueprint(
             create_training_runs_blueprint(
-                Mock(), Mock(), status_reader=lambda task_id: self.statuses[task_id]
+                Mock(), status_reader=lambda task_id: self.statuses[task_id]
             )
         )
         self.client = self.app.test_client()

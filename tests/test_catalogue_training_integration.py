@@ -273,10 +273,10 @@ class CatalogueTrainingRunTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
-        self.cgnn_task = Mock()
-        self.cgnn_task.apply_async.return_value = types.SimpleNamespace(id="cgnn-task")
-        self.if_task = Mock()
-        self.if_task.apply_async.return_value = types.SimpleNamespace(id="if-task")
+        self.training_task = Mock()
+        self.training_task.apply_async.side_effect = lambda *, args: types.SimpleNamespace(
+            id=f"{args[0]['detector_id']}-task"
+        )
         self.app = Flask(__name__)
         configure_training_run_defaults(self.app)
         self.app.config.update(
@@ -287,8 +287,7 @@ class CatalogueTrainingRunTests(unittest.TestCase):
         )
         self.app.register_blueprint(
             create_training_runs_blueprint(
-                self.cgnn_task,
-                self.if_task,
+                self.training_task,
                 status_reader=lambda _task_id: None,
             )
         )
@@ -379,47 +378,32 @@ class CatalogueTrainingRunTests(unittest.TestCase):
         metadata = json.loads((snapshot / "snapshot.json").read_text())
         self.assertEqual(metadata["catalogue_provenance"]["partition_id"], "partition-one")
         self.assertFalse(source["temporary_root"].exists())
-        self.cgnn_task.apply_async.assert_called_once()
-        self.if_task.apply_async.assert_called_once()
+        self.assertEqual(self.training_task.apply_async.call_count, 2)
 
-    def test_if_validation_failure_does_not_block_cgnn(self):
-        self.app.config["CATALOGUE_BUNDLE_FETCHER"] = lambda _dataset: self.source(nonfinite=True)
-        response = self.client.post(
-            "/training_runs",
-            json=self.payload(
-                [
-                    {"detector_id": "cgnn", "parameters": {}},
-                    {"detector_id": "isolation-forest", "parameters": {}},
-                ]
-            ),
-        )
-        self.assertEqual(response.status_code, 202, response.get_json())
-        children = {item["detector_id"]: item for item in response.get_json()["children"]}
-        self.assertEqual(children["isolation-forest"]["status"], "validation_failed")
-        self.assertIn("finite", children["isolation-forest"]["validation_error"])
-        self.assertEqual(children["cgnn"]["task_id"], "cgnn-task")
-        self.assertEqual(response.get_json()["status"], "partial_success")
-        self.cgnn_task.apply_async.assert_called_once()
-        self.if_task.apply_async.assert_not_called()
-
-    def test_cgnn_validation_failure_does_not_block_if(self):
-        self.app.config["CATALOGUE_BUNDLE_FETCHER"] = lambda _dataset: self.source(rows=4)
-        response = self.client.post(
-            "/training_runs",
-            json=self.payload(
-                [
-                    {"detector_id": "cgnn", "parameters": {}},
-                    {"detector_id": "isolation-forest", "parameters": {}},
-                ]
-            ),
-        )
-        self.assertEqual(response.status_code, 202, response.get_json())
-        children = {item["detector_id"]: item for item in response.get_json()["children"]}
-        self.assertEqual(children["cgnn"]["status"], "validation_failed")
-        self.assertIn("lookback", children["cgnn"]["validation_error"])
-        self.assertEqual(children["isolation-forest"]["task_id"], "if-task")
-        self.cgnn_task.apply_async.assert_not_called()
-        self.if_task.apply_async.assert_called_once()
+    def test_detector_compatibility_is_deferred_to_independent_generic_children(self):
+        for source in (self.source(nonfinite=True), self.source(rows=4)):
+            with self.subTest(rows=source["manifest"]["counts"]["train"]):
+                self.training_task.reset_mock()
+                self.app.config["CATALOGUE_BUNDLE_FETCHER"] = (
+                    lambda _dataset, source=source: source
+                )
+                response = self.client.post(
+                    "/training_runs",
+                    json=self.payload(
+                        [
+                            {"detector_id": "cgnn", "parameters": {}},
+                            {"detector_id": "isolation-forest", "parameters": {}},
+                        ]
+                    ),
+                )
+                self.assertEqual(response.status_code, 202, response.get_json())
+                self.assertEqual(self.training_task.apply_async.call_count, 2)
+                self.assertTrue(
+                    all(
+                        child["status"] == "queued"
+                        for child in response.get_json()["children"]
+                    )
+                )
 
     def test_central_bundle_failure_dispatches_nothing(self):
         def fail(_dataset):
@@ -432,8 +416,7 @@ class CatalogueTrainingRunTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("checksum", response.get_json()["error"])
-        self.cgnn_task.apply_async.assert_not_called()
-        self.if_task.apply_async.assert_not_called()
+        self.training_task.apply_async.assert_not_called()
         self.assertFalse((self.root / "runs").exists())
 
     def test_corrupt_bundle_checksum_is_rejected(self):
@@ -462,12 +445,9 @@ class CatalogueTrainingRunTests(unittest.TestCase):
             ),
         )
         self.assertEqual(response.status_code, 202, response.get_json())
-        cgnn = next(
-            item for item in response.get_json()["children"] if item["detector_id"] == "cgnn"
-        )
-        self.assertEqual(cgnn["status"], "validation_failed")
-        self.assertIn("unavailable", cgnn["validation_error"])
-        self.if_task.apply_async.assert_called_once()
+        children = response.get_json()["children"]
+        self.assertTrue(all(child["status"] == "queued" for child in children))
+        self.assertEqual(self.training_task.apply_async.call_count, 2)
 
 
 if __name__ == "__main__":

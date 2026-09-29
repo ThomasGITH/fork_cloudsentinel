@@ -5,6 +5,13 @@ version: 1.0.0
 description: Detects anomalous independent timestamp observations in multivariate metrics using Isolation Forest.
 supported_modalities:
   - metrics
+capabilities:
+  training:
+    enabled: true
+    protocol: cloudsentinel.training/v1
+    input_profile: metrics-partition-v1
+  prediction:
+    enabled: true
 input_requirements:
   training:
     format: Numeric two-dimensional matrix
@@ -65,6 +72,7 @@ training_parameters:
   n_jobs:
     type: integer
     default: 1
+    excluded_values: [0]
     advanced: true
     description: Non-zero number of parallel jobs used by Isolation Forest; negative values follow scikit-learn semantics.
 entry_point: detectors.isolation_forest.adapter:IsolationForestAdapter

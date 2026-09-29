@@ -241,11 +241,32 @@ def mark_child_failed(context: dict[str, Any] | None, error: Any) -> None:
     update_child(run_store, context["training_run_id"], context["detector_id"], mutate)
 
 
+def mark_child_validation_failed(context: dict[str, Any] | None, error: Any) -> None:
+    if not context:
+        return
+    run_store, _model_store = configured_stores()
+
+    def mutate(child: dict[str, Any], now: str) -> None:
+        if child.get("status") == "completed":
+            return
+        child["status"] = "validation_failed"
+        child["started_at"] = child.get("started_at") or now
+        child["completed_at"] = child.get("completed_at") or now
+        child["validation_error"] = safe_failure_summary(error)
+        child["failure_summary"] = None
+        child["result_metadata"] = None
+        child["model_status"] = None
+
+    update_child(run_store, context["training_run_id"], context["detector_id"], mutate)
+
+
 def record_successful_model(
     context: dict[str, Any] | None,
     *,
     evaluation: dict[str, Any],
     promotion: dict[str, Any],
+    artifact: dict[str, Any] | None = None,
+    model_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     if not context:
         return None
@@ -276,6 +297,10 @@ def record_successful_model(
             "safe_reference": context["model_id"] if promotion_status == "promoted" else None,
         },
     }
+    if artifact is not None:
+        record["artifact"] = deepcopy(artifact)
+    if model_metadata is not None:
+        record["model_metadata"] = deepcopy(model_metadata)
     try:
         existing = model_store.read(record["model_id"])
     except ModelNotFoundError:
@@ -450,6 +475,7 @@ def history_summary(run: dict[str, Any]) -> dict[str, Any]:
     }
     return {
         "run_id": run.get("run_id"),
+        "run_name": run.get("run_name"),
         "status": run.get("status"),
         "created_at": run.get("created_at"),
         "started_at": run.get("started_at"),
@@ -482,7 +508,7 @@ def model_summary(record: dict[str, Any]) -> dict[str, Any]:
 
 def public_model_record(record: dict[str, Any]) -> dict[str, Any]:
     """Project a storage record onto the stable, path-free public contract."""
-    return {
+    public = {
         "schema_version": record["schema_version"],
         "model_id": record["model_id"],
         "detector_id": record["detector_id"],
@@ -499,3 +525,8 @@ def public_model_record(record: dict[str, Any]) -> dict[str, Any]:
         "evaluation": evaluation_summary(record["evaluation"]),
         "promotion": deepcopy(record["promotion"]),
     }
+    if "artifact" in record:
+        public["artifact"] = deepcopy(record["artifact"])
+    if "model_metadata" in record:
+        public["model_metadata"] = deepcopy(record["model_metadata"])
+    return public

@@ -5,6 +5,13 @@ version: 1.0.0
 description: Detects anomalies in preprocessed multivariate metric time series using the current CGNN-MHSA-AR implementation.
 supported_modalities:
   - metrics
+capabilities:
+  training:
+    enabled: true
+    protocol: cloudsentinel.training/v1
+    input_profile: metrics-partition-v1
+  prediction:
+    enabled: true
 input_requirements:
   training:
     format: Numeric CSV without a header

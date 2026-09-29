@@ -33,6 +33,7 @@ assert app.app.config['result_backend'] == 'redis://infra-test.invalid:6379/2'
 assert str(tasks.TRAINED_MODELS_TEMP_ROOT) == '/tmp/infra-trained-models'
 assert 'tasks.train_and_evaluate_task' in app.celery.tasks
 assert 'tasks.train_and_evaluate_isolation_forest_task' in app.celery.tasks
+assert 'tasks.train_detector_plugin_task' in app.celery.tasks
 health = app.app.test_client().get('/healthz')
 assert health.status_code == 200
 assert health.get_json() == {'status': 'healthy'}
@@ -202,6 +203,7 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
         tasks_stub = types.ModuleType("tasks")
         tasks_stub.train_and_evaluate_task = submitted_task
         tasks_stub.train_and_evaluate_isolation_forest_task = Mock()
+        tasks_stub.train_detector_plugin_task = Mock()
         celery_stub = types.ModuleType("celery")
         celery_stub.Celery = FakeCeleryApp
         config_stub = types.ModuleType("cgnn.config")
@@ -281,8 +283,6 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
                 with (
                     patch.object(module.registry, "get_adapter", return_value=adapter) as get_adapter,
                     patch.object(module, "TRAINED_MODELS_TEMP_ROOT", Path(directory)),
-                    patch.object(module, "mark_child_running") as mark_running,
-                    patch.object(module, "record_successful_model") as record_model,
                 ):
                     result = module.train_and_evaluate_task(
                         task_context,
@@ -307,21 +307,20 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
             adapter.train.call_args.kwargs["progress_callback"],
             adapter.evaluate.call_args.kwargs["progress_callback"],
         )
-        mark_running.assert_called_once_with(orchestration_context)
-        record_model.assert_called_once_with(
-            orchestration_context,
-            evaluation={},
-            promotion={"status": "not_promoted"},
-        )
 
-        with patch.object(module, "mark_child_failed") as mark_failed:
+        with patch("learning_adaptation.training_lifecycle.mark_child_failed") as mark_failed:
             module._persist_terminal_task_failure(
-                sender=types.SimpleNamespace(name="tasks.train_and_evaluate_task"),
+                sender=types.SimpleNamespace(name="tasks.train_detector_plugin_task"),
                 exception=RuntimeError("training failed"),
-                args=([], [], [], {"data": {"orchestration_context": orchestration_context}}),
+                args=(
+                    {
+                        "run_id": orchestration_context["training_run_id"],
+                        "detector_id": orchestration_context["detector_id"],
+                    },
+                ),
             )
         mark_failed.assert_called_once()
-        self.assertIs(mark_failed.call_args.args[0], orchestration_context)
+        self.assertEqual(mark_failed.call_args.args[0], orchestration_context)
 
     def test_detection_flow_calls_adapter_predict(self):
         config_stub = types.ModuleType("config")

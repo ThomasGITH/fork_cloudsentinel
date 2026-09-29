@@ -86,6 +86,7 @@ class DetectorRegistryTests(unittest.TestCase):
         self.assertEqual(parameters["max_features"]["exclusive_minimum"], 0)
         self.assertEqual(parameters["max_features"]["maximum"], 1.0)
         self.assertTrue(parameters["n_jobs"]["advanced"])
+        self.assertEqual(parameters["n_jobs"]["excluded_values"], [0])
 
     def test_inconsistent_parameter_constraints_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -7,7 +7,7 @@ import unittest
 
 import yaml
 
-from detectors.contracts import DetectorAdapter
+from detectors.contracts import DetectorAdapter, TrainableDetectorAdapter
 from detectors.registry import (
     AdapterContractError,
     AdapterImportError,
@@ -15,6 +15,7 @@ from detectors.registry import (
     UnknownDetectorError,
     discover_detectors,
     get_adapter,
+    get_training_adapter,
     load_manifest,
 )
 
@@ -60,6 +61,16 @@ class DetectorResolverTests(unittest.TestCase):
         self.assertIn("detectors.cgnn.adapter", sys.modules)
         for module_name in ("torch", "celery", "cgnn.train", "cgnn.evaluate_prediction", "predict"):
             self.assertNotIn(module_name, sys.modules)
+
+    def test_bundled_adapters_implement_the_generic_training_protocol(self):
+        for detector_id, class_name in (
+            ("cgnn", "CGNNAdapter"),
+            ("isolation-forest", "IsolationForestAdapter"),
+        ):
+            with self.subTest(detector_id=detector_id):
+                adapter = get_training_adapter(detector_id, REPOSITORY_ROOT / "detectors")
+                self.assertEqual(type(adapter).__name__, class_name)
+                self.assertIsInstance(adapter, TrainableDetectorAdapter)
 
     def test_unknown_detector_has_targeted_error(self):
         with self.assertRaisesRegex(UnknownDetectorError, "Unknown detector id: 'missing'"):

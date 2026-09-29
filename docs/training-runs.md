@@ -1,7 +1,7 @@
 # Generic training runs
 
-`POST /training_runs` starts independent detector-specific Celery tasks for one
-dataset. `GET /training_runs/{run_id}` returns the durable run record, reconciled
+`POST /training_runs` starts independent children of the single generic Celery
+task `train_detector_plugin_task` for one dataset. `GET /training_runs/{run_id}` returns the durable run record, reconciled
 with current Celery state when that state is still available. The legacy CGNN
 and Isolation Forest endpoints remain available.
 
@@ -22,8 +22,10 @@ also protects history after Redis result expiry. A task failure is written when
 Celery reaches terminal failure; no scheduler or status sweeper is introduced.
 
 The local implementation stores immutable source snapshots below
-`DATASET_SNAPSHOT_STORAGE_ROOT` and run metadata and child inputs below
-`TRAINING_RUN_STORAGE_ROOT`. Existing datasets are read from
+`DATASET_SNAPSHOT_STORAGE_ROOT` and run metadata below
+`TRAINING_RUN_STORAGE_ROOT`. Generic children read the shared immutable
+snapshot directly; they do not create detector-specific input copies.
+Existing datasets are read from
 `EXISTING_DATASETS_ROOT`. Defaults point at directories beside the
 learning-adaptation application.
 
@@ -52,9 +54,11 @@ dispatch-failed, and validation-failed children do not create available model
 records. Repeated lifecycle delivery for the same model and provenance reuses
 the first record rather than changing its identity or timestamps.
 
-The API validates and prepares every selected detector before dispatching the
-first task. Dispatches remain independent: a dispatch or runtime failure for
-one detector does not cancel its siblings. The response field
+The API validates manifest capabilities, manifest parameters, and the shared
+`metrics-partition-v1` envelope before dispatch. Each generic child lazily loads
+its adapter and performs detector-specific compatibility validation.
+Compatibility, execution, promotion, or dispatch failure for one detector does
+not cancel its siblings. The response field
 `physical_parallelism_guaranteed` is `false`; actual parallel execution needs
 separate Celery queues or workers.
 
@@ -87,9 +91,9 @@ snapshot shape used by existing datasets. Catalogue identity, partition and
 feature-order hashes, label provenance, source hashes, and observation counts
 are stored in both snapshot and run metadata.
 
-Catalogue or bundle-integrity failures stop the run before dispatch. A
-detector-specific compatibility failure is stored as `validation_failed` on
-that child while compatible siblings are dispatched. CGNN feature importance
+Catalogue, snapshot, or bundle-integrity failures stop the run before dispatch.
+A detector-specific compatibility failure is stored as `validation_failed` on
+that child while compatible siblings continue. CGNN feature importance
 is unavailable for catalogue data because arbitrary PromQL feature names do
 not provide a trustworthy container-by-metric mapping; legacy CGNN behavior is
 unchanged.
@@ -104,3 +108,8 @@ Celery terminal failure event may remain `running` until a later detail/history
 request can reconcile it with a retained Celery result. The file locks protect
 processes sharing one filesystem; multi-host correctness still depends on the
 shared filesystem's locking semantics.
+
+
+`POST /training_runs` also accepts an optional non-empty `run_name` of at most
+200 characters. It is persisted and included in list and detail responses;
+existing requests and old records remain valid without it.

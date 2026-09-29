@@ -4,16 +4,19 @@ from __future__ import annotations
 
 from importlib import import_module
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any
 
 import yaml
 
-from .contracts import DetectorAdapter
+from .contracts import DetectorAdapter, TrainableDetectorAdapter
 
 
 SUPPORTED_SCHEMA_VERSION = 1
+SUPPORTED_TRAINING_PROTOCOLS = {"cloudsentinel.training/v1"}
+SUPPORTED_INPUT_PROFILES = {"metrics-partition-v1"}
 MAX_MANIFEST_BYTES = 1_000_000
 REQUIRED_FIELDS = {
     "schema_version",
@@ -53,8 +56,23 @@ class AdapterContractError(TypeError):
     """Raised when a resolved adapter does not implement the required operations."""
 
 
+class UnsupportedTrainingProtocolError(ManifestValidationError):
+    """Raised when a detector requests an unsupported training protocol."""
+
+
+class ParameterValidationError(ValueError):
+    """Raised when submitted values violate manifest parameter metadata."""
+
+
 def _fail(path: Path, message: str) -> ManifestValidationError:
     return ManifestValidationError(f"{path}: {message}")
+
+
+def _detector_root(detector_dir: str | Path | None) -> Path:
+    if detector_dir is not None:
+        return Path(detector_dir)
+    configured = os.getenv("DETECTOR_PLUGIN_ROOT")
+    return Path(configured) if configured else Path(__file__).parent
 
 
 def _require_non_empty_string(manifest: dict[str, Any], field: str, path: Path) -> None:
@@ -136,6 +154,24 @@ def _validate_parameter_constraints(
                 path, f"training parameter '{parameter_name}' default is not in allowed_values"
             )
 
+    excluded = metadata.get("excluded_values")
+    if excluded is not None:
+        if not isinstance(excluded, list) or not excluded:
+            raise _fail(
+                path,
+                f"training parameter '{parameter_name}' excluded_values must be a non-empty list",
+            )
+        if len({json.dumps(item, sort_keys=True) for item in excluded}) != len(excluded):
+            raise _fail(path, f"training parameter '{parameter_name}' excluded_values has duplicates")
+        probe = {**metadata, "nullable": metadata.get("nullable", False)}
+        for item in excluded:
+            probe["default"] = item
+            _validate_default(parameter_name, probe, path)
+        if metadata["default"] in excluded:
+            raise _fail(
+                path, f"training parameter '{parameter_name}' default is excluded"
+            )
+
     candidates = [("default", metadata["default"])]
     if allowed is not None:
         candidates.extend(("allowed value", item) for item in allowed)
@@ -190,6 +226,20 @@ def validate_manifest(manifest: Any, path: Path) -> dict[str, Any]:
     if not isinstance(manifest["input_requirements"], dict):
         raise _fail(path, "'input_requirements' must be a mapping")
 
+    capabilities = manifest.get("capabilities")
+    if not isinstance(capabilities, dict):
+        raise _fail(path, "'capabilities' must be a mapping")
+    training = capabilities.get("training")
+    if not isinstance(training, dict) or not isinstance(training.get("enabled"), bool):
+        raise _fail(path, "'capabilities.training.enabled' must be boolean")
+    if training["enabled"]:
+        protocol = training.get("protocol")
+        profile = training.get("input_profile")
+        if not isinstance(protocol, str) or not protocol:
+            raise _fail(path, "enabled training capability needs a protocol")
+        if not isinstance(profile, str) or not profile:
+            raise _fail(path, "enabled training capability needs an input_profile")
+
     parameters = manifest["training_parameters"]
     if not isinstance(parameters, dict):
         raise _fail(path, "'training_parameters' must be a mapping")
@@ -231,9 +281,67 @@ def load_manifest(path: str | Path) -> dict[str, Any]:
     return validate_manifest(manifest, manifest_path)
 
 
+def _safe_discovery_error(path: Path, exc: Exception, code: str) -> dict[str, str]:
+    message = str(exc).replace(str(path), path.name).replace(str(path.parent), path.parent.name)
+    return {
+        "plugin": path.parent.name[:128],
+        "code": code,
+        "message": message.replace("\n", " ").replace("\r", " ")[:1000],
+    }
+
+
+def scan_detectors(detector_dir: str | Path | None = None) -> dict[str, list[dict[str, Any]]]:
+    """Discover manifests independently, quarantining invalid and duplicate plugins."""
+    root = _detector_root(detector_dir)
+    root = root.resolve()
+    if not root.is_dir():
+        return {
+            "detectors": [],
+            "discovery_errors": [
+                {
+                    "plugin": "detectors",
+                    "code": "directory_unavailable",
+                    "message": "detector directory does not exist",
+                }
+            ],
+        }
+
+    candidates: list[tuple[Path, dict[str, Any]]] = []
+    errors: list[dict[str, Any]] = []
+    for path in sorted(root.glob("*/manifest.yaml")):
+        try:
+            resolved = path.resolve()
+            if not resolved.is_relative_to(root):
+                raise _fail(path, "manifest resolves outside the detector directory")
+            candidates.append((path, load_manifest(resolved)))
+        except (ManifestValidationError, OSError, UnicodeError) as exc:
+            errors.append(_safe_discovery_error(path, exc, "invalid_manifest"))
+
+    grouped: dict[str, list[tuple[Path, dict[str, Any]]]] = {}
+    for path, manifest in candidates:
+        grouped.setdefault(manifest["id"], []).append((path, manifest))
+
+    detectors = []
+    for detector_id, entries in grouped.items():
+        if len(entries) > 1:
+            for path, _manifest in entries:
+                errors.append(
+                    {
+                        "plugin": path.parent.name[:128],
+                        "code": "duplicate_detector_id",
+                        "message": f"detector id {detector_id!r} is declared by multiple plugins",
+                    }
+                )
+            continue
+        detectors.append(entries[0][1])
+    detectors.sort(key=lambda item: item["id"])
+    errors.sort(key=lambda item: (item["plugin"], item["code"]))
+    return {"detectors": detectors, "discovery_errors": errors}
+
+
 def discover_detectors(detector_dir: str | Path | None = None) -> list[dict[str, Any]]:
     """Return validated manifests without importing their entry points."""
-    root = Path(detector_dir) if detector_dir is not None else Path(__file__).parent
+    root = _detector_root(detector_dir)
     root = root.resolve()
     if not root.is_dir():
         raise ManifestValidationError(f"{root}: detector directory does not exist")
@@ -256,21 +364,93 @@ def discover_detectors(detector_dir: str | Path | None = None) -> list[dict[str,
     return manifests
 
 
+def get_manifest(
+    detector_id: str, detector_dir: str | Path | None = None
+) -> dict[str, Any]:
+    report = scan_detectors(detector_dir)
+    manifest = next(
+        (item for item in report["detectors"] if item["id"] == detector_id), None
+    )
+    if manifest is None:
+        # Preserve a targeted schema error when the requested ID belongs to one
+        # invalid manifest. Duplicate IDs remain quarantined and unresolved.
+        root = _detector_root(detector_dir).resolve()
+        matching_paths = []
+        for path in sorted(root.glob("*/manifest.yaml")) if root.is_dir() else ():
+            try:
+                if path.stat().st_size > MAX_MANIFEST_BYTES:
+                    continue
+                candidate = yaml.safe_load(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, yaml.YAMLError):
+                continue
+            if isinstance(candidate, dict) and candidate.get("id") == detector_id:
+                matching_paths.append(path)
+        if len(matching_paths) == 1:
+            return load_manifest(matching_paths[0])
+        raise UnknownDetectorError(f"Unknown or invalid detector id: {detector_id!r}")
+    return manifest
+
+
+def validate_training_parameters(
+    detector_id: str,
+    submitted: Any,
+    manifest: dict[str, Any],
+) -> dict[str, Any]:
+    if submitted is None:
+        submitted = {}
+    if not isinstance(submitted, dict):
+        raise ParameterValidationError(
+            f"parameters for detector {detector_id!r} must be an object"
+        )
+    definitions = manifest["training_parameters"]
+    unknown = sorted(set(submitted).difference(definitions))
+    if unknown:
+        raise ParameterValidationError(
+            f"unknown training parameter(s) for {detector_id!r}: {', '.join(unknown)}"
+        )
+    values = {name: metadata["default"] for name, metadata in definitions.items()}
+    values.update(submitted)
+    for name, value in values.items():
+        metadata = definitions[name]
+        if value is None and metadata.get("nullable", False):
+            continue
+        expected = metadata["type"]
+        valid = {
+            "boolean": isinstance(value, bool),
+            "integer": isinstance(value, int) and not isinstance(value, bool),
+            "number": isinstance(value, (int, float)) and not isinstance(value, bool),
+            "string": isinstance(value, str),
+        }[expected]
+        if not valid:
+            raise ParameterValidationError(
+                f"parameter {name!r} for {detector_id!r} must be {expected}"
+            )
+        if "minimum" in metadata and value < metadata["minimum"]:
+            raise ParameterValidationError(f"parameter {name!r} is below its minimum")
+        if "exclusive_minimum" in metadata and value <= metadata["exclusive_minimum"]:
+            raise ParameterValidationError(f"parameter {name!r} must exceed its lower bound")
+        if "maximum" in metadata and value > metadata["maximum"]:
+            raise ParameterValidationError(f"parameter {name!r} exceeds its maximum")
+        if "exclusive_maximum" in metadata and value >= metadata["exclusive_maximum"]:
+            raise ParameterValidationError(f"parameter {name!r} must be below its upper bound")
+        if "allowed_values" in metadata and value not in metadata["allowed_values"]:
+            raise ParameterValidationError(
+                f"parameter {name!r} must be one of {metadata['allowed_values']}"
+            )
+        if value in metadata.get("excluded_values", []):
+            raise ParameterValidationError(f"parameter {name!r} uses an excluded value")
+    return values
+
+
 def get_adapter(
     detector_id: str,
     detector_dir: str | Path | None = None,
 ) -> DetectorAdapter:
     """Resolve one detector adapter from its manifest without eager plugin imports."""
-    manifest = next(
-        (
-            candidate
-            for candidate in discover_detectors(detector_dir)
-            if candidate["id"] == detector_id
-        ),
-        None,
-    )
-    if manifest is None:
-        raise UnknownDetectorError(f"Unknown detector id: {detector_id!r}")
+    try:
+        manifest = get_manifest(detector_id, detector_dir)
+    except UnknownDetectorError as exc:
+        raise UnknownDetectorError(f"Unknown detector id: {detector_id!r}") from exc
 
     entry_point = manifest["entry_point"]
     if not ENTRY_POINT_PATTERN.fullmatch(entry_point):
@@ -317,4 +497,63 @@ def get_adapter(
             f"DetectorAdapter: {details}"
         )
 
+    return adapter
+
+
+def get_training_adapter(
+    detector_id: str,
+    detector_dir: str | Path | None = None,
+) -> TrainableDetectorAdapter:
+    """Resolve a v1 training adapter only when a worker starts its child task."""
+    manifest = get_manifest(detector_id, detector_dir)
+    training = manifest["capabilities"]["training"]
+    if not training.get("enabled"):
+        raise UnsupportedTrainingProtocolError(
+            f"Detector {detector_id!r} does not enable training"
+        )
+    protocol = training.get("protocol")
+    if protocol not in SUPPORTED_TRAINING_PROTOCOLS:
+        raise UnsupportedTrainingProtocolError(
+            f"Detector {detector_id!r} uses unsupported training protocol {protocol!r}"
+        )
+    profile = training.get("input_profile")
+    if profile not in SUPPORTED_INPUT_PROFILES:
+        raise UnsupportedTrainingProtocolError(
+            f"Detector {detector_id!r} uses unsupported input profile {profile!r}"
+        )
+
+    entry_point = manifest["entry_point"]
+    module_name, attribute_name = entry_point.split(":", 1)
+    try:
+        module = import_module(module_name)
+    except Exception as exc:
+        raise AdapterImportError(
+            f"Could not import training adapter module for detector {detector_id!r}: {exc}"
+        ) from exc
+    try:
+        adapter_class = getattr(module, attribute_name)
+    except AttributeError as exc:
+        raise InvalidEntryPointError(
+            f"Training adapter entry point for detector {detector_id!r} does not exist"
+        ) from exc
+    if not isinstance(adapter_class, type):
+        raise InvalidEntryPointError(
+            f"Training adapter entry point for detector {detector_id!r} must resolve to a class"
+        )
+    try:
+        adapter = adapter_class()
+    except Exception as exc:
+        raise AdapterContractError(
+            f"Training adapter for detector {detector_id!r} could not be instantiated: {exc}"
+        ) from exc
+    if not isinstance(adapter, TrainableDetectorAdapter):
+        missing = [
+            name
+            for name in ("validate_training", "run_training")
+            if not callable(getattr(adapter, name, None))
+        ]
+        raise AdapterContractError(
+            f"Training adapter for detector {detector_id!r} does not satisfy "
+            f"TrainableDetectorAdapter: {', '.join(missing) or 'invalid methods'}"
+        )
     return adapter

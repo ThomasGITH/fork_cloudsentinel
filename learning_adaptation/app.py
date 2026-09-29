@@ -11,7 +11,11 @@ import pandas as pd
 import numpy as np
 from flask_cors import CORS
 from celery import Celery
-from tasks import train_and_evaluate_isolation_forest_task, train_and_evaluate_task
+from tasks import (
+    train_and_evaluate_isolation_forest_task,
+    train_and_evaluate_task,
+    train_detector_plugin_task,
+)
 
 from detectors.api import create_detectors_blueprint
 from detectors.isolation_forest.training_request import (
@@ -82,8 +86,7 @@ celery.conf.update(
 )
 app.register_blueprint(
     create_training_runs_blueprint(
-        train_and_evaluate_task,
-        train_and_evaluate_isolation_forest_task,
+        train_detector_plugin_task,
         status_reader=lambda task_id: celery.AsyncResult(task_id),
     )
 )

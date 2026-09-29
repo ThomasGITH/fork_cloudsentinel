@@ -237,7 +237,7 @@ class DatasetSnapshotStore:
 
 
 class TrainingRunStore:
-    """Atomically persist compact run metadata and detector child inputs."""
+    """Atomically persist compact run metadata and legacy child-input paths."""
 
     def __init__(self, root: str | Path):
         self.root = Path(root).resolve()

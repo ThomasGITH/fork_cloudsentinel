@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import math
 import os
 from pathlib import Path
+import csv
 from typing import Any, Callable
 import uuid
 
@@ -14,10 +13,40 @@ from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 from detectors import registry
-from detectors.isolation_forest.training_request import (
-    IsolationForestRequestError,
-    validate_training_parameters,
-)
+
+
+def _validate_metrics_partition_v1(snapshot: dict[str, Any]) -> None:
+    """Validate the shared v1 envelope once before any child is dispatched."""
+
+    directory = Path(snapshot["directory"]).resolve()
+    shapes: dict[str, tuple[int, int]] = {}
+    for logical_name in ("train", "test", "labels"):
+        path = (directory / f"{logical_name}.csv").resolve()
+        if not path.is_relative_to(directory) or not path.is_file():
+            raise TrainingRunValidationError(
+                f"metrics-partition-v1 is missing {logical_name} data"
+            )
+        try:
+            with path.open("r", encoding="utf-8", newline="") as source:
+                rows = list(csv.reader(source))
+        except (OSError, UnicodeError, csv.Error) as exc:
+            raise TrainingRunValidationError(
+                f"invalid {logical_name} CSV: {exc}"
+            ) from exc
+        if not rows or any(not row for row in rows):
+            raise TrainingRunValidationError(f"{logical_name} CSV is empty or malformed")
+        width = len(rows[0])
+        if width < 1 or any(len(row) != width for row in rows):
+            raise TrainingRunValidationError(f"{logical_name} CSV is not rectangular")
+        shapes[logical_name] = (len(rows), width)
+    if shapes["train"][1] != shapes["test"][1]:
+        raise TrainingRunValidationError(
+            "train and test data must have the same feature count"
+        )
+    if shapes["labels"][1] != 1 or shapes["labels"][0] != shapes["test"][0]:
+        raise TrainingRunValidationError(
+            "metrics-partition-v1 labels must contain one value per test observation"
+        )
 
 try:
     from learning_adaptation.catalogue_training import (
@@ -48,7 +77,6 @@ try:
         safe_failure_summary,
         utc_now,
     )
-    from learning_adaptation.training_launchers import build_training_launchers
     from learning_adaptation.training_run_storage import (
         DatasetSnapshotStore,
         TrainingRunNotFoundError,
@@ -62,7 +90,6 @@ except ModuleNotFoundError as exc:  # The service image copies modules into /app
         "learning_adaptation",
         "learning_adaptation.model_catalogue",
         "learning_adaptation.training_lifecycle",
-        "learning_adaptation.training_launchers",
         "learning_adaptation.training_run_storage",
     }:
         raise
@@ -77,7 +104,6 @@ except ModuleNotFoundError as exc:  # The service image copies modules into /app
         safe_failure_summary,
         utc_now,
     )
-    from training_launchers import build_training_launchers
     from training_run_storage import (
         DatasetSnapshotStore,
         TrainingRunNotFoundError,
@@ -88,71 +114,9 @@ except ModuleNotFoundError as exc:  # The service image copies modules into /app
     )
 
 
-def _parameter_matches_type(value: Any, parameter_type: str) -> bool:
-    if parameter_type == "boolean":
-        return isinstance(value, bool)
-    if parameter_type == "integer":
-        return isinstance(value, int) and not isinstance(value, bool)
-    if parameter_type == "number":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
-    return isinstance(value, str)
-
-
-def validate_manifest_parameters(
-    detector_id: str,
-    submitted: Any,
-    manifest: dict[str, Any],
-) -> dict[str, Any]:
-    if submitted is None:
-        submitted = {}
-    if not isinstance(submitted, dict):
-        raise TrainingRunValidationError(
-            f"parameters for detector {detector_id!r} must be an object"
-        )
-    definitions = manifest["training_parameters"]
-    unknown = sorted(set(submitted).difference(definitions))
-    if unknown:
-        raise TrainingRunValidationError(
-            f"unknown training parameter(s) for {detector_id!r}: {', '.join(unknown)}"
-        )
-
-    values = {name: metadata["default"] for name, metadata in definitions.items()}
-    values.update(submitted)
-    for name, value in values.items():
-        metadata = definitions[name]
-        if value is None and metadata.get("nullable", False):
-            continue
-        if not _parameter_matches_type(value, metadata["type"]):
-            raise TrainingRunValidationError(
-                f"parameter {name!r} for {detector_id!r} must be {metadata['type']}"
-            )
-        if "minimum" in metadata and value < metadata["minimum"]:
-            raise TrainingRunValidationError(
-                f"parameter {name!r} for {detector_id!r} must be at least {metadata['minimum']}"
-            )
-        if "maximum" in metadata and value > metadata["maximum"]:
-            raise TrainingRunValidationError(
-                f"parameter {name!r} for {detector_id!r} must be at most {metadata['maximum']}"
-            )
-        if "exclusive_minimum" in metadata and value <= metadata["exclusive_minimum"]:
-            raise TrainingRunValidationError(
-                f"parameter {name!r} for {detector_id!r} must be greater than {metadata['exclusive_minimum']}"
-            )
-        if "exclusive_maximum" in metadata and value >= metadata["exclusive_maximum"]:
-            raise TrainingRunValidationError(
-                f"parameter {name!r} for {detector_id!r} must be less than {metadata['exclusive_maximum']}"
-            )
-        if "allowed_values" in metadata and value not in metadata["allowed_values"]:
-            raise TrainingRunValidationError(
-                f"parameter {name!r} for {detector_id!r} must be one of {metadata['allowed_values']}"
-            )
-    return values
-
-
 def validate_request_payload(
     payload: Any,
-    launchers: dict[str, Any],
-) -> tuple[dict[str, Any], list[dict[str, Any]], str | None]:
+) -> tuple[dict[str, Any], list[dict[str, Any]], str | None, str | None]:
     if not isinstance(payload, dict):
         raise TrainingRunValidationError("request body must be a JSON object")
     dataset = payload.get("dataset")
@@ -191,7 +155,9 @@ def validate_request_payload(
     if not isinstance(detector_requests, list) or not detector_requests:
         raise TrainingRunValidationError("detectors must be a non-empty list")
 
-    manifests = {item["id"]: item for item in registry.discover_detectors()}
+    manifests = {
+        item["id"]: item for item in registry.scan_detectors()["detectors"]
+    }
     validated = []
     seen = set()
     for index, detector_request in enumerate(detector_requests):
@@ -206,25 +172,25 @@ def validate_request_payload(
             )
         seen.add(detector_id)
         manifest = manifests[detector_id]
-        if "training" not in manifest.get("input_requirements", {}):
+        training_capability = manifest.get("capabilities", {}).get("training", {})
+        if not training_capability.get("enabled"):
             raise TrainingRunValidationError(
                 f"detector {detector_id!r} does not declare training capability"
             )
-        if detector_id not in launchers:
+        if training_capability.get("protocol") not in registry.SUPPORTED_TRAINING_PROTOCOLS:
             raise TrainingRunValidationError(
-                f"detector {detector_id!r} has no training launcher"
+                f"detector {detector_id!r} uses an unsupported training protocol"
             )
-        if detector_id == "isolation-forest":
-            try:
-                parameters = validate_training_parameters(
-                    detector_request.get("parameters")
-                )
-            except IsolationForestRequestError as exc:
-                raise TrainingRunValidationError(str(exc)) from exc
-        else:
-            parameters = validate_manifest_parameters(
+        if training_capability.get("input_profile") not in registry.SUPPORTED_INPUT_PROFILES:
+            raise TrainingRunValidationError(
+                f"detector {detector_id!r} uses an unsupported input profile"
+            )
+        try:
+            parameters = registry.validate_training_parameters(
                 detector_id, detector_request.get("parameters"), manifest
             )
+        except registry.ParameterValidationError as exc:
+            raise TrainingRunValidationError(str(exc)) from exc
         validated.append({"detector_id": detector_id, "parameters": parameters})
 
     client_request_id = payload.get("client_request_id")
@@ -236,7 +202,18 @@ def validate_request_payload(
         raise TrainingRunValidationError(
             "client_request_id must be a non-empty string of at most 200 characters"
         )
-    return normalized_dataset, validated, client_request_id
+    run_name = payload.get("run_name")
+    if run_name is not None and (
+        not isinstance(run_name, str)
+        or not run_name.strip()
+        or len(run_name.strip()) > 200
+    ):
+        raise TrainingRunValidationError(
+            "run_name must be a non-empty string of at most 200 characters"
+        )
+    return normalized_dataset, validated, client_request_id, (
+        run_name.strip() if run_name is not None else None
+    )
 
 
 def _positive_integer(value: str | None, field: str, default: int, maximum: int) -> int:
@@ -261,41 +238,11 @@ def _choice(value: str | None, field: str, choices: set[str]) -> str | None:
     return value
 
 
-def _model_feature_identity(snapshot: dict[str, Any]) -> dict[str, Any]:
-    provenance = snapshot.get("catalogue_provenance") or {}
-    feature_order = provenance.get("feature_order")
-    feature_hash = provenance.get("feature_order_sha256")
-    if not feature_order:
-        details = snapshot.get("dataset_details", {})
-        containers = details.get("containers", [])
-        metrics = details.get("metrics", [])
-        if isinstance(containers, list) and isinstance(metrics, list):
-            feature_order = [
-                f"{container}_{metric}"
-                for container in containers
-                for metric in metrics
-            ]
-        else:
-            feature_order = []
-        if feature_order:
-            feature_hash = hashlib.sha256(
-                json.dumps(
-                    feature_order, ensure_ascii=False, separators=(",", ":")
-                ).encode("utf-8")
-            ).hexdigest()
-    return {
-        "feature_order": feature_order or [],
-        "feature_order_sha256": feature_hash,
-    }
-
-
 def create_training_runs_blueprint(
-    cgnn_task: Any,
-    isolation_forest_task: Any,
+    training_task: Any,
     status_reader: Callable[[str], Any],
 ) -> Blueprint:
     blueprint = Blueprint("training_runs", __name__)
-    launchers = build_training_launchers(cgnn_task, isolation_forest_task)
 
     def stores() -> tuple[DatasetSnapshotStore, TrainingRunStore, ModelCatalogueStore]:
         snapshot_root = current_app.config["DATASET_SNAPSHOT_STORAGE_ROOT"]
@@ -313,8 +260,8 @@ def create_training_runs_blueprint(
             return jsonify({"error": "Content-Type must be application/json"}), 415
         try:
             payload = request.get_json(silent=False)
-            dataset, detector_requests, client_request_id = validate_request_payload(
-                payload, launchers
+            dataset, detector_requests, client_request_id, run_name = validate_request_payload(
+                payload
             )
             snapshot_store, run_store, _model_store = stores()
         except (BadRequest, TrainingRunValidationError, ValueError) as exc:
@@ -323,7 +270,6 @@ def create_training_runs_blueprint(
         run_id = new_identifier("run")
         snapshot = None
         downloaded_source = None
-        prepared_children = []
         try:
             if dataset["source"] == "existing":
                 source = snapshot_store.validate_source(dataset["dataset_id"])
@@ -337,7 +283,10 @@ def create_training_runs_blueprint(
                 else:
                     downloaded_source = fetcher(dataset)
                 snapshot = snapshot_store.create_catalogue(downloaded_source)
+            _validate_metrics_partition_v1(snapshot)
         except (TrainingRunValidationError, CatalogueBundleError, ValueError) as exc:
+            if snapshot is not None:
+                snapshot_store.remove(snapshot["snapshot_id"])
             if downloaded_source is not None:
                 temporary_root = downloaded_source.get("temporary_root")
                 if temporary_root:
@@ -362,96 +311,42 @@ def create_training_runs_blueprint(
                     shutil.rmtree(temporary_root, ignore_errors=True)
 
         child_records = []
+        dispatch_children = []
         created_at = utc_now()
-        try:
-            for detector_request in detector_requests:
-                detector_id = detector_request["detector_id"]
-                model_id = (
-                    f"{run_id}-{detector_id}-{uuid.uuid4().hex[:8]}"
-                )
-                child_input_dir = run_store.child_input_directory(run_id, detector_id)
-                record = {
-                    "detector_id": detector_id,
-                    "model_id": model_id,
-                    "task_id": None,
-                    "status": "queued",
-                    "parameters": detector_request["parameters"],
-                    "snapshot_id": snapshot["snapshot_id"],
-                    "validation_error": None,
-                    "dispatch_error": None,
-                    "failure_summary": None,
-                    "result_metadata": None,
-                    "model_status": None,
-                    "created_at": created_at,
-                    "started_at": None,
-                    "updated_at": created_at,
-                    "completed_at": None,
-                }
-                try:
-                    manifest = next(
-                        item
-                        for item in registry.discover_detectors()
-                        if item["id"] == detector_id
-                    )
-                    catalogue_provenance = snapshot.get("catalogue_provenance") or {}
-                    model_context = {
-                        "training_run_id": run_id,
-                        "training_child_id": f"{run_id}-{detector_id}",
-                        "model_id": model_id,
+        for detector_request in detector_requests:
+            detector_id = detector_request["detector_id"]
+            model_id = f"{run_id}-{detector_id}-{uuid.uuid4().hex[:8]}"
+            index = len(child_records)
+            record = {
+                "child_id": f"{run_id}-{detector_id}",
+                "detector_id": detector_id,
+                "model_id": model_id,
+                "task_id": None,
+                "status": "queued",
+                "parameters": detector_request["parameters"],
+                "snapshot_id": snapshot["snapshot_id"],
+                "validation_error": None,
+                "dispatch_error": None,
+                "failure_summary": None,
+                "result_metadata": None,
+                "model_status": None,
+                "created_at": created_at,
+                "started_at": None,
+                "updated_at": created_at,
+                "completed_at": None,
+            }
+            child_records.append(record)
+            dispatch_children.append(
+                {
+                    "record_index": index,
+                    "context_payload": {
+                        "run_id": run_id,
                         "detector_id": detector_id,
-                        "detector_version": manifest["version"],
-                        "dataset": (
-                            {
-                                **dataset,
-                                **(
-                                    {
-                                        "partition_checksum": catalogue_provenance.get(
-                                            "partition_checksum"
-                                        )
-                                    }
-                                    if dataset["source"] == "catalogue"
-                                    else {}
-                                ),
-                            }
-                        ),
-                        "snapshot": {
-                            "snapshot_id": snapshot["snapshot_id"],
-                            "snapshot_sha256": snapshot["sha256"],
-                        },
-                        "feature_identity": _model_feature_identity(snapshot),
-                        "training_parameters": detector_request["parameters"],
-                    }
-                    prepared = launchers[detector_id].prepare(
-                        snapshot,
-                        child_input_dir,
-                        detector_request["parameters"],
-                        {
-                            "run_id": run_id,
-                            "model_id": model_id,
-                            "dataset_id": dataset["dataset_id"],
-                            "model_context": model_context,
-                        },
-                    )
-                    prepared_children.append(
-                        {**record, "prepared": prepared, "record_index": len(child_records)}
-                    )
-                except TrainingRunValidationError as exc:
-                    if dataset["source"] == "existing":
-                        raise
-                    record["status"] = "validation_failed"
-                    record["validation_error"] = safe_failure_summary(exc)
-                    record["completed_at"] = created_at
-                child_records.append(record)
-        except TrainingRunValidationError as exc:
-            run_store.remove(run_id)
-            if snapshot is not None:
-                snapshot_store.remove(snapshot["snapshot_id"])
-            return jsonify({"error": str(exc)}), 400
-        except Exception:
-            run_store.remove(run_id)
-            if snapshot is not None:
-                snapshot_store.remove(snapshot["snapshot_id"])
-            raise
+                        "model_id": model_id,
+                        "snapshot_id": snapshot["snapshot_id"],
+                    },
+                }
+            )
 
         run = {
             "schema_version": 2 if dataset["source"] == "catalogue" else 1,
@@ -462,6 +357,7 @@ def create_training_runs_blueprint(
             "updated_at": created_at,
             "completed_at": None,
             "client_request_id": client_request_id,
+            "run_name": run_name,
             "dataset": (
                 {
                     **dataset,
@@ -483,10 +379,12 @@ def create_training_runs_blueprint(
         run_store.write(run)
 
         successful_dispatches = 0
-        for child in prepared_children:
+        for child in dispatch_children:
             index = child["record_index"]
             try:
-                task_id = launchers[child["detector_id"]].dispatch(child["prepared"])
+                task_id = training_task.apply_async(
+                    args=[child["context_payload"]]
+                ).id
                 def dispatched(stored, task_id=task_id, index=index):
                     normalized = normalize_run_record(stored)
                     normalized["children"][index]["task_id"] = task_id
@@ -525,10 +423,6 @@ def create_training_runs_blueprint(
                 return normalized
 
             run = run_store.update(run_id, no_dispatch)
-            if run["children"] and all(
-                child["status"] == "validation_failed" for child in run["children"]
-            ):
-                return jsonify({"error": "no detector passed dataset validation", **run}), 422
             return jsonify({"error": "no child training task could be dispatched", **run}), 503
         return jsonify(run), 202
 

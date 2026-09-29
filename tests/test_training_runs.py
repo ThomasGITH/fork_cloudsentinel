@@ -58,13 +58,14 @@ class TrainingRunApiTests(unittest.TestCase):
         self.dataset_id = "fixture-1"
         self.write_dataset()
 
-        self.cgnn_task = Mock()
-        self.cgnn_task.apply_async.return_value = types.SimpleNamespace(id="cgnn-task")
-        self.if_task = Mock()
-        self.if_task.apply_async.return_value = types.SimpleNamespace(id="if-task")
+        self.training_task = Mock()
+        self.training_task.apply_async.side_effect = lambda *, args: types.SimpleNamespace(
+            id=f"{args[0]['detector_id']}-task"
+        )
         tasks = types.ModuleType("tasks")
-        tasks.train_and_evaluate_task = self.cgnn_task
-        tasks.train_and_evaluate_isolation_forest_task = self.if_task
+        tasks.train_and_evaluate_task = Mock()
+        tasks.train_and_evaluate_isolation_forest_task = Mock()
+        tasks.train_detector_plugin_task = self.training_task
         cgnn, config = config_stubs()
         stubs = {
             "celery": celery_stub(),
@@ -135,7 +136,7 @@ class TrainingRunApiTests(unittest.TestCase):
         self.assertRegex(body["snapshot_id"], r"^snapshot_[0-9a-f]{32}$")
         child = body["children"][0]
         self.assertEqual(child["detector_id"], "isolation-forest")
-        self.assertEqual(child["task_id"], "if-task")
+        self.assertEqual(child["task_id"], "isolation-forest-task")
         self.assertEqual(child["parameters"]["n_estimators"], 25)
         self.assertEqual(child["parameters"]["contamination"], "auto")
         self.assertFalse(body["physical_parallelism_guaranteed"])
@@ -157,11 +158,7 @@ class TrainingRunApiTests(unittest.TestCase):
         source_train.write_text("99,99\n", encoding="utf-8")
         self.assertEqual((snapshot_directory / "train.csv").read_bytes(), original_snapshot_train)
         self.assertTrue((self.run_root / body["run_id"] / "run.json").is_file())
-        self.assertTrue(
-            (self.run_root / body["run_id"] / "children" / "isolation-forest" / "input" / "train.csv").is_file()
-        )
-        self.if_task.apply_async.assert_called_once()
-        self.cgnn_task.apply_async.assert_not_called()
+        self.training_task.apply_async.assert_called_once()
 
     def test_cgnn_run_uses_safe_direct_dispatch_with_preprocessed_inputs(self):
         response = self.client.post(
@@ -173,17 +170,14 @@ class TrainingRunApiTests(unittest.TestCase):
         body = response.get_json()
         child = body["children"][0]
         self.assertEqual(child["task_id"], "cgnn-task")
-        args = self.cgnn_task.apply_async.call_args.kwargs["args"]
-        train = np.asarray(args[0])
-        test = np.asarray(args[1])
-        self.assertEqual(train.shape, (4, 2))
-        self.assertEqual(test.shape, (3, 2))
-        self.assertEqual(np.asarray(args[2]).shape, (3, 1))
-        self.assertGreaterEqual(train.min(), 0.0)
-        self.assertLessEqual(train.max(), 1.0)
-        self.assertEqual(args[3]["data"]["epochs"], 3)
-        self.assertEqual(args[3]["data"]["orchestration_model_id"], child["model_id"])
-        self.if_task.apply_async.assert_not_called()
+        args = self.training_task.apply_async.call_args.kwargs["args"]
+        self.assertEqual(len(args), 1)
+        self.assertEqual(args[0]["run_id"], body["run_id"])
+        self.assertEqual(args[0]["detector_id"], "cgnn")
+        self.assertEqual(args[0]["model_id"], child["model_id"])
+        self.assertEqual(args[0]["snapshot_id"], body["snapshot_id"])
+        self.assertEqual(child["parameters"]["epochs"], 3)
+        self.training_task.apply_async.assert_called_once()
 
     def test_combined_run_keeps_parameters_and_child_inputs_separate(self):
         response = self.client.post(
@@ -207,12 +201,7 @@ class TrainingRunApiTests(unittest.TestCase):
         self.assertEqual(children["isolation-forest"]["parameters"]["n_estimators"], 30)
         self.assertNotIn("epochs", children["isolation-forest"]["parameters"])
         self.assertNotEqual(children["cgnn"]["model_id"], children["isolation-forest"]["model_id"])
-        for detector_id in children:
-            self.assertTrue(
-                (self.run_root / body["run_id"] / "children" / detector_id / "input").is_dir()
-            )
-        self.cgnn_task.apply_async.assert_called_once()
-        self.if_task.apply_async.assert_called_once()
+        self.assertEqual(self.training_task.apply_async.call_count, 2)
 
     def test_run_snapshot_and_model_identifiers_are_unique(self):
         responses = [
@@ -243,13 +232,15 @@ class TrainingRunApiTests(unittest.TestCase):
             self.payload(
                 [{"detector_id": "isolation-forest", "parameters": {"contamination": 0.1}}]
             ),
+            self.payload(
+                [{"detector_id": "isolation-forest", "parameters": {"n_jobs": 0}}]
+            ),
         )
         for payload in invalid_payloads:
             with self.subTest(payload=payload):
                 response = self.client.post("/training_runs", json=payload)
                 self.assertEqual(response.status_code, 400)
-        self.cgnn_task.apply_async.assert_not_called()
-        self.if_task.apply_async.assert_not_called()
+        self.training_task.apply_async.assert_not_called()
 
         malformed = self.client.post(
             "/training_runs", data="{", content_type="application/json"
@@ -266,8 +257,7 @@ class TrainingRunApiTests(unittest.TestCase):
         payload["dataset"]["dataset_id"] = "missing"
         response = self.client.post("/training_runs", json=payload)
         self.assertEqual(response.status_code, 400)
-        self.cgnn_task.apply_async.assert_not_called()
-        self.if_task.apply_async.assert_not_called()
+        self.training_task.apply_async.assert_not_called()
 
     def test_detector_data_validation_happens_before_any_dispatch(self):
         self.write_dataset(labels=[0, 1])
@@ -281,11 +271,14 @@ class TrainingRunApiTests(unittest.TestCase):
             ),
         )
         self.assertEqual(response.status_code, 400)
-        self.cgnn_task.apply_async.assert_not_called()
-        self.if_task.apply_async.assert_not_called()
+        self.training_task.apply_async.assert_not_called()
 
     def test_one_dispatch_failure_does_not_cancel_the_other_child(self):
-        self.cgnn_task.apply_async.side_effect = RuntimeError("broker rejected CGNN")
+        def dispatch(*, args):
+            if args[0]["detector_id"] == "cgnn":
+                raise RuntimeError("broker rejected CGNN")
+            return types.SimpleNamespace(id="isolation-forest-task")
+        self.training_task.apply_async.side_effect = dispatch
         response = self.client.post(
             "/training_runs",
             json=self.payload(
@@ -299,11 +292,11 @@ class TrainingRunApiTests(unittest.TestCase):
         children = {item["detector_id"]: item for item in response.get_json()["children"]}
         self.assertEqual(children["cgnn"]["status"], "dispatch_failed")
         self.assertIn("broker rejected", children["cgnn"]["dispatch_error"])
-        self.assertEqual(children["isolation-forest"]["task_id"], "if-task")
-        self.if_task.apply_async.assert_called_once()
+        self.assertEqual(children["isolation-forest"]["task_id"], "isolation-forest-task")
+        self.assertEqual(self.training_task.apply_async.call_count, 2)
 
     def test_no_successful_dispatch_returns_service_error_and_preserves_run(self):
-        self.if_task.apply_async.side_effect = RuntimeError("broker unavailable")
+        self.training_task.apply_async.side_effect = RuntimeError("broker unavailable")
         response = self.client.post(
             "/training_runs",
             json=self.payload([{"detector_id": "isolation-forest", "parameters": {}}]),
@@ -325,7 +318,9 @@ class TrainingRunApiTests(unittest.TestCase):
         ).get_json()
         tasks = {
             "cgnn-task": types.SimpleNamespace(state="SUCCESS", info="Training Successful"),
-            "if-task": types.SimpleNamespace(state="FAILURE", info=RuntimeError("failed")),
+            "isolation-forest-task": types.SimpleNamespace(
+                state="FAILURE", info=RuntimeError("failed")
+            ),
         }
         self.module.app.config["TRAINING_RUN_STATUS_READER"] = tasks.__getitem__
 

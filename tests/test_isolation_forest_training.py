@@ -122,6 +122,7 @@ class IsolationForestTrainingRouteTests(unittest.TestCase):
         tasks = types.ModuleType("tasks")
         tasks.train_and_evaluate_task = Mock()
         tasks.train_and_evaluate_isolation_forest_task = self.submitted_task
+        tasks.train_detector_plugin_task = Mock()
         cgnn, config = config_stubs()
         stubs = {
             "celery": celery_stub(),
@@ -282,18 +283,15 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
                 "model_id": "model-1",
             },
         ) as promotion:
-            with patch.object(self.module, "mark_child_running") as mark_running, patch.object(
-                self.module, "record_successful_model"
-            ) as record_model:
-                result = self.module.train_and_evaluate_isolation_forest_task(
-                    task_context,
-                    [[0.0, 0.0], [0.1, 0.1]],
-                    [[2.0, 2.0]],
-                    [1],
-                    {"n_estimators": 100},
-                    "model-1",
-                    orchestration_context,
-                )
+            result = self.module.train_and_evaluate_isolation_forest_task(
+                task_context,
+                [[0.0, 0.0], [0.1, 0.1]],
+                [[2.0, 2.0]],
+                [1],
+                {"n_estimators": 100},
+                "model-1",
+                orchestration_context,
+            )
 
         resolver.assert_called_once_with("isolation-forest")
         adapter.train.assert_called_once()
@@ -302,12 +300,6 @@ class IsolationForestTrainingTaskTests(unittest.TestCase):
         self.assertEqual(adapter.train.call_args.args[1], expected_dir)
         self.assertEqual(adapter.evaluate.call_args.args[2], expected_dir)
         promotion.assert_called_once_with(expected_dir, "model-1")
-        mark_running.assert_called_once_with(orchestration_context)
-        record_model.assert_called_once_with(
-            orchestration_context,
-            evaluation=evaluation,
-            promotion=result["promotion"],
-        )
         self.assertEqual(result["artifact_dir"], "isolation-forest/model-1")
         self.assertEqual(result["promotion"]["status"], "available")
         self.assertEqual(
