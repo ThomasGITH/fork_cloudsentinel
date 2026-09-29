@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: monitoring-project
-        image: jojojochem/monitoring_project:dc-ui-1
+        image: jojojochem/monitoring_project:models-ui-1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000

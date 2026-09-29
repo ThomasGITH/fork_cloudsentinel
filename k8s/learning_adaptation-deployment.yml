@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:dc-infra-1
+        image: jojojochem/learning_adaptation:models-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
