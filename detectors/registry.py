@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from importlib import import_module
+import json
 from pathlib import Path
 import re
 from typing import Any
@@ -85,6 +86,72 @@ def _validate_default(parameter_name: str, metadata: dict[str, Any], path: Path)
         )
 
 
+def _validate_parameter_constraints(
+    parameter_name: str, metadata: dict[str, Any], path: Path
+) -> None:
+    parameter_type = metadata["type"]
+    if "advanced" in metadata and not isinstance(metadata["advanced"], bool):
+        raise _fail(path, f"training parameter '{parameter_name}' advanced must be boolean")
+
+    numeric = parameter_type in {"integer", "number"}
+    bounds = ("minimum", "exclusive_minimum", "maximum", "exclusive_maximum")
+    for field in bounds:
+        if field not in metadata:
+            continue
+        value = metadata[field]
+        if not numeric or not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise _fail(
+                path,
+                f"training parameter '{parameter_name}' {field} requires a numeric parameter",
+            )
+    if "minimum" in metadata and "exclusive_minimum" in metadata:
+        raise _fail(path, f"training parameter '{parameter_name}' has two lower bounds")
+    if "maximum" in metadata and "exclusive_maximum" in metadata:
+        raise _fail(path, f"training parameter '{parameter_name}' has two upper bounds")
+    lower = metadata.get("minimum", metadata.get("exclusive_minimum"))
+    upper = metadata.get("maximum", metadata.get("exclusive_maximum"))
+    if lower is not None and upper is not None and (
+        lower > upper
+        or (
+            lower == upper
+            and ("exclusive_minimum" in metadata or "exclusive_maximum" in metadata)
+        )
+    ):
+        raise _fail(path, f"training parameter '{parameter_name}' has inconsistent bounds")
+
+    allowed = metadata.get("allowed_values")
+    if allowed is not None:
+        if not isinstance(allowed, list) or not allowed:
+            raise _fail(
+                path, f"training parameter '{parameter_name}' allowed_values must be a non-empty list"
+            )
+        if len({json.dumps(item, sort_keys=True) for item in allowed}) != len(allowed):
+            raise _fail(path, f"training parameter '{parameter_name}' allowed_values has duplicates")
+        probe = {**metadata, "nullable": metadata.get("nullable", False)}
+        for item in allowed:
+            probe["default"] = item
+            _validate_default(parameter_name, probe, path)
+        if metadata["default"] not in allowed:
+            raise _fail(
+                path, f"training parameter '{parameter_name}' default is not in allowed_values"
+            )
+
+    candidates = [("default", metadata["default"])]
+    if allowed is not None:
+        candidates.extend(("allowed value", item) for item in allowed)
+    for candidate_name, candidate in candidates:
+        if candidate is None or not numeric:
+            continue
+        if "minimum" in metadata and candidate < metadata["minimum"]:
+            raise _fail(path, f"training parameter '{parameter_name}' {candidate_name} is below minimum")
+        if "exclusive_minimum" in metadata and candidate <= metadata["exclusive_minimum"]:
+            raise _fail(path, f"training parameter '{parameter_name}' {candidate_name} is below exclusive_minimum")
+        if "maximum" in metadata and candidate > metadata["maximum"]:
+            raise _fail(path, f"training parameter '{parameter_name}' {candidate_name} is above maximum")
+        if "exclusive_maximum" in metadata and candidate >= metadata["exclusive_maximum"]:
+            raise _fail(path, f"training parameter '{parameter_name}' {candidate_name} is above exclusive_maximum")
+
+
 def validate_manifest(manifest: Any, path: Path) -> dict[str, Any]:
     """Validate a decoded manifest and return it unchanged."""
     if not isinstance(manifest, dict):
@@ -144,6 +211,7 @@ def validate_manifest(manifest: Any, path: Path) -> dict[str, Any]:
         if "nullable" in metadata and not isinstance(metadata["nullable"], bool):
             raise _fail(path, f"training parameter '{parameter_name}' nullable must be boolean")
         _validate_default(parameter_name, metadata, path)
+        _validate_parameter_constraints(parameter_name, metadata, path)
 
     return manifest
 

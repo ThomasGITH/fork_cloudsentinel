@@ -30,30 +30,41 @@ training_parameters:
   n_estimators:
     type: integer
     default: 100
+    minimum: 1
+    advanced: false
     description: Number of isolation trees.
   max_samples:
     type: string
     default: auto
+    allowed_values: [auto]
+    advanced: true
     description: Number of training observations sampled for each tree.
   contamination:
     type: string
     default: auto
+    allowed_values: [auto]
+    advanced: true
     description: Automatic strategy for determining the binary anomaly threshold.
   max_features:
     type: number
     default: 1.0
+    exclusive_minimum: 0
+    maximum: 1.0
+    advanced: true
     description: Fraction of features sampled for each tree.
   bootstrap:
     type: boolean
     default: false
+    advanced: true
     description: Whether individual trees use bootstrap samples.
   random_state:
     type: integer
     default: 42
+    advanced: true
     description: Seed for deterministic model construction.
   n_jobs:
     type: integer
     default: 1
-    description: Number of parallel jobs used by Isolation Forest.
+    advanced: true
+    description: Non-zero number of parallel jobs used by Isolation Forest; negative values follow scikit-learn semantics.
 entry_point: detectors.isolation_forest.adapter:IsolationForestAdapter
-

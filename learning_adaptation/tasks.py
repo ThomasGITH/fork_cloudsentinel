@@ -8,6 +8,10 @@ import traceback
 from pathlib import Path
 import numpy as np
 from celery import Celery, Task
+try:
+    from celery.signals import task_failure
+except (ImportError, ModuleNotFoundError):  # Lightweight unit-test Celery doubles.
+    task_failure = None
 from detectors import registry
 from detectors.isolation_forest.training_request import validate_model_id
 try:
@@ -24,6 +28,23 @@ except ModuleNotFoundError as exc:  # The service image copies this module besid
     from isolation_forest_promotion import (
         IsolationForestPromotionError,
         promote_isolation_forest_model,
+    )
+try:
+    from learning_adaptation.training_lifecycle import (
+        mark_child_failed,
+        mark_child_running,
+        record_successful_model,
+    )
+except ModuleNotFoundError as exc:
+    if exc.name not in {
+        "learning_adaptation",
+        "learning_adaptation.training_lifecycle",
+    }:
+        raise
+    from training_lifecycle import (
+        mark_child_failed,
+        mark_child_running,
+        record_successful_model,
     )
 
 # Configure and initialize Celery
@@ -75,6 +96,27 @@ ISOLATION_FOREST_EVALUATION_KEYS = (
 )
 
 
+def _failure_context(task_name, args):
+    if task_name and task_name.endswith("train_and_evaluate_task"):
+        if len(args) >= 4 and isinstance(args[3], dict):
+            return args[3].get("data", {}).get("orchestration_context")
+    if task_name and task_name.endswith("train_and_evaluate_isolation_forest_task"):
+        if len(args) >= 6 and isinstance(args[5], dict):
+            return args[5]
+    return None
+
+
+def _persist_terminal_task_failure(sender=None, exception=None, args=None, **_kwargs):
+    """Celery emits task_failure only after retry handling reaches terminal failure."""
+    context = _failure_context(getattr(sender, "name", None), args or ())
+    if context:
+        mark_child_failed(context, exception)
+
+
+if task_failure is not None:
+    task_failure.connect(_persist_terminal_task_failure, weak=False)
+
+
 @celery.task(bind=True)
 def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, train_info):
     """
@@ -95,6 +137,9 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
     """
     try:
         logger.info("Starting the training process.")
+
+        model_context = train_info.get("data", {}).get("orchestration_context")
+        mark_child_running(model_context)
 
         adapter = registry.get_adapter("cgnn")
 
@@ -129,7 +174,7 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
         logger.info("Starting the evaluation process.")
 
         # Evaluate the model
-        adapter.evaluate(
+        evaluation_result = adapter.evaluate(
             model_config,
             np.array(train_array, dtype=np.float32),
             np.array(test_array, dtype=np.float32),
@@ -162,6 +207,36 @@ def train_and_evaluate_task(self, train_array, test_array, anomaly_label_array, 
         with open(model_dir / "model_params.json", "w") as f:
             json.dump(train_info['data'], f, indent=2)
 
+        if model_context:
+            required_artifacts = (
+                model_dir / "model.pt",
+                model_dir / "model_config.json",
+                model_dir / "model_evaluation.json",
+            )
+            missing_artifacts = [
+                path.name for path in required_artifacts if not path.is_file()
+            ]
+            if missing_artifacts:
+                raise RuntimeError(
+                    "CGNN training completed without required artifact(s): "
+                    + ", ".join(missing_artifacts)
+                )
+
+        evaluation = evaluation_result if isinstance(evaluation_result, dict) else {}
+        evaluation_path = model_dir / "model_evaluation.json"
+        if evaluation_path.is_file():
+            try:
+                stored_evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
+                if isinstance(stored_evaluation, dict):
+                    evaluation = stored_evaluation
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                logger.warning("CGNN evaluation metadata could not be read for catalogue record")
+        record_successful_model(
+            model_context,
+            evaluation=evaluation,
+            promotion={"status": "not_promoted"},
+        )
+
         return "Training Successful"
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -179,11 +254,14 @@ def train_and_evaluate_isolation_forest_task(
     anomaly_label_array,
     training_parameters,
     model_id,
+    training_context=None,
 ):
     """Train and evaluate one Isolation Forest model through its plugin adapter."""
     model_id = validate_model_id(model_id)
     artifact_dir = ISOLATION_FOREST_ARTIFACT_ROOT / model_id
     adapter = registry.get_adapter("isolation-forest")
+
+    mark_child_running(training_context)
 
     self.update_state(state='INITIATING', meta='Initiating Isolation Forest training')
     self.update_state(state='TRAINING', meta='Training the Isolation Forest model')
@@ -205,6 +283,12 @@ def train_and_evaluate_isolation_forest_task(
         state='PROMOTING', meta='Promoting the Isolation Forest model'
     )
     promotion = promote_isolation_forest_model(artifact_dir, model_id)
+
+    record_successful_model(
+        training_context,
+        evaluation=compact_evaluation,
+        promotion=promotion,
+    )
 
     try:
         shutil.rmtree(artifact_dir)

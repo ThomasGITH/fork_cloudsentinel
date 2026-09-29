@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
+import fcntl
 from typing import Any
 import uuid
 
@@ -257,6 +258,23 @@ class TrainingRunStore:
     def write(self, run: dict[str, Any]) -> None:
         atomic_write_json(self.directory(run["run_id"]) / "run.json", run)
 
+    def update(self, run_id: str, updater: Any) -> dict[str, Any]:
+        """Apply one read/modify/write operation while holding a per-run lock."""
+        directory = self.directory(run_id)
+        directory.mkdir(parents=True, exist_ok=True)
+        lock_path = directory / ".run.lock"
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                run = self.read(run_id)
+                updated = updater(run)
+                if updated is None:
+                    updated = run
+                self.write(updated)
+                return updated
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
     def read(self, run_id: str) -> dict[str, Any]:
         path = self.directory(run_id) / "run.json"
         try:
@@ -268,6 +286,15 @@ class TrainingRunStore:
         if not isinstance(value, dict):
             raise RuntimeError(f"training run {run_id!r} is not a JSON object")
         return value
+
+    def identifiers(self) -> list[str]:
+        if not self.root.is_dir():
+            return []
+        return sorted(
+            path.name
+            for path in self.root.iterdir()
+            if path.is_dir() and SAFE_IDENTIFIER.fullmatch(path.name)
+        )
 
     def remove(self, run_id: str) -> None:
         directory = self.directory(run_id)

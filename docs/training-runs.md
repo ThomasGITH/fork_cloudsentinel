@@ -1,15 +1,56 @@
 # Generic training runs
 
 `POST /training_runs` starts independent detector-specific Celery tasks for one
-existing dataset. `GET /training_runs/{run_id}` returns the stored run metadata
-and current child task states. The legacy CGNN and Isolation Forest endpoints
-remain available.
+dataset. `GET /training_runs/{run_id}` returns the durable run record, reconciled
+with current Celery state when that state is still available. The legacy CGNN
+and Isolation Forest endpoints remain available.
+
+`GET /training_runs` is the compact history endpoint. It accepts `page`
+(default `1`), `page_size` (default `20`, maximum `100`), `status`,
+`detector_id`, `dataset_id`, `source`, and `sort=newest|oldest`. It omits task
+IDs, filesystem paths, broker information, stack traces, and large results. A
+damaged run record is counted in `skipped_corrupt_records` and does not make the
+whole history unavailable.
+
+Generic TrainingRun children persist `queued`, `running`, `completed`,
+`failed`, `dispatch_failed`, or `validation_failed`, including lifecycle
+timestamps and compact failure/result metadata. Parent state is recalculated
+from all children as `queued`, `running`, `completed`, `partial_success`, or
+`failed`. Updates use a per-run filesystem lock and atomic replacement. Stored
+terminal states take precedence over ambiguous Celery `PENDING` results, which
+also protects history after Redis result expiry. A task failure is written when
+Celery reaches terminal failure; no scheduler or status sweeper is introduced.
 
 The local implementation stores immutable source snapshots below
 `DATASET_SNAPSHOT_STORAGE_ROOT` and run metadata and child inputs below
 `TRAINING_RUN_STORAGE_ROOT`. Existing datasets are read from
 `EXISTING_DATASETS_ROOT`. Defaults point at directories beside the
 learning-adaptation application.
+
+## Saved models
+
+Successful generic TrainingRun children create an artifact-independent model
+record below `MODEL_CATALOGUE_STORAGE_ROOT`. Its default is a `models`
+directory beside `TRAINING_RUN_STORAGE_ROOT`. The record retains detector,
+dataset/version/partition, snapshot, feature-order, parameter, compact
+evaluation, and promotion provenance. It never stores model bytes, worker
+paths, temporary directory names, service URLs, or Celery task IDs.
+
+`GET /models` supports `page`, `page_size` (maximum `100`), `detector_id`,
+`status`, `dataset_id`, `training_run_id`, and `sort=newest|oldest`.
+`GET /models/{model_id}` returns the complete safe metadata projection and
+returns `404` for an unknown model. Corrupt records are isolated from list
+responses in the same way as corrupt run records.
+
+An Isolation Forest record is created only after its binary promotion has been
+confirmed and records `promotion.status=promoted`. A CGNN record is created
+after the training/evaluation artifacts exist, initially with
+`promotion.status=not_promoted`; the existing `/save_to_detection_module` flow
+updates it to `promoted` after the detection service accepts the model. The
+catalogue record survives subsequent cleanup of temporary artifacts. Failed,
+dispatch-failed, and validation-failed children do not create available model
+records. Repeated lifecycle delivery for the same model and provenance reuses
+the first record rather than changing its identity or timestamps.
 
 The API validates and prepares every selected detector before dispatching the
 first task. Dispatches remain independent: a dispatch or runtime failure for
@@ -52,3 +93,14 @@ that child while compatible siblings are dispatched. CGNN feature importance
 is unavailable for catalogue data because arbitrary PromQL feature names do
 not provide a trustworthy container-by-metric mapping; legacy CGNN behavior is
 unchanged.
+
+First-version limitations: records created before this lifecycle was deployed
+remain readable but are not retroactively turned into Saved Model records.
+The detector-specific legacy training routes remain backward compatible but do
+not create model-catalogue records because they have no generic TrainingRun or
+snapshot provenance.
+Without a periodic reconciler, a worker that is forcibly terminated without a
+Celery terminal failure event may remain `running` until a later detail/history
+request can reconcile it with a retained Celery result. The file locks protect
+processes sharing one filesystem; multi-host correctness still depends on the
+shared filesystem's locking semantics.

@@ -17,6 +17,13 @@ Schema version 1 requires:
 - `entry_point`
 
 Each training parameter has `type`, `default`, and `description`. Nullable defaults must explicitly set `nullable: true`.
+Optional UI-facing constraints are `minimum`, `exclusive_minimum`, `maximum`,
+`exclusive_maximum`, `allowed_values`, and `advanced`. Discovery validates
+these values without importing the adapter. The Isolation Forest manifest now
+advertises only `auto` for `max_samples` and `contamination`, matching the
+implemented request validator, and marks implementation-level controls as
+advanced. A valid manifest still does not guarantee a generic training path:
+TrainingRun separately requires an explicit detector launcher.
 
 `GET /detectors` returns:
 

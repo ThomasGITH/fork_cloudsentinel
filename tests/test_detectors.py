@@ -14,6 +14,7 @@ from detectors.registry import ManifestValidationError, discover_detectors, load
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CGNN_MANIFEST = REPOSITORY_ROOT / "detectors" / "cgnn" / "manifest.yaml"
+IF_MANIFEST = REPOSITORY_ROOT / "detectors" / "isolation_forest" / "manifest.yaml"
 
 
 class DetectorRegistryTests(unittest.TestCase):
@@ -74,6 +75,40 @@ class DetectorRegistryTests(unittest.TestCase):
             invalid["training_parameters"]["epochs"]["default"] = "one"
             path = self.write_manifest(Path(directory), "invalid", invalid)
             with self.assertRaisesRegex(ManifestValidationError, "default does not match"):
+                load_manifest(path)
+
+    def test_isolation_forest_manifest_exposes_runtime_constraints(self):
+        manifest = load_manifest(IF_MANIFEST)
+        parameters = manifest["training_parameters"]
+        self.assertEqual(parameters["max_samples"]["allowed_values"], ["auto"])
+        self.assertEqual(parameters["contamination"]["allowed_values"], ["auto"])
+        self.assertEqual(parameters["n_estimators"]["minimum"], 1)
+        self.assertEqual(parameters["max_features"]["exclusive_minimum"], 0)
+        self.assertEqual(parameters["max_features"]["maximum"], 1.0)
+        self.assertTrue(parameters["n_jobs"]["advanced"])
+
+    def test_inconsistent_parameter_constraints_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            invalid = copy.deepcopy(self.valid_manifest)
+            invalid["training_parameters"]["epochs"].update(
+                {"minimum": 5, "maximum": 2}
+            )
+            path = self.write_manifest(Path(directory), "invalid", invalid)
+            with self.assertRaisesRegex(ManifestValidationError, "inconsistent bounds"):
+                load_manifest(path)
+
+        with tempfile.TemporaryDirectory() as directory:
+            invalid = copy.deepcopy(self.valid_manifest)
+            invalid["training_parameters"]["comment"]["allowed_values"] = ["note"]
+            path = self.write_manifest(Path(directory), "invalid", invalid)
+            with self.assertRaisesRegex(ManifestValidationError, "default is not in allowed_values"):
+                load_manifest(path)
+
+        with tempfile.TemporaryDirectory() as directory:
+            invalid = copy.deepcopy(self.valid_manifest)
+            invalid["training_parameters"]["epochs"]["exclusive_minimum"] = 0
+            path = self.write_manifest(Path(directory), "invalid", invalid)
+            with self.assertRaisesRegex(ManifestValidationError, "two lower bounds"):
                 load_manifest(path)
 
     def test_duplicate_detector_ids_are_rejected(self):

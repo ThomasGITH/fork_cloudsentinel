@@ -9,7 +9,7 @@ import sys
 import tempfile
 import types
 import unittest
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import Mock, patch
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -257,33 +257,71 @@ class CGNNServiceIntegrationTests(unittest.TestCase):
             task_context = types.SimpleNamespace(update_state=Mock(), retry=Mock())
             model_config = {"dataset": "sample", "id": "run-1", "feature_importance": False}
             train_result = (model_config, None)
-            adapter = types.SimpleNamespace(
-                train=Mock(return_value=train_result),
-                evaluate=Mock(return_value="evaluation"),
-            )
-            with (
-                patch.object(module.registry, "get_adapter", return_value=adapter) as get_adapter,
-                patch.object(module.os, "makedirs"),
-                patch("builtins.open", mock_open()),
-            ):
-                result = module.train_and_evaluate_task(
-                    task_context,
-                    [[1.0]],
-                    [[2.0]],
-                    [[0.0]],
-                    {"data": {"dataset": "sample"}},
+            orchestration_context = {
+                "training_run_id": "run-one",
+                "detector_id": "cgnn",
+            }
+            with tempfile.TemporaryDirectory() as directory:
+                model_dir = Path(directory) / "sample_run-1"
+
+                def train(*_args, **_kwargs):
+                    model_dir.mkdir(parents=True)
+                    (model_dir / "model.pt").write_bytes(b"model")
+                    (model_dir / "model_config.json").write_text("{}", encoding="utf-8")
+                    return train_result
+
+                def evaluate(*_args, **_kwargs):
+                    (model_dir / "model_evaluation.json").write_text("{}", encoding="utf-8")
+                    return "evaluation"
+
+                adapter = types.SimpleNamespace(
+                    train=Mock(side_effect=train),
+                    evaluate=Mock(side_effect=evaluate),
                 )
+                with (
+                    patch.object(module.registry, "get_adapter", return_value=adapter) as get_adapter,
+                    patch.object(module, "TRAINED_MODELS_TEMP_ROOT", Path(directory)),
+                    patch.object(module, "mark_child_running") as mark_running,
+                    patch.object(module, "record_successful_model") as record_model,
+                ):
+                    result = module.train_and_evaluate_task(
+                        task_context,
+                        [[1.0]],
+                        [[2.0]],
+                        [[0.0]],
+                        {
+                            "data": {
+                                "dataset": "sample",
+                                "orchestration_context": orchestration_context,
+                            }
+                        },
+                    )
 
         self.assertEqual(result, "Training Successful")
         get_adapter.assert_called_once_with("cgnn")
         adapter.train.assert_called_once()
         adapter.evaluate.assert_called_once()
-        self.assertEqual(adapter.train.call_args.args[0], {"dataset": "sample"})
+        self.assertEqual(adapter.train.call_args.args[0]["dataset"], "sample")
         self.assertIs(adapter.evaluate.call_args.args[0], model_config)
         self.assertIs(
             adapter.train.call_args.kwargs["progress_callback"],
             adapter.evaluate.call_args.kwargs["progress_callback"],
         )
+        mark_running.assert_called_once_with(orchestration_context)
+        record_model.assert_called_once_with(
+            orchestration_context,
+            evaluation={},
+            promotion={"status": "not_promoted"},
+        )
+
+        with patch.object(module, "mark_child_failed") as mark_failed:
+            module._persist_terminal_task_failure(
+                sender=types.SimpleNamespace(name="tasks.train_and_evaluate_task"),
+                exception=RuntimeError("training failed"),
+                args=([], [], [], {"data": {"orchestration_context": orchestration_context}}),
+            )
+        mark_failed.assert_called_once()
+        self.assertIs(mark_failed.call_args.args[0], orchestration_context)
 
     def test_detection_flow_calls_adapter_predict(self):
         config_stub = types.ModuleType("config")

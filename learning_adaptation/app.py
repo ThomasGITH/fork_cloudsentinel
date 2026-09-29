@@ -38,6 +38,15 @@ except ModuleNotFoundError as exc:  # The service image copies modules into /app
         configure_training_run_defaults,
         create_training_runs_blueprint,
     )
+try:
+    from learning_adaptation.training_lifecycle import mark_cgnn_promoted
+except ModuleNotFoundError as exc:
+    if exc.name not in {
+        "learning_adaptation",
+        "learning_adaptation.training_lifecycle",
+    }:
+        raise
+    from training_lifecycle import mark_cgnn_promoted
 
 # Initialize Flask app and configure CORS
 app = Flask(__name__)
@@ -262,6 +271,13 @@ def save_to_detection_module():
                                  files={'model': model_json}, data={'model_info': model_info_json})
 
         if response.status_code == 200:
+            orchestration_model_id = (
+                model_info["data"][next(iter(model_info["data"]))]
+                .get("model_params", {})
+                .get("orchestration_model_id")
+            )
+            if orchestration_model_id:
+                mark_cgnn_promoted(orchestration_model_id)
             shutil.rmtree(path)
             logger.info(f"Model saved to detection module and local path {path} deleted")
         else:

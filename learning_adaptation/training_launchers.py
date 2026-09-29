@@ -96,6 +96,7 @@ class CGNNTrainingLauncher:
         details.update(parameters)
         details["training_run_id"] = context["run_id"]
         details["orchestration_model_id"] = context["model_id"]
+        details["orchestration_context"] = context["model_context"]
         train_info = {"data": details}
         return PreparedTraining(
             self.task,
@@ -143,6 +144,7 @@ class IsolationForestTrainingLauncher:
                 labels.tolist(),
                 parameters,
                 context["model_id"],
+                context["model_context"],
             ],
         )
 
