@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Detector | Models | CloudSentinel{% endblock %}
+{% block extra_head %}<link href="{% static 'css/models.css' %}" rel="stylesheet">{% endblock %}
+{% block content %}<main class="models-page container-fluid py-3">
+  <a href="{% url 'models_overview' %}?tab=detectors" class="btn btn-link px-0">← Detector Library</a>
+  {% if error %}<div class="alert alert-danger"><h1 class="h4">Detector unavailable</h1><p>{{ error }}</p>{% if retryable %}<a href="{{ request.path }}" class="btn btn-outline-danger">Retry</a>{% endif %}</div>{% else %}
+  <div class="models-hero mb-4"><div><h1>{{ detector.name }}</h1><p class="models-id mb-2">{{ detector.id }} · version {{ detector.version }}</p><p class="models-muted mb-0">{{ detector.description }}</p></div>{% if detector.training.trainable %}<a class="btn btn-primary" href="{% url 'models_train' %}?detector={{ detector.id|urlencode }}">Train with this detector</a>{% endif %}</div>
+  <div class="row g-4"><div class="col-lg-5"><section class="card models-card h-100"><div class="card-body"><h2 class="h5">Capabilities and input</h2><dl class="models-definition"><dt>Modalities</dt><dd>{{ detector.supported_modalities|join:", " }}</dd><dt>Trainable</dt><dd>{{ detector.training.trainable|yesno:"Yes,No" }}</dd><dt>Protocol</dt><dd>{{ detector.training.protocol|default:"—" }}</dd><dt>Input profile</dt><dd>{{ detector.training.input_profile|default:"—" }}</dd></dl><h3 class="h6 mt-4">Input requirements</h3><pre class="small bg-light rounded p-3 mb-0 text-wrap">{{ detector.input_requirements }}</pre></div></section></div>
+  <div class="col-lg-7"><section class="card models-card"><div class="card-body"><h2 class="h5">Training parameters</h2><h3 class="h6 mt-4">Basic</h3>{% include "config_app/models/_parameter_table.html" with parameters=detector.basic_parameters %}{% if detector.advanced_parameters %}<details class="mt-4"><summary class="fw-bold">Advanced parameters</summary>{% include "config_app/models/_parameter_table.html" with parameters=detector.advanced_parameters %}</details>{% endif %}</div></section></div></div>
+  {% endif %}
+</main>{% endblock %}

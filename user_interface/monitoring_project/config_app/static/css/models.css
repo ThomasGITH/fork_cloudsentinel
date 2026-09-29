@@ -1,0 +1,26 @@
+.models-page { width: min(1500px, 100%); margin: 0 auto; }
+.models-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.models-muted { color:#607080; }
+.models-card { border:0; box-shadow:0 2px 12px rgba(25,47,68,.08); }
+.models-id { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; overflow-wrap:anywhere; }
+.models-tabs .nav-link { color:#334e68; }
+.models-tabs .nav-link.active { color:#004080; font-weight:700; }
+.model-status { display:inline-block; padding:.3rem .55rem; border-radius:999px; font-size:.78rem; font-weight:700; text-transform:capitalize; }
+.model-status-queued { background:#e9ecef; color:#34404b; }
+.model-status-running { background:#fff1c2; color:#694f00; }
+.model-status-completed,.model-status-available,.model-status-promoted { background:#d7f3df; color:#17602d; }
+.model-status-partial_success,.model-status-validation_failed { background:#ffe8b5; color:#684600; }
+.model-status-failed,.model-status-dispatch_failed,.model-status-promotion_failed { background:#f8d7da; color:#842029; }
+.models-definition { display:grid; grid-template-columns:minmax(160px,.35fr) 1fr; gap:.55rem 1rem; }
+.models-definition dt { color:#5d6b78; }
+.models-definition dd { overflow-wrap:anywhere; }
+.models-checksum { display:inline-block; max-width:22rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
+.wizard-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; }
+.wizard-step { border-top:4px solid #ced4da; padding:.65rem .25rem; color:#607080; }
+.wizard-step.active { border-color:#004080; color:#004080; font-weight:700; }
+.wizard-step.complete { border-color:#198754; color:#17602d; }
+.detector-card { height:100%; border-left:4px solid #004080; }
+.parameter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; }
+.parameter-field { border:1px solid #e1e6ea; border-radius:.35rem; padding:1rem; }
+.safe-error { white-space:pre-wrap; overflow-wrap:anywhere; }
+@media (max-width:767.98px) { .models-definition { grid-template-columns:1fr; gap:.1rem; } .models-definition dd { margin-bottom:.8rem; } .wizard-steps { grid-template-columns:1fr 1fr; } .models-table td,.models-table th { min-width:9rem; } }

@@ -21,6 +21,14 @@ from .views.data_catalogue import (
     data_catalogue_partition,
     data_catalogue_preview,
 )
+from .views.models_ui import (
+    detector_detail,
+    models_overview,
+    saved_model_detail,
+    train_models,
+    training_run_detail,
+    training_run_status,
+)
 
 urlpatterns = [
     path('', home, name='home'),
@@ -36,6 +44,13 @@ urlpatterns = [
     path('data-catalogue/<str:dataset_id>/versions/<int:version>/derive-labels/', data_catalogue_derive_labels, name='data_catalogue_derive_labels'),
     path('data-catalogue/<str:dataset_id>/versions/<int:version>/partitions/', data_catalogue_partition, name='data_catalogue_partition'),
     path('data-catalogue/<str:dataset_id>/', data_catalogue_detail, name='data_catalogue_detail'),
+
+    path('models/', models_overview, name='models_overview'),
+    path('models/detectors/<str:detector_id>/', detector_detail, name='models_detector_detail'),
+    path('models/train/', train_models, name='models_train'),
+    path('models/training-runs/<str:run_id>/', training_run_detail, name='models_training_run_detail'),
+    path('models/training-runs/<str:run_id>/status/', training_run_status, name='models_training_run_status'),
+    path('models/saved/<str:model_id>/', saved_model_detail, name='models_saved_detail'),
 
     path('config/', config, name='config'),
     path('config-cgnn/', config_cgnn, name='config_cgnn'),

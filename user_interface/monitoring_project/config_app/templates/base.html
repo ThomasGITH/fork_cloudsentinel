@@ -32,18 +32,13 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMain">
                         <li><a class="dropdown-item{% if request.resolver_match.url_name == 'home' %} active{% endif %}" href="{% url 'home' %}">Home</a></li>
                         <li><a class="dropdown-item{% if request.path|slice:':15' == '/data-catalogue' %} active{% endif %}" href="{% url 'data_catalogue_overview' %}">Data Catalogue</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}" href="{% url 'models_overview' %}">Models</a></li>
                         <li class="dropdown-submenu">
                             <a class="dropdown-item dropdown-toggle" href="#">Monitoring</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'monitoring_overview' %}">Monitoring Dashboard</a></li>
                                 <li><a class="dropdown-item" href="{% url 'task_manager' %}">Manage Monitoring Tasks</a></li>
                                 <li><a class="dropdown-item" href="{% url 'monitoring' %}">Setup Monitoring</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="#">Train Algorithms</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'train_cgnn' %}">Train CGNN</a></li>
                             </ul>
                         </li>
                         <li class="dropdown-submenu">
