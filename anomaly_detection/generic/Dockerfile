@@ -11,8 +11,12 @@ WORKDIR /app
 # Build from the repository root:
 # docker build -f anomaly_detection/generic/Dockerfile \
 #   -t jojojochem/anomaly_detection_generic:generic-detection-1 .
+ARG PYTORCH_VERSION=2.2.2
 COPY anomaly_detection/generic/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN python -m pip install --no-cache-dir -r /tmp/requirements.txt \
+    && python -m pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cpu \
+        "torch==${PYTORCH_VERSION}+cpu"
 
 COPY pyproject.toml /tmp/cloudsentinel-detectors/pyproject.toml
 COPY detectors /tmp/cloudsentinel-detectors/detectors

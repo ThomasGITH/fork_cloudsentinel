@@ -27,8 +27,30 @@ docker build \
 ```
 
 The generic image contains the common CPU runtime, registry, built-in adapters,
-and CGNN modules. External LOF code is loaded from the Plugin PVC and is not
-baked into this image.
+and CGNN modules. It installs `torch==2.2.2+cpu` from the official PyTorch CPU
+wheel index (`https://download.pytorch.org/whl/cpu`). The normal generic
+requirements deliberately do not contain `torch`, so a later PyPI install
+cannot replace the CPU wheel with a CUDA dependency set. This matches the
+`2.2.2` release used by the learning/CGNN code while retaining CPU state-dict
+loading and inference. External LOF code is loaded from the Plugin PVC and is
+not baked into this image.
+
+To build the generic image directly in Minikube and avoid a separate image-load
+step, use:
+
+```bash
+minikube image build \
+  -f anomaly_detection/generic/Dockerfile \
+  -t jojojochem/anomaly_detection_generic:generic-detection-1 \
+  .
+```
+
+The CPU wheel avoids the NVIDIA CUDA, cuDNN, cuBLAS, cuFFT, NCCL, cuSolver and
+cuSparse packages pulled by the default Linux PyPI Torch distribution. This
+removes several gigabytes of download and unpacked build-layer pressure in the
+Minikube Docker store. Measure the resulting compressed image after the first
+successful build; the precise size depends on the base image and transitive
+wheel versions.
 
 Load both images into Minikube:
 
@@ -38,6 +60,19 @@ minikube image load jojojochem/anomaly_detection_generic:generic-detection-1
 
 minikube image ls | grep -E 'learning_adaptation|anomaly_detection_generic'
 ```
+
+If an earlier failed generic-image build left Minikube short on disk, inspect
+usage and remove only unused builder cache before retrying:
+
+```bash
+minikube ssh -- docker system df
+minikube ssh -- docker builder prune --force
+```
+
+This does not delete tagged images, containers, or PVC data. Do not use
+`docker system prune` for this recovery step. With a shell configured through
+`minikube docker-env`, run `docker builder prune --force` against that daemon
+instead.
 
 For a registry-based cluster, push these exact tags and confirm that the node
 can pull them before applying the Deployments. Keep the Learning API and worker

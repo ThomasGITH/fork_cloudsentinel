@@ -148,9 +148,14 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
         dockerfile = (ROOT / "anomaly_detection" / "generic" / "Dockerfile").read_text(
             encoding="utf-8"
         )
-        requirements = (
+        requirements_text = (
             ROOT / "anomaly_detection" / "generic" / "requirements.txt"
         ).read_text(encoding="utf-8")
+        requirements = {
+            line.strip()
+            for line in requirements_text.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
         self.assertIn("FROM python:3.12-slim", dockerfile)
         self.assertIn("COPY pyproject.toml", dockerfile)
         self.assertIn("COPY detectors", dockerfile)
@@ -162,14 +167,63 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
         for dependency in (
             "Flask==",
             "gunicorn==",
-            "torch==",
             "scikit-learn==",
             "joblib==",
             "numpy==",
             "pandas==",
             "scipy==",
+            "PyYAML==",
         ):
-            self.assertIn(dependency, requirements)
+            self.assertTrue(
+                any(item.startswith(dependency) for item in requirements),
+                dependency,
+            )
+
+    def test_generic_image_installs_only_the_pinned_cpu_torch_wheel(self):
+        dockerfile = (ROOT / "anomaly_detection" / "generic" / "Dockerfile").read_text(
+            encoding="utf-8"
+        )
+        requirements = (
+            ROOT / "anomaly_detection" / "generic" / "requirements.txt"
+        ).read_text(encoding="utf-8")
+        normalized_requirements = {
+            line.split("#", 1)[0].strip().lower()
+            for line in requirements.splitlines()
+            if line.split("#", 1)[0].strip()
+        }
+
+        self.assertIn("ARG PYTORCH_VERSION=2.2.2", dockerfile)
+        self.assertIn("https://download.pytorch.org/whl/cpu", dockerfile)
+        self.assertIn('"torch==${PYTORCH_VERSION}+cpu"', dockerfile)
+        self.assertFalse(any(item.startswith("torch") for item in normalized_requirements))
+
+        dependency_configuration = f"{dockerfile}\n{requirements}".lower()
+        for gpu_package_marker in ("nvidia-", "nvidia_", "cu12", "cudnn", "cublas"):
+            self.assertNotIn(gpu_package_marker, dependency_configuration)
+
+        # CGNN inference remains available through the explicitly installed CPU wheel
+        # and the built-in detector/application modules copied into the image.
+        self.assertIn("COPY detectors", dockerfile)
+        self.assertIn("learning_adaptation /app/learning_adaptation", dockerfile)
+
+    def test_generic_image_build_context_is_selective_and_ignores_runtime_data(self):
+        dockerfile = (ROOT / "anomaly_detection" / "generic" / "Dockerfile").read_text(
+            encoding="utf-8"
+        )
+        dockerignore = (ROOT / ".dockerignore").read_text(encoding="utf-8")
+
+        self.assertNotIn("COPY . ", dockerfile)
+        self.assertNotIn("ADD . ", dockerfile)
+        for ignored in (
+            ".git",
+            "**/env",
+            "**/.venv",
+            "**/storage",
+            "**/model_artifacts",
+            "**/training_runs",
+            "**/trained_models_temp",
+        ):
+            self.assertIn(ignored, dockerignore)
 
     def test_legacy_detector_resources_remain_present_and_separate(self):
         cgnn = (K8S / "cgnn_anomaly_detection-deployment.yml").read_text(
