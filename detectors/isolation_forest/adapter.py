@@ -11,6 +11,11 @@ from detectors.contracts import (
     DetectorCompatibilityError,
     DetectorExecutionError,
     DetectorPromotionError,
+    InferenceCompatibilityError,
+    InferenceContext,
+    ModelLoadContext,
+    ModelLoadError,
+    PredictionResult,
     ProgressReporter,
     PromotionResult,
     TrainingContext,
@@ -161,4 +166,42 @@ class IsolationForestAdapter:
         except Exception as exc:
             raise DetectorExecutionError(
                 f"Isolation Forest training failed: {exc}"
+            ) from exc
+
+    def load_model(self, context: ModelLoadContext) -> Any:
+        try:
+            implementation = import_module("detectors.isolation_forest.implementation")
+            model, metadata = implementation._load_artifacts(
+                context.artifact_directory
+            )
+            if metadata.get("n_features") != context.model_record.get(
+                "model_metadata", {}
+            ).get("n_features"):
+                raise ModelLoadError("Isolation Forest feature metadata mismatch")
+            return {"pipeline": model, "metadata": metadata}
+        except ModelLoadError:
+            raise
+        except Exception as exc:
+            raise ModelLoadError("Isolation Forest model could not be loaded") from exc
+
+    def predict_inference(
+        self, model: Any, context: InferenceContext
+    ) -> PredictionResult:
+        try:
+            implementation = import_module("detectors.isolation_forest.implementation")
+            matrix = implementation._numeric_matrix(context.matrix, "matrix")
+            implementation._validate_feature_count(
+                matrix, model["metadata"], "matrix"
+            )
+            predictions, scores = implementation._predictions(
+                model["pipeline"], matrix
+            )
+            return PredictionResult(
+                binary_predictions=predictions,
+                anomaly_scores=scores,
+                warmup_observations=0,
+            )
+        except Exception as exc:
+            raise InferenceCompatibilityError(
+                f"Isolation Forest inference input is incompatible: {exc}"
             ) from exc

@@ -59,6 +59,22 @@ class DetectorPromotionError(DetectorTrainingError):
     """A trained artifact could not be promoted as required by the adapter."""
 
 
+class DetectorInferenceError(RuntimeError):
+    """Base class for safe detector inference failures."""
+
+
+class ModelLoadError(DetectorInferenceError):
+    """A verified artifact cannot be reconstructed by its adapter."""
+
+
+class InferenceCompatibilityError(DetectorInferenceError, ValueError):
+    """Inference input is incompatible with the loaded detector model."""
+
+
+class PredictionContractError(DetectorInferenceError):
+    """An adapter returned an invalid generic prediction result."""
+
+
 @dataclass(frozen=True)
 class TrainingData:
     """Private references to one immutable metrics-partition-v1 snapshot."""
@@ -116,6 +132,53 @@ class TrainingContext:
     artifact_workspace: Path
     suggested_artifact_directory: Path
     model_record_context: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class ModelLoadContext:
+    """Private, verified inputs used by an adapter to reconstruct one model."""
+
+    model_id: str
+    detector_id: str
+    detector_version: str
+    artifact_directory: Path
+    artifact_manifest: Mapping[str, Any]
+    model_record: Mapping[str, Any]
+    feature_identity: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class InferenceContext:
+    """One bounded metrics batch plus its declared feature identity."""
+
+    matrix: Any
+    feature_order: tuple[str, ...] = ()
+    feature_order_sha256: str | None = None
+    timestamps: tuple[str, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class PredictionResult:
+    """Uniform detector output: 1 is anomalous and larger scores are stranger."""
+
+    binary_predictions: Any
+    anomaly_scores: Any
+    warmup_observations: int = 0
+    diagnostics: Mapping[str, Any] = field(default_factory=dict)
+
+
+@runtime_checkable
+class InferenceDetectorAdapter(Protocol):
+    """Versioned model loading and prediction contract for generic runtimes."""
+
+    def load_model(self, context: ModelLoadContext) -> Any:
+        ...
+
+    def predict_inference(
+        self, model: Any, context: InferenceContext
+    ) -> PredictionResult:
+        ...
 
 
 class ProgressReporter:

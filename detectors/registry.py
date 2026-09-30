@@ -15,7 +15,12 @@ from typing import Any
 
 import yaml
 
-from .contracts import DetectorAdapter, PluginReference, TrainableDetectorAdapter
+from .contracts import (
+    DetectorAdapter,
+    InferenceDetectorAdapter,
+    PluginReference,
+    TrainableDetectorAdapter,
+)
 from .plugin_integrity import (
     PluginPackageError,
     package_sha256,
@@ -27,6 +32,8 @@ from .plugin_integrity import (
 SUPPORTED_SCHEMA_VERSION = 1
 SUPPORTED_TRAINING_PROTOCOLS = {"cloudsentinel.training/v1"}
 SUPPORTED_INPUT_PROFILES = {"metrics-partition-v1"}
+SUPPORTED_INFERENCE_PROTOCOLS = {"cloudsentinel.inference/v1"}
+SUPPORTED_INFERENCE_INPUT_PROFILES = {"metrics-matrix/v1"}
 MAX_MANIFEST_BYTES = 1_000_000
 REQUIRED_FIELDS = {
     "schema_version",
@@ -98,6 +105,10 @@ class AdapterContractError(TypeError):
 
 class UnsupportedTrainingProtocolError(ManifestValidationError):
     """Raised when a detector requests an unsupported training protocol."""
+
+
+class UnsupportedInferenceProtocolError(ManifestValidationError):
+    """Raised when a detector requests an unsupported inference protocol."""
 
 
 class ParameterValidationError(ValueError):
@@ -307,6 +318,14 @@ def validate_manifest(manifest: Any, path: Path) -> dict[str, Any]:
             raise _fail(path, "enabled training capability needs a protocol")
         if not isinstance(profile, str) or not profile:
             raise _fail(path, "enabled training capability needs an input_profile")
+    inference = capabilities.get("inference")
+    if inference is not None:
+        if not isinstance(inference, dict) or not isinstance(inference.get("enabled"), bool):
+            raise _fail(path, "'capabilities.inference.enabled' must be boolean")
+        if inference["enabled"]:
+            for field in ("protocol", "input_profile", "artifact_format"):
+                if not isinstance(inference.get(field), str) or not inference[field].strip():
+                    raise _fail(path, f"enabled inference capability needs {field}")
 
     parameters = manifest["training_parameters"]
     if not isinstance(parameters, dict):
@@ -937,5 +956,54 @@ def get_training_adapter(
         raise AdapterContractError(
             f"Training adapter for detector {detector_id!r} does not satisfy "
             f"TrainableDetectorAdapter: {', '.join(missing) or 'invalid methods'}"
+        )
+    return adapter
+
+
+def get_inference_adapter(
+    detector_id: str,
+    detector_dir: str | Path | None = None,
+    plugin_reference: dict[str, Any] | PluginReference | None = None,
+) -> InferenceDetectorAdapter:
+    """Resolve a version-pinned inference adapter only during model activation."""
+
+    descriptor = get_descriptor(detector_id, detector_dir, plugin_reference)
+    inference = descriptor.manifest.get("capabilities", {}).get("inference")
+    if not isinstance(inference, dict) or not inference.get("enabled"):
+        raise UnsupportedInferenceProtocolError(
+            f"Detector {detector_id!r} does not enable generic inference"
+        )
+    if inference.get("protocol") not in SUPPORTED_INFERENCE_PROTOCOLS:
+        raise UnsupportedInferenceProtocolError(
+            f"Detector {detector_id!r} uses an unsupported inference protocol"
+        )
+    if inference.get("input_profile") not in SUPPORTED_INFERENCE_INPUT_PROFILES:
+        raise UnsupportedInferenceProtocolError(
+            f"Detector {detector_id!r} uses an unsupported inference input profile"
+        )
+    if descriptor.source_class == "external" and descriptor.runtime_status.get(
+        "inference_runtime_status"
+    ) != "ready":
+        raise AdapterImportError(
+            f"External detector {detector_id!r} is not ready in this inference runtime"
+        )
+    adapter_class, _descriptor_value = _adapter_class(
+        detector_id, detector_dir, plugin_reference
+    )
+    try:
+        adapter = adapter_class()
+    except Exception as exc:
+        raise AdapterContractError(
+            f"Inference adapter for detector {detector_id!r} could not be instantiated: {exc}"
+        ) from exc
+    if not isinstance(adapter, InferenceDetectorAdapter):
+        missing = [
+            name
+            for name in ("load_model", "predict_inference")
+            if not callable(getattr(adapter, name, None))
+        ]
+        raise AdapterContractError(
+            f"Inference adapter for detector {detector_id!r} does not satisfy "
+            f"InferenceDetectorAdapter: {', '.join(missing) or 'invalid methods'}"
         )
     return adapter

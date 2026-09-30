@@ -83,6 +83,6 @@ appear with source `external` and can use the generic **Train models** flow.
 - Training uses only the labelled `metrics-partition-v1` profile.
 - `contamination` supports only `auto` in this first version.
 - Input must be finite numeric metrics with stable positional feature order.
-- No LOF-specific inference service or promotion call exists.
-- Live prediction awaits the future Generic Detection Runtime.
+- No LOF-specific inference service or promotion call exists. Published models
+  use `cloudsentinel.inference/v1` through the shared Generic Detection Runtime.
 - Plugin dependencies must already exist in the selected runtime image.

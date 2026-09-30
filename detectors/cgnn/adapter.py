@@ -9,6 +9,11 @@ from detectors.contracts import (
     ArtifactResult,
     DetectorCompatibilityError,
     DetectorExecutionError,
+    InferenceCompatibilityError,
+    InferenceContext,
+    ModelLoadContext,
+    ModelLoadError,
+    PredictionResult,
     ProgressReporter,
     PromotionResult,
     TrainingContext,
@@ -188,6 +193,7 @@ class CGNNAdapter:
 
             json_module = import_module("json")
             artifact_dir.mkdir(parents=True, exist_ok=True)
+            import_module("joblib").dump(scaler, artifact_dir / "scaler.joblib")
             (artifact_dir / "model_params.json").write_text(
                 json_module.dumps(dataset_config, indent=2), encoding="utf-8"
             )
@@ -206,6 +212,7 @@ class CGNNAdapter:
                         "model_config.json",
                         "model_evaluation.json",
                         "model_params.json",
+                        "scaler.joblib",
                     ),
                     format="torch-state-dict",
                     safe_reference=context.model_id,
@@ -222,3 +229,110 @@ class CGNNAdapter:
             raise
         except Exception as exc:
             raise DetectorExecutionError(f"CGNN training failed: {exc}") from exc
+
+    @staticmethod
+    def _config_value(config: dict[str, Any], name: str, cast: Any = None) -> Any:
+        value = config[name]
+        if cast is bool:
+            return value if isinstance(value, bool) else str(value).lower() == "true"
+        if value == "" and name in {"feat_gat_embed_dim", "time_gat_embed_dim"}:
+            return None
+        return cast(value) if cast else value
+
+    def load_model(self, context: ModelLoadContext) -> Any:
+        try:
+            json_module = import_module("json")
+            torch = import_module("torch")
+            joblib = import_module("joblib")
+            try:
+                model_class = import_module("learning_adaptation.cgnn.mtad_gat").MTAD_GAT
+            except ModuleNotFoundError:
+                model_class = import_module("cgnn.mtad_gat").MTAD_GAT
+            directory = context.artifact_directory
+            config = json_module.loads(
+                (directory / "model_config.json").read_text(encoding="utf-8")
+            )
+            evaluation = json_module.loads(
+                (directory / "model_evaluation.json").read_text(encoding="utf-8")
+            )
+            n_features = int(
+                context.model_record.get("model_metadata", {}).get("n_features")
+                or len(context.feature_identity.get("feature_order", []))
+            )
+            if n_features < 1:
+                raise ModelLoadError("CGNN feature count is unavailable")
+            lookback = self._config_value(config, "lookback", int)
+            model = model_class(
+                n_features,
+                lookback,
+                n_features,
+                kernel_size=self._config_value(config, "kernel_size", int),
+                use_gatv2=self._config_value(config, "use_gatv2", bool),
+                feat_gat_embed_dim=self._config_value(config, "feat_gat_embed_dim"),
+                time_gat_embed_dim=self._config_value(config, "time_gat_embed_dim"),
+                gru_n_layers=self._config_value(config, "gru_n_layers", int),
+                gru_hid_dim=self._config_value(config, "gru_hid_dim", int),
+                forecast_n_layers=self._config_value(config, "fc_n_layers", int),
+                forecast_hid_dim=self._config_value(config, "fc_hid_dim", int),
+                dropout=self._config_value(config, "dropout", float),
+                alpha=self._config_value(config, "alpha", float),
+            )
+            device = "cuda" if self._config_value(config, "use_cuda", bool) and torch.cuda.is_available() else "cpu"
+            model.load_state_dict(torch.load(directory / "model.pt", map_location=device))
+            model.to(device)
+            model.eval()
+            threshold = float(evaluation["epsilon_result"]["threshold"])
+            return {
+                "model": model,
+                "scaler": joblib.load(directory / "scaler.joblib"),
+                "config": config,
+                "threshold": threshold,
+                "lookback": lookback,
+                "n_features": n_features,
+                "device": device,
+            }
+        except ModelLoadError:
+            raise
+        except Exception as exc:
+            raise ModelLoadError("CGNN model could not be reconstructed") from exc
+
+    def predict_inference(
+        self, loaded: Any, context: InferenceContext
+    ) -> PredictionResult:
+        try:
+            np = import_module("numpy")
+            torch = import_module("torch")
+            matrix = np.asarray(context.matrix)
+            if matrix.ndim != 2 or matrix.dtype.kind not in "iuf" or not np.isfinite(matrix).all():
+                raise InferenceCompatibilityError(
+                    "CGNN matrix must be a finite two-dimensional numeric matrix"
+                )
+            if matrix.shape[1] != loaded["n_features"]:
+                raise InferenceCompatibilityError("CGNN feature count mismatch")
+            if matrix.shape[0] <= loaded["lookback"]:
+                raise InferenceCompatibilityError(
+                    "CGNN input needs more observations than its lookback"
+                )
+            scaled = loaded["scaler"].transform(matrix)
+            tensor = torch.from_numpy(scaled).float().to(loaded["device"])
+            predictions = []
+            with torch.no_grad():
+                for index in range(loaded["lookback"], tensor.shape[0]):
+                    window = tensor[index - loaded["lookback"] : index].unsqueeze(0)
+                    forecast = loaded["model"](window).reshape(-1)
+                    actual = tensor[index].reshape(-1)
+                    predictions.append(torch.mean(torch.abs(forecast - actual)).item())
+            scores = np.asarray(predictions, dtype=float)
+            binary = (scores >= loaded["threshold"]).astype(np.int8)
+            return PredictionResult(
+                binary_predictions=binary,
+                anomaly_scores=scores,
+                warmup_observations=loaded["lookback"],
+                diagnostics={"device": loaded["device"]},
+            )
+        except InferenceCompatibilityError:
+            raise
+        except Exception as exc:
+            raise InferenceCompatibilityError(
+                f"CGNN inference input is incompatible: {exc}"
+            ) from exc

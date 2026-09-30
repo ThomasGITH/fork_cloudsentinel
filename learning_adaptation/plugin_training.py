@@ -22,6 +22,7 @@ from detectors.contracts import (
     TrainingData,
     TrainingResult,
 )
+from detectors.model_artifacts import ModelArtifactError, ModelArtifactStore
 
 try:
     from learning_adaptation.training_lifecycle import (
@@ -347,6 +348,38 @@ def execute_detector_plugin_training(
         except Exception as exc:
             raise DetectorExecutionError(str(exc)) from exc
         result = _validate_result(context, result)
+        manifest = registry.get_manifest(
+            context.detector_id,
+            plugin_reference=context.model_record_context.get("plugin"),
+        )
+        inference_capability = manifest.get("capabilities", {}).get("inference", {})
+        inference_metadata = {"status": "not_supported"}
+        if inference_capability.get("enabled"):
+            artifact_root = Path(
+                os.getenv("MODEL_ARTIFACT_STORAGE_ROOT", "model_artifacts")
+            ).resolve()
+            try:
+                published = ModelArtifactStore(artifact_root).publish(
+                    context.model_id,
+                    result.artifact,
+                    detector_id=context.detector_id,
+                    detector_version=context.detector_version,
+                    artifact_format=inference_capability["artifact_format"],
+                    feature_identity=context.feature_identity,
+                    plugin_reference=context.model_record_context.get("plugin"),
+                    inference_contract=inference_capability["protocol"],
+                )
+            except ModelArtifactError as exc:
+                raise DetectorExecutionError(
+                    f"generic model artifact publication failed: {exc}"
+                ) from exc
+            inference_metadata = {
+                "status": "ready",
+                "artifact_id": published["artifact_id"],
+                "artifact_manifest_sha256": published["manifest_sha256"],
+                "contract": inference_capability["protocol"],
+                "artifact_format": inference_capability["artifact_format"],
+            }
         promotion = {
             "status": result.promotion.status,
             "promoted_at": result.promotion.promoted_at,
@@ -362,6 +395,7 @@ def execute_detector_plugin_training(
                 "safe_reference": result.artifact.safe_reference,
             },
             model_metadata=_safe_model_metadata(dict(result.model_metadata)),
+            inference=inference_metadata,
         )
         if result.cleanup == "remove_after_catalogue":
             try:

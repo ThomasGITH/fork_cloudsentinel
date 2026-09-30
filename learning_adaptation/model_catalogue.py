@@ -35,6 +35,14 @@ PROMOTION_STATUSES = {
     "promotion_failed",
     "not_applicable",
 }
+INFERENCE_STATUSES = {
+    "ready",
+    "not_ready",
+    "legacy_external",
+    "artifact_unavailable",
+    "incompatible",
+    "not_supported",
+}
 
 
 def _object(value: Any, field: str) -> dict[str, Any]:
@@ -99,6 +107,19 @@ def validate_model_record(record: Any) -> dict[str, Any]:
                 raise ModelRecordError(str(exc)) from exc
     if "model_metadata" in record:
         _object(record["model_metadata"], "model_metadata")
+    if "inference" in record:
+        inference = _object(record["inference"], "inference")
+        if inference.get("status") not in INFERENCE_STATUSES:
+            raise ModelRecordError("unsupported inference status")
+        if inference.get("status") == "ready":
+            required_inference = {
+                "artifact_id",
+                "artifact_manifest_sha256",
+                "contract",
+                "artifact_format",
+            }
+            if not required_inference.issubset(inference):
+                raise ModelRecordError("ready inference metadata is incomplete")
     if "plugin" in record:
         plugin = _object(record["plugin"], "plugin")
         required_plugin_fields = {

@@ -13,7 +13,7 @@ import sys
 import tempfile
 from typing import Any
 
-from .contracts import TrainableDetectorAdapter
+from .contracts import InferenceDetectorAdapter, TrainableDetectorAdapter
 from .plugin_integrity import (
     PluginPackageError,
     package_files,
@@ -156,6 +156,11 @@ class PluginRepository:
             raise PluginRepositoryError(
                 "external adapter does not satisfy TrainableDetectorAdapter"
             )
+        inference = manifest.get("capabilities", {}).get("inference", {})
+        if inference.get("enabled") and not isinstance(adapter, InferenceDetectorAdapter):
+            raise PluginRepositoryError(
+                "external adapter does not satisfy InferenceDetectorAdapter"
+            )
 
     @staticmethod
     def _make_release_read_only(package_root: Path) -> None:
@@ -206,7 +211,7 @@ class PluginRepository:
                 "runtime_fingerprint": runtime_fingerprint(),
                 "training_runtime_status": "ready",
                 "inference_runtime_status": (
-                    "unvalidated"
+                    "ready"
                     if manifest.get("capabilities", {}).get("inference", {}).get("enabled")
                     else "not_supported"
                 ),

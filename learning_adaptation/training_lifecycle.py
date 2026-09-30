@@ -267,6 +267,7 @@ def record_successful_model(
     promotion: dict[str, Any],
     artifact: dict[str, Any] | None = None,
     model_metadata: dict[str, Any] | None = None,
+    inference: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     if not context:
         return None
@@ -303,6 +304,9 @@ def record_successful_model(
         record["artifact"] = deepcopy(artifact)
     if model_metadata is not None:
         record["model_metadata"] = deepcopy(model_metadata)
+    record["inference"] = deepcopy(
+        inference if inference is not None else {"status": "not_supported"}
+    )
     try:
         existing = model_store.read(record["model_id"])
     except ModelNotFoundError:
@@ -525,6 +529,7 @@ def model_summary(record: dict[str, Any]) -> dict[str, Any]:
             if dataset.get(key) is not None
         },
         "promotion": {"status": record["promotion"]["status"]},
+        "inference": deepcopy(record.get("inference", {"status": "legacy_external"})),
     }
 
 
@@ -552,5 +557,18 @@ def public_model_record(record: dict[str, Any]) -> dict[str, Any]:
     if "model_metadata" in record:
         public["model_metadata"] = deepcopy(record["model_metadata"])
     if "plugin" in record:
-        public["plugin"] = deepcopy(record["plugin"])
+        plugin = record["plugin"]
+        public["plugin"] = {
+            key: plugin.get(key)
+            for key in (
+                "source",
+                "detector_id",
+                "detector_version",
+                "runtime_profile",
+            )
+            if plugin.get(key) is not None
+        }
+    public["inference"] = deepcopy(
+        record.get("inference", {"status": "legacy_external"})
+    )
     return public

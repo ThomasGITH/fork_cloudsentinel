@@ -22,6 +22,7 @@ from detectors.contracts import (
     TrainingData,
 )
 from detectors.plugin_repository import PluginRepository
+from learning_adaptation.model_catalogue import ModelCatalogueStore
 from learning_adaptation.plugin_training import execute_detector_plugin_training
 from learning_adaptation.training_runs_api import (
     configure_training_run_defaults,
@@ -48,6 +49,7 @@ class ExternalLocalOutlierFactorPluginTests(unittest.TestCase):
         self.run_root = self.root / "runs"
         self.model_root = self.root / "models"
         self.artifact_root = self.root / "artifacts"
+        self.published_artifact_root = self.root / "published-model-artifacts"
         self.train, self.test, self.labels = self._write_dataset()
 
         self.task = Mock()
@@ -74,6 +76,7 @@ class ExternalLocalOutlierFactorPluginTests(unittest.TestCase):
                 "TRAINING_RUN_STORAGE_ROOT": str(self.run_root),
                 "MODEL_CATALOGUE_STORAGE_ROOT": str(self.model_root),
                 "TRAINED_MODELS_TEMP_ROOT": str(self.artifact_root),
+                "MODEL_ARTIFACT_STORAGE_ROOT": str(self.published_artifact_root),
             },
             clear=False,
         )
@@ -245,9 +248,14 @@ class ExternalLocalOutlierFactorPluginTests(unittest.TestCase):
         self.assertEqual(child["model_status"], "available")
         model = self.client.get(f"/models/{model_id}").get_json()
         self.assertEqual(model["detector_id"], LOF_ID)
-        self.assertEqual(model["plugin"], context_payload["plugin"])
+        self.assertEqual(model["plugin"]["source"], "external")
+        self.assertNotIn("package_sha256", model["plugin"])
+        self.assertNotIn("manifest_sha256", model["plugin"])
+        stored_model = ModelCatalogueStore(self.model_root).read(model_id)
+        self.assertEqual(stored_model["plugin"], context_payload["plugin"])
         self.assertEqual(model["artifact"]["format"], "joblib")
         self.assertEqual(model["promotion"]["status"], "not_applicable")
+        self.assertEqual(model["inference"]["status"], "ready")
         self.assertEqual(model["feature_identity"]["feature_order"], ["service_cpu", "service_memory"])
         self.assertNotIn("binary_predictions", model["evaluation"])
         self.assertNotIn("anomaly_scores", model["evaluation"])

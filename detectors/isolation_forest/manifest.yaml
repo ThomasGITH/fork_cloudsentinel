@@ -10,6 +10,11 @@ capabilities:
     enabled: true
     protocol: cloudsentinel.training/v1
     input_profile: metrics-partition-v1
+  inference:
+    enabled: true
+    protocol: cloudsentinel.inference/v1
+    input_profile: metrics-matrix/v1
+    artifact_format: sklearn-pipeline-joblib-v1
   prediction:
     enabled: true
 input_requirements:

@@ -84,6 +84,19 @@ def _read_numeric_matrix(path: Path, name: str) -> np.ndarray:
     return matrix
 
 
+def numeric_matrix(value: Any, name: str) -> np.ndarray:
+    matrix = np.asarray(value)
+    if matrix.ndim != 2 or matrix.shape[0] < 1 or matrix.shape[1] < 1:
+        raise LocalOutlierFactorInputError(
+            f"{name} must be a non-empty two-dimensional matrix"
+        )
+    if matrix.dtype.kind not in "iuf" or not np.isfinite(matrix).all():
+        raise LocalOutlierFactorInputError(
+            f"{name} must contain only finite numeric values without coercion"
+        )
+    return matrix
+
+
 def _read_binary_labels(path: Path | None, expected_length: int) -> np.ndarray:
     if path is None:
         raise LocalOutlierFactorInputError(

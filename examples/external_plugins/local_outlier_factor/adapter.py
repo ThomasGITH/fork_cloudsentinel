@@ -6,6 +6,11 @@ from detectors.contracts import (
     ArtifactResult,
     DetectorCompatibilityError,
     DetectorExecutionError,
+    InferenceCompatibilityError,
+    InferenceContext,
+    ModelLoadContext,
+    ModelLoadError,
+    PredictionResult,
     ProgressReporter,
     PromotionResult,
     TrainingContext,
@@ -94,4 +99,33 @@ class LocalOutlierFactorAdapter:
         except Exception as exc:
             raise DetectorExecutionError(
                 f"Local Outlier Factor training failed: {exc}"
+            ) from exc
+
+    def load_model(self, context: ModelLoadContext):
+        try:
+            pipeline, metadata = implementation._load_pipeline(
+                context.artifact_directory
+            )
+            return {"pipeline": pipeline, "metadata": metadata}
+        except Exception as exc:
+            raise ModelLoadError("Local Outlier Factor model could not be loaded") from exc
+
+    def predict_inference(
+        self, model, context: InferenceContext
+    ) -> PredictionResult:
+        try:
+            matrix = implementation.numeric_matrix(context.matrix, "matrix")
+            if matrix.shape[1] != model["metadata"].get("n_features"):
+                raise implementation.LocalOutlierFactorInputError(
+                    "matrix feature count does not match the stored LOF model"
+                )
+            predictions, scores = implementation.predict(model["pipeline"], matrix)
+            return PredictionResult(
+                binary_predictions=predictions,
+                anomaly_scores=scores,
+                warmup_observations=0,
+            )
+        except Exception as exc:
+            raise InferenceCompatibilityError(
+                f"Local Outlier Factor inference input is incompatible: {exc}"
             ) from exc

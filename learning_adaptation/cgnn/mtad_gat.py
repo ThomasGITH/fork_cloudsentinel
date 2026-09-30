@@ -1,17 +1,29 @@
 import torch
 import torch.nn as nn
 # from test_tube import HyperOptArgumentParser
-from cgnn.modules import (
-    Denoising,
-    ConvLayer,
-    GRULayer,
-    Forecasting_Model,
-    MHSA,
-    AR,
-    TemporalcorrelationLayer,
-    FeaturecorrelationLayer,
-
-)
+try:
+    # Package import used by the generic inference runtime.
+    from .modules import (
+        Denoising,
+        ConvLayer,
+        GRULayer,
+        Forecasting_Model,
+        MHSA,
+        AR,
+        TemporalcorrelationLayer,
+        FeaturecorrelationLayer,
+    )
+except ImportError:  # Backward compatibility for the legacy top-level cgnn path.
+    from cgnn.modules import (
+        Denoising,
+        ConvLayer,
+        GRULayer,
+        Forecasting_Model,
+        MHSA,
+        AR,
+        TemporalcorrelationLayer,
+        FeaturecorrelationLayer,
+    )
 
 
 class MTAD_GAT(nn.Module):
