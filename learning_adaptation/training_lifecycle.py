@@ -297,6 +297,8 @@ def record_successful_model(
             "safe_reference": context["model_id"] if promotion_status == "promoted" else None,
         },
     }
+    if isinstance(context.get("plugin"), dict):
+        record["plugin"] = deepcopy(context["plugin"])
     if artifact is not None:
         record["artifact"] = deepcopy(artifact)
     if model_metadata is not None:
@@ -316,6 +318,7 @@ def record_successful_model(
             "snapshot",
             "feature_identity",
             "training_parameters",
+            "plugin",
         )
         if any(existing.get(field) != record.get(field) for field in identity_fields):
             raise ModelRecordError(
@@ -548,4 +551,6 @@ def public_model_record(record: dict[str, Any]) -> dict[str, Any]:
         public["artifact"] = deepcopy(record["artifact"])
     if "model_metadata" in record:
         public["model_metadata"] = deepcopy(record["model_metadata"])
+    if "plugin" in record:
+        public["plugin"] = deepcopy(record["plugin"])
     return public

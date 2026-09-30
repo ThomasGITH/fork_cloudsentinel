@@ -171,7 +171,13 @@ def validate_request_payload(
                 f"duplicate detector_id: {detector_id!r}"
             )
         seen.add(detector_id)
-        manifest = manifests[detector_id]
+        try:
+            descriptor = registry.get_descriptor(detector_id)
+        except (registry.UnknownDetectorError, registry.ManifestValidationError) as exc:
+            raise TrainingRunValidationError(
+                f"detector {detector_id!r} changed during request validation"
+            ) from exc
+        manifest = descriptor.manifest
         training_capability = manifest.get("capabilities", {}).get("training", {})
         if not training_capability.get("enabled"):
             raise TrainingRunValidationError(
@@ -185,13 +191,25 @@ def validate_request_payload(
             raise TrainingRunValidationError(
                 f"detector {detector_id!r} uses an unsupported input profile"
             )
+        if descriptor.source_class == "external" and descriptor.runtime_status.get(
+            "training_runtime_status"
+        ) != "ready":
+            raise TrainingRunValidationError(
+                f"external detector {detector_id!r} is not ready in the training runtime"
+            )
         try:
             parameters = registry.validate_training_parameters(
                 detector_id, detector_request.get("parameters"), manifest
             )
         except registry.ParameterValidationError as exc:
             raise TrainingRunValidationError(str(exc)) from exc
-        validated.append({"detector_id": detector_id, "parameters": parameters})
+        validated.append(
+            {
+                "detector_id": detector_id,
+                "parameters": parameters,
+                "plugin_reference": descriptor.reference().to_dict(),
+            }
+        )
 
     client_request_id = payload.get("client_request_id")
     if client_request_id is not None and (
@@ -325,6 +343,7 @@ def create_training_runs_blueprint(
                 "status": "queued",
                 "parameters": detector_request["parameters"],
                 "snapshot_id": snapshot["snapshot_id"],
+                "plugin": detector_request["plugin_reference"],
                 "validation_error": None,
                 "dispatch_error": None,
                 "failure_summary": None,
@@ -344,6 +363,7 @@ def create_training_runs_blueprint(
                         "detector_id": detector_id,
                         "model_id": model_id,
                         "snapshot_id": snapshot["snapshot_id"],
+                        "plugin": detector_request["plugin_reference"],
                     },
                 }
             )

@@ -99,6 +99,36 @@ def validate_model_record(record: Any) -> dict[str, Any]:
                 raise ModelRecordError(str(exc)) from exc
     if "model_metadata" in record:
         _object(record["model_metadata"], "model_metadata")
+    if "plugin" in record:
+        plugin = _object(record["plugin"], "plugin")
+        required_plugin_fields = {
+            "source",
+            "detector_id",
+            "detector_version",
+            "package_sha256",
+            "manifest_sha256",
+            "runtime_profile",
+        }
+        if not required_plugin_fields.issubset(plugin):
+            raise ModelRecordError("plugin reference is incomplete")
+        if plugin["source"] not in {"builtin", "external"}:
+            raise ModelRecordError("plugin source is invalid")
+        if plugin["detector_id"] != record["detector_id"] or plugin[
+            "detector_version"
+        ] != record["detector_version"]:
+            raise ModelRecordError("plugin reference does not match model detector")
+        for field in ("package_sha256", "manifest_sha256"):
+            value = plugin[field]
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise ModelRecordError(f"plugin.{field} is invalid")
+        if not isinstance(plugin["runtime_profile"], str) or not plugin[
+            "runtime_profile"
+        ]:
+            raise ModelRecordError("plugin.runtime_profile is invalid")
     if record["promotion"].get("status") not in PROMOTION_STATUSES:
         raise ModelRecordError("unsupported promotion status")
     safe_reference = record["promotion"].get("safe_reference")

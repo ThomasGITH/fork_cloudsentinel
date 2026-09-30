@@ -230,7 +230,8 @@ class FixtureAdapter:
         )
         self.assertEqual(run["run_name"], "Fixture protocol acceptance")
         self.assertEqual(run["children"][0]["parameters"]["marker"], 7)
-        self.assertEqual(len(context_payload), 4)
+        self.assertEqual(context_payload["plugin"]["detector_id"], self.plugin_id)
+        self.assertEqual(context_payload["plugin"]["source"], "external")
         self.assertNotIn(self.module_name, sys.modules)
 
         result = execute_detector_plugin_training(context_payload, lambda *_args: None)
@@ -252,6 +253,8 @@ class FixtureAdapter:
         self.assertEqual(model["feature_identity"]["feature_order"], ["svc_cpu", "svc_memory"])
         self.assertEqual(model["training_parameters"]["marker"], 7)
         self.assertEqual(model["artifact"]["format"], "fixture-binary")
+        self.assertEqual(model["plugin"]["detector_id"], self.plugin_id)
+        self.assertEqual(model["plugin"]["source"], "external")
 
     def test_compatibility_and_runtime_failures_are_durable_without_models(self):
         exception_types = {

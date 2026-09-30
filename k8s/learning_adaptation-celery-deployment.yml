@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation-celery
-        image: jojojochem/learning_adaptation:models-1
+        image: jojojochem/learning_adaptation:external-plugins-1
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent", "--concurrency=1"]
         securityContext:
@@ -41,9 +41,14 @@ spec:
           value: "/app/storage/training_runs"
         - name: MODEL_CATALOGUE_STORAGE_ROOT
           value: "/app/storage/models"
+        - name: DETECTOR_PLUGIN_ROOTS
+          value: "/opt/cloudsentinel/detectors/active"
         volumeMounts:
         - name: learning-storage
           mountPath: /app/storage
+        - name: detector-plugins
+          mountPath: /opt/cloudsentinel/detectors
+          readOnly: true
         resources:
           requests:
             memory: "4Gi"
@@ -55,3 +60,6 @@ spec:
       - name: learning-storage
         persistentVolumeClaim:
           claimName: learning-adaptation-pvc
+      - name: detector-plugins
+        persistentVolumeClaim:
+          claimName: detector-plugin-repository-pvc
