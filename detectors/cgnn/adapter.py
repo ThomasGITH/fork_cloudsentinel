@@ -133,6 +133,8 @@ class CGNNAdapter:
             dataset_config["orchestration_model_id"] = context.model_id
             dataset_config["orchestration_context"] = dict(context.model_record_context)
 
+            active_phase = "TRAINING"
+
             def legacy_progress(
                 state: str, message: str, *values: Any, **named_values: Any
             ) -> None:
@@ -144,7 +146,10 @@ class CGNNAdapter:
                         if value is not None
                     },
                 }
-                progress.report(state if state in progress.ALLOWED_STATES else "TRAINING", detail)
+                progress.report(
+                    state if state in progress.ALLOWED_STATES else active_phase,
+                    detail,
+                )
 
             progress.report("TRAINING", "Training the CGNN model")
             model_config, feature_importance = self.train(
@@ -154,6 +159,7 @@ class CGNNAdapter:
                 labels,
                 progress_callback=legacy_progress,
             )
+            active_phase = "EVALUATING"
             progress.report("EVALUATING", "Evaluating the CGNN model")
             evaluation_result = self.evaluate(
                 model_config,

@@ -18,6 +18,21 @@ from detectors.contracts import (
 )
 
 
+def _promotion_runtime() -> Any:
+    """Load promotion code from source checkouts and flat service images."""
+    try:
+        return import_module("learning_adaptation.isolation_forest_promotion")
+    except ModuleNotFoundError as exc:
+        if exc.name not in {
+            "learning_adaptation",
+            "learning_adaptation.isolation_forest_promotion",
+        }:
+            raise
+        # The learning-adaptation image copies the service modules directly
+        # into /app, while repository execution exposes them as a package.
+        return import_module("isolation_forest_promotion")
+
+
 class IsolationForestAdapter:
     """Load the Isolation Forest runtime only when an operation is invoked."""
 
@@ -111,9 +126,9 @@ class IsolationForestAdapter:
             evaluation = self.evaluate(test, labels, artifact_dir)
             progress.report("PROMOTING", "Promoting the Isolation Forest model")
             try:
-                promotion_payload = import_module(
-                    "learning_adaptation.isolation_forest_promotion"
-                ).promote_isolation_forest_model(artifact_dir, context.model_id)
+                promotion_payload = _promotion_runtime().promote_isolation_forest_model(
+                    artifact_dir, context.model_id
+                )
             except Exception as exc:
                 raise DetectorPromotionError(
                     f"Isolation Forest promotion failed: {exc}"

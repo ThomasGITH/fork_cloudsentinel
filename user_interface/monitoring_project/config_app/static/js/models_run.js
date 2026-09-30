@@ -9,6 +9,20 @@
     function text(node, value) { if (node) node.textContent = value == null || value === "" ? "—" : String(value); }
     function badge(node, status) { if (!node) return; node.className = "model-status model-status-" + String(status || "unknown").replace(/[^a-z_]/g, ""); text(node, status); }
     function showMessage(node, value) { if (!node) return; node.textContent = value || ""; node.hidden = !value; }
+    function progressText(child) {
+      if (typeof child.display_detail === "string") return child.display_detail;
+      const phase = typeof child.progress_phase === "string" ? child.progress_phase.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, function (letter) { return letter.toUpperCase(); }) : "";
+      const detail = child.status_detail || child.detail;
+      if (typeof detail === "string") return phase && detail.toLowerCase() !== phase.toLowerCase() ? phase + " — " + detail : detail;
+      if (detail && typeof detail === "object") {
+        if (typeof detail.message === "string") return phase ? phase + " — " + detail.message : detail.message;
+        if (Array.isArray(detail.values) && detail.values.length >= 4 && detail.values.slice(0, 4).every(Number.isInteger)) {
+          const outer = (phase === "" || phase === "Training") ? "Epoch" : "Step";
+          return (phase || "Training") + " — " + outer + " " + (detail.values[0] + 1) + " of " + detail.values[1] + " · batch " + (detail.values[2] + 1) + " of " + detail.values[3];
+        }
+      }
+      return phase;
+    }
     function render(data) {
       badge(root.querySelector("[data-parent-status]"), data.status);
       text(root.querySelector("[data-run-started]"), data.started_at); text(root.querySelector("[data-run-updated]"), data.updated_at); text(root.querySelector("[data-run-completed]"), data.completed_at);
@@ -16,7 +30,7 @@
       (data.children || []).forEach(function (child) {
         const escaped = window.CSS && CSS.escape ? CSS.escape(String(child.detector_id)) : String(child.detector_id).replace(/[^a-zA-Z0-9_-]/g, "");
         const card = root.querySelector('[data-child="' + escaped + '"]'); if (!card) return;
-        badge(card.querySelector("[data-child-status]"), child.status); text(card.querySelector("[data-child-detail]"), child.status_detail || child.detail || ""); showMessage(card.querySelector("[data-child-validation]"), child.validation_error); showMessage(card.querySelector("[data-child-failure]"), child.failure_summary); text(card.querySelector("[data-child-promotion]"), child.promotion_status || child.model_status);
+        badge(card.querySelector("[data-child-status]"), child.status); text(card.querySelector("[data-child-detail]"), progressText(child)); showMessage(card.querySelector("[data-child-validation]"), child.validation_error); showMessage(card.querySelector("[data-child-failure]"), child.failure_summary); text(card.querySelector("[data-child-promotion]"), child.promotion_status || child.model_status);
         if (!terminal.has(child.status)) active = true;
         if (child.model_id && child.model_status === "available") { const wrap = card.querySelector("[data-child-model]"); if (wrap && !wrap.querySelector("a")) { const link = document.createElement("a"); link.className = "btn btn-sm btn-outline-primary"; link.href = root.dataset.modelUrl.replace("__MODEL__", encodeURIComponent(child.model_id)); link.textContent = "View saved model"; wrap.appendChild(link); } }
       });

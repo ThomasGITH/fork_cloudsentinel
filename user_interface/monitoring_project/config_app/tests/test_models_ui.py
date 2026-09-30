@@ -117,10 +117,12 @@ class ModelsUiTests(SimpleTestCase):
     def test_saved_models_and_history_filters_pagination(self):
         saved = self.client.get(reverse("models_overview"), {"tab": "saved", "detector_id": "isolation-forest", "page": 2, "sort": "oldest"})
         self.assertContains(saved, "model_demo")
+        self.assertContains(saved, "Checkout metrics v3")
         self.learning.list_models.assert_called_once_with({"detector_id": "isolation-forest", "page": "2", "sort": "oldest"})
         history = self.client.get(reverse("models_overview"), {"tab": "history", "status": "partial_success", "page_size": 10})
         self.assertContains(history, "Partial success", count=None)
         self.assertContains(history, "validation_failed")
+        self.assertContains(history, "Checkout metrics v3")
         self.learning.list_training_runs.assert_called_once_with({"status": "partial_success", "page_size": "10"})
 
     def test_model_and_run_details_hide_runtime_internals(self):
@@ -199,6 +201,28 @@ class ModelsUiTests(SimpleTestCase):
         self.assertEqual(response.json()["status"], "partial_success")
         self.assertNotIn("task_id", response.content.decode())
         self.assertContains(self.client.get(reverse("models_training_run_detail", args=["run_demo"])), "models_run.js")
+
+    def test_structured_cgnn_progress_is_rendered_as_epoch_feedback(self):
+        running = run_payload("running")
+        running["children"] = [{
+            "detector_id": "cgnn",
+            "model_id": "model_cgnn",
+            "status": "running",
+            "progress_phase": "TRAINING",
+            "detail": {"values": [1, 10, 3, 8]},
+            "parameters": {},
+        }]
+        self.learning.get_training_run.return_value = running
+
+        page = self.client.get(reverse("models_training_run_detail", args=["run_demo"]))
+        self.assertContains(page, "Training — Epoch 2 of 10 · batch 4 of 8")
+        self.assertNotContains(page, "[object Object]")
+
+        status = self.client.get(reverse("models_training_run_status", args=["run_demo"]))
+        self.assertEqual(
+            status.json()["children"][0]["display_detail"],
+            "Training — Epoch 2 of 10 · batch 4 of 8",
+        )
 
     def test_mutating_route_requires_csrf(self):
         csrf_client = Client(enforce_csrf_checks=True)

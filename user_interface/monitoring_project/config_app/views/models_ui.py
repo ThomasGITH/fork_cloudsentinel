@@ -128,6 +128,31 @@ def _detector_map() -> tuple[list[dict], list[dict]]:
     return detectors, errors
 
 
+def _add_dataset_display_names(items: list[dict]) -> None:
+    """Add catalogue display names without making Models depend on their availability."""
+    catalogue = get_catalogue_client()
+    names: dict[str, str] = {}
+    for item in items:
+        dataset = item.get("dataset")
+        if not isinstance(dataset, dict) or dataset.get("source") != "catalogue":
+            continue
+        dataset_id = dataset.get("dataset_id")
+        if not isinstance(dataset_id, str) or not dataset_id:
+            continue
+        if dataset_id not in names:
+            try:
+                record = catalogue.get_dataset(dataset_id)
+                display_name = record.get("display_name")
+                names[dataset_id] = (
+                    display_name.strip()
+                    if isinstance(display_name, str) and display_name.strip()
+                    else dataset_id
+                )
+            except CatalogueClientError:
+                names[dataset_id] = dataset_id
+        dataset["display_name"] = names[dataset_id]
+
+
 @require_GET
 def models_overview(request: HttpRequest):
     tab = request.GET.get("tab", "detectors")
@@ -142,12 +167,14 @@ def models_overview(request: HttpRequest):
             allowed = {"page", "page_size", "detector_id", "status", "dataset_id", "sort"}
             filters = _filters(request, allowed)
             payload = _safe(get_learning_client().list_models(filters))
+            _add_dataset_display_names(payload.get("items", []))
             previous, following = _page_links(payload, filters, tab=tab)
             context.update(models=payload, filters=filters, previous=previous, next=following)
         else:
             allowed = {"page", "page_size", "status", "detector_id", "dataset_id", "source", "sort"}
             filters = _filters(request, allowed)
             payload = _safe(get_learning_client().list_training_runs(filters))
+            _add_dataset_display_names(payload.get("items", []))
             for item in payload.get("items", []):
                 statuses = {}
                 for child in item.get("children", []):
@@ -500,9 +527,36 @@ def _run_ui(run: dict) -> dict:
     for child in run.get("children", []):
         metadata = child.get("result_metadata") or {}
         child["promotion_status"] = (metadata.get("promotion") or {}).get("status") or child.get("model_status")
-        child["display_detail"] = child.get("status_detail") or child.get("detail") or ""
+        child["display_detail"] = _child_progress_text(child)
     run["is_active"] = any(child.get("status") in _ACTIVE_CHILD_STATUSES for child in run.get("children", []))
     return run
+
+
+def _child_progress_text(child: dict) -> str:
+    """Render trusted, bounded task metadata without exposing object reprs."""
+    phase = str(child.get("progress_phase") or "").strip().upper()
+    phase_label = phase.replace("_", " ").title() if phase else ""
+    detail = child.get("status_detail") or child.get("detail")
+    if isinstance(detail, str):
+        detail = detail.strip()
+        if detail and phase_label and detail.casefold() != phase_label.casefold():
+            return f"{phase_label} — {detail}"
+        return detail or phase_label
+    if isinstance(detail, dict):
+        message = detail.get("message")
+        if isinstance(message, str) and message.strip():
+            return f"{phase_label} — {message.strip()}" if phase_label else message.strip()
+        values = detail.get("values")
+        if isinstance(values, list) and len(values) >= 4:
+            outer, total_outer, inner, total_inner = values[:4]
+            if all(isinstance(value, int) and not isinstance(value, bool) for value in values[:4]):
+                outer_label = "Epoch" if phase in {"", "TRAINING"} else "Step"
+                prefix = phase_label or "Training"
+                return (
+                    f"{prefix} — {outer_label} {outer + 1} of {total_outer} · "
+                    f"batch {inner + 1} of {total_inner}"
+                )
+    return phase_label
 
 
 @require_GET

@@ -405,7 +405,8 @@ def reconcile_run(
                 continue
             try:
                 task = status_reader(child["task_id"])
-                observed = normalize_celery_status(getattr(task, "state", "PENDING"))
+                celery_state = str(getattr(task, "state", "PENDING") or "PENDING").upper()
+                observed = normalize_celery_status(celery_state)
                 # PENDING is ambiguous after Redis result expiry. Never downgrade a
                 # child that was already observed as running.
                 if observed == "queued" and child.get("status") == "running":
@@ -417,13 +418,31 @@ def reconcile_run(
                     child["updated_at"] = now
                 if observed == "running":
                     child["started_at"] = child.get("started_at") or now
+                    # Preserve the bounded public phase separately from the
+                    # generic running status. Adapter progress metadata may be
+                    # structured, so clients should not have to stringify it
+                    # to discover whether a detector is training or evaluating.
+                    child["progress_phase"] = (
+                        celery_state
+                        if celery_state
+                        in {
+                            "INITIATING",
+                            "VALIDATING",
+                            "TRAINING",
+                            "EVALUATING",
+                            "PROMOTING",
+                        }
+                        else "RUNNING"
+                    )
                 raw_detail = getattr(task, "info", None)
                 if observed == "completed":
+                    child["progress_phase"] = "COMPLETED"
                     child["started_at"] = child.get("started_at") or now
                     child["completed_at"] = child.get("completed_at") or now
                     child["result_metadata"] = task_result_summary(raw_detail)
                     child["failure_summary"] = None
                 elif observed == "failed":
+                    child["progress_phase"] = "FAILED"
                     child["started_at"] = child.get("started_at") or now
                     child["completed_at"] = child.get("completed_at") or now
                     child["failure_summary"] = safe_failure_summary(

@@ -173,10 +173,16 @@ class ModelsBackendTests(unittest.TestCase):
         result = reconcile_run(
             self.run_store,
             "run-progress",
-            lambda _task: types.SimpleNamespace(state="TRAINING", info="epoch"),
+            lambda _task: types.SimpleNamespace(
+                state="TRAINING", info={"values": [1, 10, 3, 8]}
+            ),
         )
         self.assertEqual(result["status"], "running")
         self.assertIsNotNone(result["children"][0]["started_at"])
+        self.assertEqual(result["children"][0]["progress_phase"], "TRAINING")
+        self.assertEqual(
+            result["children"][0]["detail"], {"values": [1, 10, 3, 8]}
+        )
 
         result = reconcile_run(
             self.run_store,
