@@ -35,6 +35,12 @@ spec:
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: API_ISOLATION_FOREST_ANOMALY_DETECTION_URL
           value: "http://isolation-forest-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
+        - name: DATASET_SNAPSHOT_STORAGE_ROOT
+          value: "/app/storage/dataset_snapshots"
+        - name: TRAINING_RUN_STORAGE_ROOT
+          value: "/app/storage/training_runs"
+        - name: MODEL_CATALOGUE_STORAGE_ROOT
+          value: "/app/storage/models"
         volumeMounts:
         - name: learning-storage
           mountPath: /app/storage
