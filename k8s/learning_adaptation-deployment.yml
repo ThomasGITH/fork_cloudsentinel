@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:models-1
+        image: jojojochem/learning_adaptation:external-plugins-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -39,6 +39,8 @@ spec:
           value: "/app/storage/trained_models_temp"
         - name: MODEL_CATALOGUE_STORAGE_ROOT
           value: "/app/storage/models" 
+        - name: DETECTOR_PLUGIN_ROOTS
+          value: "/opt/cloudsentinel/detectors/active"
         - name: CELERY_BROKER_URL
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: CELERY_RESULT_BACKEND
@@ -46,6 +48,9 @@ spec:
         volumeMounts:
         - name: learning-storage
           mountPath: /app/storage
+        - name: detector-plugins
+          mountPath: /opt/cloudsentinel/detectors
+          readOnly: true
         readinessProbe:
           httpGet:
             path: /healthz
@@ -66,6 +71,9 @@ spec:
       - name: learning-storage
         persistentVolumeClaim:
           claimName: learning-adaptation-pvc
+      - name: detector-plugins
+        persistentVolumeClaim:
+          claimName: detector-plugin-repository-pvc
 ---
 apiVersion: v1
 kind: Service

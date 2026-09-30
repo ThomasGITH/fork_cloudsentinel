@@ -67,6 +67,14 @@ The abbreviated object above is only illustrative; the endpoint returns full val
 
 Plugins are trusted server-side code installed by a developer or operator. There is no browser Python upload, runtime dependency installation, or code execution during discovery. Dependencies must already be present in the worker image.
 
+Built-in manifests are discovered from the installed `detectors` package.
+Additional immutable releases can be mounted through the additive
+`DETECTOR_PLUGIN_ROOTS` setting. Public discovery identifies entries as
+`source: builtin` or `source: external` and removes private entry points and
+storage information. See [External detector plugin repository](external-detector-plugins.md)
+for package installation, activation, rollback, integrity checks and exact
+TrainingRun version pinning.
+
 For local development, install the service requirements and shared package from the repository root:
 
 ```shell

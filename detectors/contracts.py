@@ -7,6 +7,28 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol, runtime_checkable
 
 
+@dataclass(frozen=True)
+class PluginReference:
+    """Safe, serializable identity of the exact plugin used by one child."""
+
+    source: str
+    detector_id: str
+    detector_version: str
+    package_sha256: str
+    manifest_sha256: str
+    runtime_profile: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "source": self.source,
+            "detector_id": self.detector_id,
+            "detector_version": self.detector_version,
+            "package_sha256": self.package_sha256,
+            "manifest_sha256": self.manifest_sha256,
+            "runtime_profile": self.runtime_profile,
+        }
+
+
 @runtime_checkable
 class DetectorAdapter(Protocol):
     """Minimal operations required by the current detector integration."""

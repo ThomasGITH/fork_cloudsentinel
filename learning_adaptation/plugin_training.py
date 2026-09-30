@@ -190,8 +190,18 @@ def _build_context(payload: dict[str, Any]) -> TrainingContext:
     if run.get("snapshot_id") != snapshot_id or child.get("snapshot_id") != snapshot_id:
         raise DetectorExecutionError("training child snapshot mismatch")
 
+    plugin_reference = payload.get("plugin")
+    stored_plugin_reference = child.get("plugin")
+    if stored_plugin_reference is not None:
+        if plugin_reference != stored_plugin_reference:
+            raise DetectorExecutionError("training child plugin reference mismatch")
+    elif plugin_reference is not None:
+        raise DetectorExecutionError("legacy training child has unexpected plugin reference")
+
     snapshot, directory = _load_verified_snapshot(snapshot_id)
-    manifest = registry.get_manifest(detector_id)
+    manifest = registry.get_manifest(
+        detector_id, plugin_reference=stored_plugin_reference
+    )
     training = manifest["capabilities"]["training"]
     if (
         not training.get("enabled")
@@ -244,6 +254,7 @@ def _build_context(payload: dict[str, Any]) -> TrainingContext:
         },
         "feature_identity": _feature_identity(snapshot),
         "training_parameters": parameters,
+        **({"plugin": dict(stored_plugin_reference)} if stored_plugin_reference else {}),
     }
     return TrainingContext(
         run_id=run_id,
@@ -319,7 +330,10 @@ def execute_detector_plugin_training(
         mark_child_running(lifecycle_context)
         progress = ProgressReporter(progress_callback)
         progress.report("VALIDATING", "Validating detector compatibility")
-        adapter = registry.get_training_adapter(context.detector_id)
+        plugin_reference = context.model_record_context.get("plugin")
+        adapter = registry.get_training_adapter(
+            context.detector_id, plugin_reference=plugin_reference
+        )
         try:
             adapter.validate_training(context)
         except DetectorCompatibilityError:

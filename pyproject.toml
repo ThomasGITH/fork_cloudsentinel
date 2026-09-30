@@ -11,6 +11,9 @@ dependencies = [
     "PyYAML==6.0.2",
 ]
 
+[project.scripts]
+cloudsentinel-plugin = "detectors.plugin_repository:main"
+
 [tool.setuptools.packages.find]
 include = ["detectors*"]
 

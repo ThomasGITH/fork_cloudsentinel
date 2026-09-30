@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: plugin-admin
+  namespace: cloudsentinel
+  labels:
+    app: plugin-admin
+spec:
+  restartPolicy: Never
+  securityContext:
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
+  containers:
+    - name: plugin-admin
+      image: jojojochem/learning_adaptation:external-plugins-1
+      imagePullPolicy: IfNotPresent
+      command: ["sh", "-c", "mkdir -p /opt/cloudsentinel/detectors/staging/incoming && sleep 3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      env:
+        - name: DETECTOR_PLUGIN_REPOSITORY_ROOT
+          value: /opt/cloudsentinel/detectors
+      volumeMounts:
+        - name: detector-plugins
+          mountPath: /opt/cloudsentinel/detectors
+          readOnly: false
+  volumes:
+    - name: detector-plugins
+      persistentVolumeClaim:
+        claimName: detector-plugin-repository-pvc
