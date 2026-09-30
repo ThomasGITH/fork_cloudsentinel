@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: generic-anomaly-detection-deployment
+  namespace: cloudsentinel
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: generic-anomaly-detection
+  template:
+    metadata:
+      labels:
+        app: generic-anomaly-detection
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: generic-anomaly-detection
+          image: jojojochem/anomaly_detection_generic:generic-detection-1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 5015
+          env:
+            - name: MODEL_CATALOGUE_STORAGE_ROOT
+              value: /app/learning-storage/models
+            - name: MODEL_ARTIFACT_STORAGE_ROOT
+              value: /app/storage/model_artifacts
+            - name: GENERIC_DETECTION_RESULTS_ROOT
+              value: /app/storage/results
+            - name: DETECTOR_PLUGIN_ROOTS
+              value: /opt/cloudsentinel/detectors/active
+            - name: GENERIC_DETECTION_MAX_REQUEST_BYTES
+              value: "104857600"
+            - name: GENERIC_DETECTION_MAX_OBSERVATIONS
+              value: "100000"
+            - name: GENERIC_DETECTION_MAX_FEATURES
+              value: "1000"
+            - name: GENERIC_DETECTION_MODEL_CACHE_SIZE
+              value: "2"
+            - name: HOME
+              value: /tmp
+          volumeMounts:
+            - name: learning-storage
+              mountPath: /app/learning-storage
+              readOnly: true
+            - name: model-artifacts
+              mountPath: /app/storage/model_artifacts
+              readOnly: true
+            - name: detection-results
+              mountPath: /app/storage/results
+              readOnly: false
+            - name: detector-plugins
+              mountPath: /opt/cloudsentinel/detectors
+              readOnly: true
+            - name: runtime-tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "500m"
+            limits:
+              memory: "8Gi"
+              cpu: "2"
+      volumes:
+        - name: learning-storage
+          persistentVolumeClaim:
+            claimName: learning-adaptation-pvc
+            readOnly: true
+        - name: model-artifacts
+          persistentVolumeClaim:
+            claimName: model-artifact-pvc
+            readOnly: true
+        - name: detection-results
+          persistentVolumeClaim:
+            claimName: detection-results-pvc
+        - name: detector-plugins
+          persistentVolumeClaim:
+            claimName: detector-plugin-repository-pvc
+            readOnly: true
+        - name: runtime-tmp
+          emptyDir:
+            sizeLimit: 256Mi

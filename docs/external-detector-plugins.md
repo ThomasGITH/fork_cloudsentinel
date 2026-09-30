@@ -90,7 +90,7 @@ The commands below document the lower-level technical fallback.
 ## Manual Minikube fallback
 
 After a compatible application image containing the repository code has been
-built as `jojojochem/learning_adaptation:external-plugins-1` and deployed,
+built as `jojojochem/learning_adaptation:generic-detection-1` and deployed,
 create the PVC and temporary admin pod. This is the one application-image
 upgrade needed to introduce the repository mechanism; later compatible plugin
 code does not require rebuilding that image.

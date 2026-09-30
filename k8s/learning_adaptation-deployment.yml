@@ -18,13 +18,16 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:external-plugins-1
+        image: jojojochem/learning_adaptation:generic-detection-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
           runAsUser: 10001
           runAsGroup: 10001
+          capabilities:
+            drop:
+            - ALL
         ports:
         - name: http
           containerPort: 5005

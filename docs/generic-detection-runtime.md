@@ -101,10 +101,16 @@ validation, checksum rejection, and compact result storage.
 
 ## Migration boundary
 
-This tranche does not add Kubernetes resources or PVC mounts, migrate live
-callers, remove detector-specific services, add streaming sequence state, or
-make old artifacts generic-inference-ready. Deployment must later mount the
-Saved Model catalogue and generic artifact store read-only in the runtime, and
-mount the external Plugin PVC read-only at the same configured root used by
-the learning worker. Parity tests must run against legacy CGNN and IF services
-before their callers or manifests can be retired.
+The staging deployment does not migrate live callers, remove detector-specific
+services, add streaming sequence state, or make old artifacts
+generic-inference-ready. It uses three storage boundaries:
+
+- `learning-adaptation-pvc` remains the owner of Saved Model catalogue
+  records. The generic runtime mounts it read-only.
+- `model-artifact-pvc` is written only by the learning worker and mounted
+  read-only by the generic runtime.
+- `detection-results-pvc` is writable only by the generic runtime.
+
+The external `detector-plugin-repository-pvc` is also mounted read-only by the
+runtime. Parity tests must run against the legacy CGNN and IF services before
+their callers or manifests can be retired.

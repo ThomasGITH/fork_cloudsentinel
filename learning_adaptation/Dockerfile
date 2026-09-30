@@ -29,6 +29,8 @@ RUN groupadd --system --gid 10001 cloudsentinel \
     && mkdir -p /app/storage/dataset_snapshots \
         /app/storage/training_runs \
         /app/storage/trained_models_temp \
+        /app/storage/models \
+        /app/storage/model_artifacts \
     && chown -R 10001:10001 /app
 
 USER 10001:10001

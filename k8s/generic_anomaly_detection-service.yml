@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: generic-anomaly-detection-service
+  namespace: cloudsentinel
+spec:
+  type: ClusterIP
+  selector:
+    app: generic-anomaly-detection
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http

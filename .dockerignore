@@ -13,6 +13,9 @@
 **/storage
 **/dataset_snapshots
 **/training_runs
+**/model_artifacts
+**/generic_detection_results
+**/model_catalogue
 **/trained_models
 **/trained_models_temp
 **/results
