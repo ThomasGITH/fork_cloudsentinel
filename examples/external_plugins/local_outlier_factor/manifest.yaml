@@ -1,0 +1,74 @@
+schema_version: 1
+id: local-outlier-factor
+name: Local Outlier Factor
+version: 1.0.0
+description: Detects local-density anomalies in independent multivariate metric observations using novelty-enabled Local Outlier Factor.
+supported_modalities:
+  - metrics
+runtime:
+  profile: python-ml-cpu/v1
+capabilities:
+  training:
+    enabled: true
+    protocol: cloudsentinel.training/v1
+    input_profile: metrics-partition-v1
+input_requirements:
+  training:
+    format: Numeric two-dimensional matrix
+    shape: [n_samples, n_features]
+    observation: One independent timestamp observation per row
+    feature_identity: Stable positional feature order
+    timestamps_included: false
+    labels_used_for_fitting: false
+    finite_values_required: true
+    minimum_observations: n_neighbors + 1
+  evaluation:
+    format: Numeric two-dimensional matrix
+    feature_order_must_match_training: true
+    labels_required: true
+    labels:
+      normal: 0
+      anomaly: 1
+  sequence_processing:
+    lookback: false
+    windowing: false
+training_parameters:
+  n_neighbors:
+    type: integer
+    default: 20
+    minimum: 1
+    advanced: false
+    description: Number of neighboring training observations used for each local-density estimate; must be smaller than the training set.
+  metric:
+    type: string
+    default: minkowski
+    allowed_values: [minkowski, euclidean, manhattan, chebyshev]
+    advanced: false
+    description: Distance metric used to find nearest neighbors.
+  contamination:
+    type: string
+    default: auto
+    allowed_values: [auto]
+    advanced: false
+    description: Uses scikit-learn's automatic offset for binary novelty predictions.
+  algorithm:
+    type: string
+    default: auto
+    allowed_values: [auto, ball_tree, kd_tree, brute]
+    advanced: true
+    description: Neighbor-search implementation selected by scikit-learn.
+  leaf_size:
+    type: integer
+    default: 30
+    minimum: 1
+    maximum: 10000
+    advanced: true
+    description: Leaf size used by BallTree or KDTree neighbor search.
+  p:
+    type: integer
+    default: 2
+    minimum: 1
+    maximum: 20
+    advanced: true
+    description: Power parameter for the Minkowski metric; ignored by metrics that do not use it.
+entry_point: adapter:LocalOutlierFactorAdapter
