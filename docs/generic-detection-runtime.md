@@ -113,9 +113,11 @@ Its current model metadata does not contain a safe generic mapping from
 arbitrary catalogue feature identity to the monitoring collector's concrete
 Prometheus queries. Guessing that mapping from feature names would be unsafe.
 The CGNN deployment therefore cannot be removed until a server-side live input
-profile/query binding is implemented and verified. The Isolation Forest
-service has no remaining new-TrainingRun caller and can be retired after the
-live IF generic parity checks in `generic-detection-migration.md` pass.
+profile/query binding is implemented and verified. The legacy Isolation Forest
+Deployment, Service, and dedicated PVC were retired after the live IF generic
+parity checks in `generic-detection-migration.md` passed. Its Python service
+code remains only as a backward-compatible legacy implementation and is not
+part of the active Kubernetes topology.
 
 The deployment uses three storage boundaries:
 

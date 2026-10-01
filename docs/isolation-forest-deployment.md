@@ -1,47 +1,24 @@
-# Isolation Forest detection deployment
+# Retired Isolation Forest detection deployment
 
-IF-C4 packages the standalone Isolation Forest detection service for local
-Docker and Kubernetes deployment. It does not deploy to a cluster or EC2 and
-does not change model training, promotion, prediction, RCA, or CGNN behavior.
+IF-C4 originally packaged a standalone Isolation Forest detection service.
+That Kubernetes Deployment, Service, and dedicated PVC have now been retired
+after the generic runtime was verified with a freshly trained IF model.
 
-Build both affected images from the repository root:
+New Isolation Forest TrainingRuns publish an immutable artifact to
+`model-artifact-pvc`, produce a Saved Model with `inference.status=ready`, and
+are activated and executed by `generic-anomaly-detection-service`. They do not
+call the former `/save_model` endpoint.
 
-```shell
-docker build -f anomaly_detection/isolation_forest/Dockerfile \
-  -t anomaly_detection_isolation_forest:local .
-docker build -f learning_adaptation/Dockerfile \
-  -t learning_adaptation:local .
-```
+The legacy Python service and Dockerfile remain in the source tree for
+backward-compatible local/reference use, but no active Kubernetes manifest
+deploys them. Do not use
+`API_ISOLATION_FOREST_ANOMALY_DETECTION_URL` for new training or detection.
 
-The Isolation Forest image contains the service runtime from
-`anomaly_detection/isolation_forest/requirements.txt` and the shared
-`detectors` package. It listens on port 5014 and exposes `GET /healthz`.
+Current deployment and smoke-test instructions are in:
 
-The Kubernetes resources are in
-`k8s/isolation_forest_anomaly_detection-deployment.yml`:
+- `docs/generic-detection-deployment.md`
+- `docs/generic-detection-migration.md`
 
-- `isolation-forest-anomaly-detection-deployment`
-- `isolation-forest-anomaly-detection-service`
-- `isolation-forest-detection-pvc`
-
-Within the `cloudsentinel` namespace, the learning Celery worker uses:
-
-```text
-API_ISOLATION_FOREST_ANOMALY_DETECTION_URL=http://isolation-forest-anomaly-detection-service.cloudsentinel.svc.cluster.local
-```
-
-The ClusterIP Service is internal and maps port 80 to container port 5014.
-The PVC is mounted once at `/app/storage`; models and results use:
-
-```text
-IF_MODEL_STORAGE_ROOT=/app/storage/trained_models
-IF_RESULTS_STORAGE_ROOT=/app/storage/results
-IF_MAX_UPLOAD_BYTES=104857600
-```
-
-The initial deployment uses one replica and ReadWriteOnce storage. Multiple
-replicas require shared storage that supports the chosen access pattern,
-cross-replica result locking, and result coordination. Without a PVC,
-promoted models and detection results are lost when the pod is replaced.
-No storage class is selected; the cluster's default provisioner must satisfy
-the claim.
+Deleting the manifest from the repository does not delete objects that may
+still exist in an older cluster. Remove those explicitly only after completing
+the documented parity checks.

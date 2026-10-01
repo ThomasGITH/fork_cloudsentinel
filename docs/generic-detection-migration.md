@@ -47,9 +47,9 @@ can use the generic runtime. Until then these legacy CGNN callers remain:
 - legacy CGNN configuration and historical result-management screens.
 
 Consequently the legacy CGNN Deployment and Service are still required. The
-legacy Isolation Forest Deployment and Service have no required new
-TrainingRun caller after this migration, but should be removed only after the
-live verification below succeeds.
+legacy Isolation Forest Deployment, Service, and dedicated PVC were retired
+after live verification confirmed that fresh IF training, artifact
+publication, activation, and detection all use the generic runtime.
 
 ## Build and rollout
 
@@ -108,16 +108,17 @@ kubectl rollout status -n cloudsentinel deployment/monitoring-project-deployment
 6. Exercise the manual CSV detection page and confirm it uses a Saved Model ID
    and succeeds while the legacy IF service is unavailable.
 
-After successful IF verification, remove the resources contained in:
+The verified legacy IF resources and their combined manifest have been
+removed from the repository:
 
 ```text
-k8s/isolation_forest_anomaly_detection-deployment.yml
-  Deployment/isolation-forest-anomaly-detection-deployment
-  Service/isolation-forest-anomaly-detection-service
+Deployment/isolation-forest-anomaly-detection-deployment
+Service/isolation-forest-anomaly-detection-service
+PersistentVolumeClaim/isolation-forest-detection-pvc
 ```
 
-Do not yet remove the resources contained in
+Clusters on which these resources still exist can remove them explicitly;
+deleting a manifest from Git does not delete already-created Kubernetes
+objects. Do not yet remove the resources contained in
 `k8s/cgnn_anomaly_detection-deployment.yml`; continuous monitoring and legacy
-result/configuration pages remain blockers. This repository stores each legacy
-Service in the same YAML file as its Deployment, so separate
-`*-service.yml` files do not currently exist.
+result/configuration pages remain blockers.

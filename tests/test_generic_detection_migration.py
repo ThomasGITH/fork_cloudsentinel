@@ -195,22 +195,19 @@ class GenericTrainingPublicationMigrationTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertNotIn("/save_to_detection_module", task_results)
 
-        # Removal happens only after live parity verification.
+        # CGNN remains deployed for continuous monitoring. Live parity has
+        # already allowed the detector-specific IF resources to be retired.
         cgnn_manifest = (
             ROOT / "k8s" / "cgnn_anomaly_detection-deployment.yml"
         ).read_text(encoding="utf-8")
-        isolation_forest_manifest = (
-            ROOT / "k8s" / "isolation_forest_anomaly_detection-deployment.yml"
-        ).read_text(encoding="utf-8")
         self.assertIn("cgnn-anomaly-detection-deployment", cgnn_manifest)
         self.assertIn("cgnn-anomaly-detection-service", cgnn_manifest)
-        self.assertIn(
-            "isolation-forest-anomaly-detection-deployment",
-            isolation_forest_manifest,
-        )
-        self.assertIn(
-            "isolation-forest-anomaly-detection-service",
-            isolation_forest_manifest,
+        self.assertFalse(
+            (
+                ROOT
+                / "k8s"
+                / "isolation_forest_anomaly_detection-deployment.yml"
+            ).exists()
         )
 
 

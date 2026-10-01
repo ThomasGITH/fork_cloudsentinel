@@ -226,19 +226,16 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
         ):
             self.assertIn(ignored, dockerignore)
 
-    def test_legacy_detector_resources_remain_present_and_separate(self):
+    def test_cgnn_legacy_resources_remain_but_if_resources_are_retired(self):
         cgnn = (K8S / "cgnn_anomaly_detection-deployment.yml").read_text(
             encoding="utf-8"
         )
-        isolation_forest = (
-            K8S / "isolation_forest_anomaly_detection-deployment.yml"
-        ).read_text(encoding="utf-8")
         self.assertIn("cgnn-anomaly-detection-deployment", cgnn)
         self.assertIn("cgnn-anomaly-detection-service", cgnn)
-        self.assertIn("isolation-forest-anomaly-detection-deployment", isolation_forest)
-        self.assertIn("isolation-forest-anomaly-detection-service", isolation_forest)
+        self.assertFalse(
+            (K8S / "isolation_forest_anomaly_detection-deployment.yml").exists()
+        )
         self.assertNotIn("model-artifact-pvc", cgnn)
-        self.assertNotIn("model-artifact-pvc", isolation_forest)
         generic = (
             K8S / "generic_anomaly_detection-deployment.yml"
         ).read_text(encoding="utf-8")
