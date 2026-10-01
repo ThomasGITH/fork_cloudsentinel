@@ -9,7 +9,12 @@ import json
 import logging
 import traceback
 
-from .utils import get_config, get_pods, get_available_models, get_settings, get_metrics
+from .utils import (
+    get_generic_inference_models,
+    get_pods,
+    get_settings,
+    get_metrics,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,7 +45,7 @@ def perform_anomaly_detection_cgnn(request):
         HttpResponse: The rendered CGNN anomaly detection configuration page.
     """
     logger.info("Fetching CGNN anomaly detection configuration")
-    config_data = get_config(settings.API_CGNN_ANOMALY_DETECTION_URL)
+    config_data = {}
     return render(request, 'config_app/anomaly_detection/cgnn/cgnn_anomaly_detection_home.html', {'config': config_data})
 
 
@@ -136,7 +141,7 @@ def upload_cgnn_data(request):
         HttpResponse: The rendered page to upload CGNN data with results.
     """
     logger.info("Fetching available models for CGNN anomaly detection")
-    models = get_available_models(settings.API_CGNN_ANOMALY_DETECTION_URL)
+    models = get_generic_inference_models(detector_id="cgnn")
     selected_model = None
     result = None
 
@@ -145,7 +150,7 @@ def upload_cgnn_data(request):
         data_file = request.FILES.get('data_file')
         test_info = {
             'settings': get_settings(),
-            'data': {'model': selected_model}
+            'data': {'model_id': selected_model}
         }
         test_info_json = json.dumps(test_info)
         if selected_model and data_file:

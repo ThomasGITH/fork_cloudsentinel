@@ -218,7 +218,10 @@ class CGNNAdapter:
                     safe_reference=context.model_id,
                 ),
                 evaluation=evaluation,
-                promotion=PromotionResult(status="not_promoted"),
+                # Generic immutable artifact publication is the publication
+                # boundary for TrainingRuns. Legacy detection-service promotion
+                # is intentionally outside this adapter.
+                promotion=PromotionResult(status="not_applicable"),
                 model_metadata={
                     "n_features": int(train.shape[1]),
                     "feature_importance_available": ranked_features is not None,

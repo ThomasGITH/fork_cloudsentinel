@@ -2,9 +2,98 @@ import numpy as np
 import pandas as pd
 import requests
 import json
+import os
+import re
 from flask import Response
 from ast import literal_eval
 from sklearn.preprocessing import MinMaxScaler
+
+
+SAFE_MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+GENERIC_DETECTION_URL_ENV = "API_GENERIC_ANOMALY_DETECTION_URL"
+LEARNING_API_URL_ENV = "API_LEARNING_ADAPTATION_URL"
+DEFAULT_GENERIC_DETECTION_URL = (
+    "http://generic-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
+)
+DEFAULT_LEARNING_API_URL = (
+    "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80"
+)
+HTTP_TIMEOUT = (5.0, 120.0)
+
+
+class GenericDetectionCallerError(RuntimeError):
+    """Safe failure raised by the server-configured generic detection caller."""
+
+
+def _configured_url(environment_name, default):
+    value = os.getenv(environment_name, default).strip().rstrip("/")
+    if not value.startswith(("http://", "https://")):
+        raise GenericDetectionCallerError(
+            f"{environment_name} is not configured with an HTTP service URL"
+        )
+    return value
+
+
+def _model_identity(test_info):
+    data = test_info.get("data") if isinstance(test_info, dict) else None
+    model_id = (
+        data.get("model_id") or data.get("model")
+        if isinstance(data, dict)
+        else None
+    )
+    if not isinstance(model_id, str) or not SAFE_MODEL_ID.fullmatch(model_id):
+        raise GenericDetectionCallerError("a safe model_id is required for detection")
+    return model_id
+
+
+def _model_feature_identity(model_id):
+    learning_url = _configured_url(LEARNING_API_URL_ENV, DEFAULT_LEARNING_API_URL)
+    try:
+        response = requests.get(
+            f"{learning_url}/models/{model_id}", timeout=HTTP_TIMEOUT
+        )
+    except requests.RequestException as exc:
+        raise GenericDetectionCallerError(
+            "model metadata service is temporarily unavailable"
+        ) from exc
+    if response.status_code == 404:
+        raise GenericDetectionCallerError("unknown model_id")
+    if response.status_code >= 400:
+        raise GenericDetectionCallerError("model metadata could not be retrieved")
+    try:
+        model = response.json()
+    except ValueError as exc:
+        raise GenericDetectionCallerError("model metadata response is invalid") from exc
+    if not isinstance(model, dict) or model.get("model_id") != model_id:
+        raise GenericDetectionCallerError("model metadata identity mismatch")
+    if (model.get("inference") or {}).get("status") != "ready":
+        raise GenericDetectionCallerError("selected model is not ready for generic inference")
+    identity = model.get("feature_identity")
+    if not isinstance(identity, dict):
+        raise GenericDetectionCallerError("selected model has no feature identity")
+    order = identity.get("feature_order") or []
+    digest = identity.get("feature_order_sha256")
+    if not isinstance(order, list) or any(not isinstance(item, str) or not item for item in order):
+        raise GenericDetectionCallerError("selected model feature order is invalid")
+    if not order and not isinstance(digest, str):
+        raise GenericDetectionCallerError("selected model feature identity is incomplete")
+    return {"feature_order": order, "feature_order_sha256": digest}
+
+
+def _safe_detection_context(test_info):
+    data = test_info.get("data", {}) if isinstance(test_info, dict) else {}
+    allowed = {
+        "task_id",
+        "iteration",
+        "start_time",
+        "end_time",
+        "containers",
+        "metrics",
+        "data_interval",
+        "crca_threshold",
+        "crca_pods",
+    }
+    return {key: data[key] for key in allowed if key in data}
 
 
 def handle_cgnn_request(test_data, test_info):
@@ -18,17 +107,56 @@ def handle_cgnn_request(test_data, test_info):
     Returns:
         Response: Flask response object containing the result from the anomaly detection API.
     """
+    model_id = _model_identity(test_info)
+    feature_identity = _model_feature_identity(model_id)
     test_array, _, _ = load_data(test_data)
-    test_data_processed = get_data(test_array, test_array.shape[1])
-    test_files = {'test_array': test_data_processed}
-    test_info_json = json.dumps(test_info)
-    response = requests.post(f"{test_info['settings']['API_CGNN_ANOMALY_DETECTION_URL']}/detect_anomalies",
-                             files=test_files, data={'test_info': test_info_json})
+    if not np.isfinite(test_array).all():
+        raise GenericDetectionCallerError("detection matrix must contain finite values")
+    if feature_identity["feature_order"] and len(feature_identity["feature_order"]) != test_array.shape[1]:
+        raise GenericDetectionCallerError(
+            "detection matrix feature count does not match the selected model"
+        )
+
+    runtime_url = _configured_url(
+        GENERIC_DETECTION_URL_ENV, DEFAULT_GENERIC_DETECTION_URL
+    )
+    try:
+        activation = requests.post(
+            f"{runtime_url}/models/{model_id}/activate", timeout=HTTP_TIMEOUT
+        )
+    except requests.RequestException as exc:
+        raise GenericDetectionCallerError(
+            "generic detection runtime is temporarily unavailable"
+        ) from exc
+    if activation.status_code >= 400:
+        return Response(
+            json.dumps({"status": "error", "error": "selected model could not be activated"}),
+            status=activation.status_code,
+            content_type="application/json",
+        )
+
+    metadata = {
+        "model_id": model_id,
+        **feature_identity,
+        "context": _safe_detection_context(test_info),
+    }
+    matrix_csv = pd.DataFrame(test_array).to_csv(index=False, header=False)
+    try:
+        response = requests.post(
+            f"{runtime_url}/detect",
+            files={"matrix": ("matrix.csv", matrix_csv, "text/csv")},
+            data={"metadata": json.dumps(metadata)},
+            timeout=HTTP_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise GenericDetectionCallerError(
+            "generic detection runtime is temporarily unavailable"
+        ) from exc
 
     flask_response = Response(
         response.content,
         status=response.status_code,
-        content_type=response.headers['Content-Type']
+        content_type=response.headers.get('Content-Type', 'application/json')
     )
     return flask_response
 

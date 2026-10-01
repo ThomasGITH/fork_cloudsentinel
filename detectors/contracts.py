@@ -189,6 +189,7 @@ class ProgressReporter:
         "VALIDATING",
         "TRAINING",
         "EVALUATING",
+        "PUBLISHING",
         "PROMOTING",
         "COMPLETED",
     }

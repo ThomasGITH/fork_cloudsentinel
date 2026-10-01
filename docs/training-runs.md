@@ -44,11 +44,11 @@ paths, temporary directory names, service URLs, or Celery task IDs.
 returns `404` for an unknown model. Corrupt records are isolated from list
 responses in the same way as corrupt run records.
 
-An Isolation Forest record is created only after its binary promotion has been
-confirmed and records `promotion.status=promoted`. A CGNN record is created
-after the training/evaluation artifacts exist, initially with
-`promotion.status=not_promoted`; the existing `/save_to_detection_module` flow
-updates it to `promoted` after the detection service accepts the model. The
+For new inference-enabled TrainingRuns, the generic executor validates and
+atomically publishes the adapter's complete artifact before it writes the
+Saved Model record. CGNN, Isolation Forest, and LOF records use
+`promotion.status=not_applicable` and `inference.status=ready`; no
+detector-specific `/save_model` call is part of successful training. The
 catalogue record survives subsequent cleanup of temporary artifacts. Failed,
 dispatch-failed, and validation-failed children do not create available model
 records. Repeated lifecycle delivery for the same model and provenance reuses

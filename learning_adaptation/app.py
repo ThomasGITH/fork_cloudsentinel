@@ -5,8 +5,6 @@ import logging
 import traceback
 import uuid
 import requests
-import torch
-import shutil
 import pandas as pd
 import numpy as np
 from flask_cors import CORS
@@ -42,15 +40,6 @@ except ModuleNotFoundError as exc:  # The service image copies modules into /app
         configure_training_run_defaults,
         create_training_runs_blueprint,
     )
-try:
-    from learning_adaptation.training_lifecycle import mark_cgnn_promoted
-except ModuleNotFoundError as exc:
-    if exc.name not in {
-        "learning_adaptation",
-        "learning_adaptation.training_lifecycle",
-    }:
-        raise
-    from training_lifecycle import mark_cgnn_promoted
 
 # Initialize Flask app and configure CORS
 app = Flask(__name__)
@@ -252,43 +241,13 @@ def get_available_models():
 
 @app.route('/save_to_detection_module', methods=['POST'])
 def save_to_detection_module():
-    """
-    Saves a trained model to the detection module.
-
-    Returns:
-        json: Success message or error details.
-    """
-    try:
-        model_info_json = request.form.get('model_info')
-        model_info = json.loads(model_info_json)
-        path = os.path.join(
-            os.getenv('TRAINED_MODELS_TEMP_ROOT', 'trained_models_temp'),
-            next(iter(model_info['data'])),
+    """Reject the retired detector-service promotion flow explicitly."""
+    return jsonify({
+        "error": (
+            "detector-specific model promotion is retired; create a TrainingRun "
+            "so its artifact is published to the generic model store"
         )
-        model = torch.load(path+'/model.pt', map_location='cpu')
-        json_data = {key: value.tolist() for key, value in model.items()}
-        model_json = json.dumps(json_data, indent=2)
-
-        model_info_json = json.dumps(model_info)
-        response = requests.post(model_info['settings']['API_CGNN_ANOMALY_DETECTION_URL'] + '/save_model',
-                                 files={'model': model_json}, data={'model_info': model_info_json})
-
-        if response.status_code == 200:
-            orchestration_model_id = (
-                model_info["data"][next(iter(model_info["data"]))]
-                .get("model_params", {})
-                .get("orchestration_model_id")
-            )
-            if orchestration_model_id:
-                mark_cgnn_promoted(orchestration_model_id)
-            shutil.rmtree(path)
-            logger.info(f"Model saved to detection module and local path {path} deleted")
-        else:
-            logger.error(f"Failed to save model to detection module: {response.text}")
-        return jsonify("success"), 200
-    except Exception as e:
-        logger.error(f"Error saving model to detection module: {traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
+    }), 410
 
 
 @app.route('/cgnn_train_with_existing_dataset', methods=['POST'])

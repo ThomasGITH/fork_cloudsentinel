@@ -1,9 +1,10 @@
 # Generic anomaly-detection runtime
 
-The generic runtime provides one detector-independent batch-inference host. It
-does not replace the existing CGNN and Isolation Forest services yet. Those
-legacy routes, promotion calls, result formats, and callers remain available
-during the migration period.
+The generic runtime provides one detector-independent batch-inference host.
+New generic TrainingRuns publish their artifacts only through the generic
+artifact store; CGNN, Isolation Forest, and LOF adapters do not call a legacy
+detection service. Existing detector-specific services and routes remain
+temporarily available for old records and callers during live parity testing.
 
 ## Inference contract
 
@@ -101,9 +102,22 @@ validation, checksum rejection, and compact result storage.
 
 ## Migration boundary
 
-The staging deployment does not migrate live callers, remove detector-specific
-services, add streaming sequence state, or make old artifacts
-generic-inference-ready. It uses three storage boundaries:
+The manual CSV detection caller now resolves an exact Saved Model by
+`model_id`, obtains its authoritative feature identity from learning
+adaptation, activates it, and sends the raw matrix to the generic runtime.
+Both upstream URLs are server configured. The caller never accepts an upstream
+URL from request metadata and does not dispatch on detector ID.
+
+Continuous Prometheus monitoring still depends on the legacy CGNN service.
+Its current model metadata does not contain a safe generic mapping from
+arbitrary catalogue feature identity to the monitoring collector's concrete
+Prometheus queries. Guessing that mapping from feature names would be unsafe.
+The CGNN deployment therefore cannot be removed until a server-side live input
+profile/query binding is implemented and verified. The Isolation Forest
+service has no remaining new-TrainingRun caller and can be retired after the
+live IF generic parity checks in `generic-detection-migration.md` pass.
+
+The deployment uses three storage boundaries:
 
 - `learning-adaptation-pvc` remains the owner of Saved Model catalogue
   records. The generic runtime mounts it read-only.
@@ -112,5 +126,5 @@ generic-inference-ready. It uses three storage boundaries:
 - `detection-results-pvc` is writable only by the generic runtime.
 
 The external `detector-plugin-repository-pvc` is also mounted read-only by the
-runtime. Parity tests must run against the legacy CGNN and IF services before
-their callers or manifests can be retired.
+runtime. Existing Saved Models without generic artifact evidence remain
+`legacy_external` and are never activated implicitly.

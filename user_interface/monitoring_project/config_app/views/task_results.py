@@ -94,24 +94,12 @@ def training_result(request):
                 models = response.json()
 
                 if selected_model in models:
-                    model_info = models[selected_model]
-                    model_info_json = json.dumps({
-                        'settings': get_settings(),
-                        'data': {selected_model: model_info}
-                    })
-
-                    try:
-                        logger.info(f"Saving model {selected_model} to detection module")
-                        response = requests.post(
-                            f'{settings.API_LEARNING_ADAPTATION_URL}/save_to_detection_module',
-                            data={'model_info': model_info_json}
-                        )
-                        response.raise_for_status()
-                        logger.info(f"Model {selected_model} saved successfully")
-                        return redirect('home')
-                    except requests.exceptions.RequestException as e:
-                        logger.error(f"Failed to save model to detection module: {traceback.format_exc()}")
-                        return JsonResponse({'status': 'error', 'message': str(e)})
+                    messages.error(
+                        request,
+                        "Legacy model promotion is retired. Retrain this model through "
+                        "Models so CloudSentinel publishes an inference-ready generic artifact.",
+                    )
+                    return redirect('models_train')
             except RequestException as e:
                 logger.error(f"Failed to fetch available models: {traceback.format_exc()}")
                 return JsonResponse({'status': 'error', 'message': str(e)})

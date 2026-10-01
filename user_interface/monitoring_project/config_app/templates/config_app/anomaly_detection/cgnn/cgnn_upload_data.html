@@ -19,13 +19,11 @@
                         <span class="ml-auto">&#9660;</span>
                     </div>
                     <div id="details-{{ model }}" class="card-body" style="display: none;">
-                        <h5>Model Parameters</h5>
+                        <h5>Generic model identity</h5>
                         <div>
-                            <strong>Metrics:</strong> {{ details.model_params.metrics|join:", " }}  ({{ details.model_params.metrics|length }} in total)<br>
-                            <strong>Containers:</strong> {{ details.model_params.containers|join:", " }}  ({{ details.model_params.containers|length }} in total)<br>
-                            <strong>Data Entries:</strong> {{ details.model_params.data_entries }}<br>
-                            <strong>Duration:</strong> {{ details.model_params.duration }} seconds<br>
-                            <strong>Step Size:</strong> {{ details.model_params.step_size }} seconds<br>
+                            <strong>Detector:</strong> {{ details.detector_id }} v{{ details.detector_version }}<br>
+                            <strong>Feature order:</strong> {{ details.feature_order|join:", " }}<br>
+                            <strong>Dataset:</strong> {{ details.dataset.dataset_id|default:"unknown" }}{% if details.dataset.version %} v{{ details.dataset.version }}{% endif %}<br>
                         </div>
                         <br>
                         <h5>Evaluation Summary</h5>
@@ -33,18 +31,14 @@
                             <thead>
                                 <tr>
                                     <th>Evaluation Type</th>
-                                    {% for key in details.model_evaluation.epsilon_result.keys %}
-                                    <th>{{ key }}</th>
-                                    {% endfor %}
+                                    <th>Value</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for result_type, result_data in details.model_evaluation.items %}
                                 <tr>
                                     <th>{{ result_type }}</th>
-                                    {% for value in result_data.values %}
-                                    <td>{{ value|floatformat:4 }}</td>
-                                    {% endfor %}
+                                    <td>{{ result_data }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

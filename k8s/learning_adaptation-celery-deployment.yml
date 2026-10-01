@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation-celery
-        image: jojojochem/learning_adaptation:generic-detection-1
+        image: jojojochem/learning_adaptation:generic-detection-migration-1
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent", "--concurrency=1"]
         securityContext:
@@ -36,8 +36,6 @@ spec:
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: CELERY_RESULT_BACKEND
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
-        - name: API_ISOLATION_FOREST_ANOMALY_DETECTION_URL
-          value: "http://isolation-forest-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
         - name: DATASET_SNAPSHOT_STORAGE_ROOT
           value: "/app/storage/dataset_snapshots"
         - name: TRAINING_RUN_STORAGE_ROOT

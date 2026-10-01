@@ -15,10 +15,15 @@ spec:
     spec:
       containers:
       - name: data-processing
-        image: jojojochem/data_processing:latest
-        imagePullPolicy: Always
+        image: jojojochem/data_processing:generic-detection-migration-1
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5002
+        env:
+        - name: API_GENERIC_ANOMALY_DETECTION_URL
+          value: "http://generic-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
+        - name: API_LEARNING_ADAPTATION_URL
+          value: "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80"
 ---
 apiVersion: v1
 kind: Service

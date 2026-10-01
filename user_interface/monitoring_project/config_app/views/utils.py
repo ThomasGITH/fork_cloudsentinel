@@ -26,6 +26,38 @@ def get_available_models(api_url):
         return {}
 
 
+def get_generic_inference_models(*, detector_id=None):
+    """Return inference-ready Saved Models in the legacy template shape."""
+    from config_app.learning_client import get_learning_client
+
+    filters = {"status": "available", "page_size": 100, "sort": "newest"}
+    if detector_id:
+        filters["detector_id"] = detector_id
+    try:
+        client = get_learning_client()
+        listing = client.list_models(filters)
+        models = {}
+        for summary in listing.get("items", []):
+            if (summary.get("inference") or {}).get("status") != "ready":
+                continue
+            model_id = summary.get("model_id")
+            if not isinstance(model_id, str):
+                continue
+            detail = client.get_model(model_id)
+            models[model_id] = {
+                "detector_id": detail.get("detector_id"),
+                "detector_version": detail.get("detector_version"),
+                "feature_order": (detail.get("feature_identity") or {}).get(
+                    "feature_order", []
+                ),
+                "model_evaluation": detail.get("evaluation") or {},
+                "dataset": detail.get("dataset") or {},
+            }
+        return models
+    except Exception:
+        return {}
+
+
 def get_config(API_URL):
     """
     Retrieves the configuration from the given API URL.

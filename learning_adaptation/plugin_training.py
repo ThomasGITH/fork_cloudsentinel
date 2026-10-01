@@ -355,6 +355,7 @@ def execute_detector_plugin_training(
         inference_capability = manifest.get("capabilities", {}).get("inference", {})
         inference_metadata = {"status": "not_supported"}
         if inference_capability.get("enabled"):
+            progress.report("PUBLISHING", "Publishing immutable model artifact")
             artifact_root = Path(
                 os.getenv("MODEL_ARTIFACT_STORAGE_ROOT", "model_artifacts")
             ).resolve()

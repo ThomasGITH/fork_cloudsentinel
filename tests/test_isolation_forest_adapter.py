@@ -98,25 +98,12 @@ assert 'joblib' not in sys.modules
         self.assertEqual(loader.call_count, 3)
         loader.assert_called_with("detectors.isolation_forest.implementation")
 
-    def test_promotion_runtime_supports_flat_learning_service_image(self):
+    def test_training_adapter_has_no_legacy_promotion_runtime(self):
         adapter_module = importlib.import_module("detectors.isolation_forest.adapter")
-        flat_runtime = types.SimpleNamespace(promote_isolation_forest_model=Mock())
-        missing_package = ModuleNotFoundError(
-            "No module named 'learning_adaptation'", name="learning_adaptation"
-        )
-        with patch.object(
-            adapter_module,
-            "import_module",
-            side_effect=[missing_package, flat_runtime],
-        ) as loader:
-            self.assertIs(adapter_module._promotion_runtime(), flat_runtime)
-        self.assertEqual(
-            [call.args[0] for call in loader.call_args_list],
-            [
-                "learning_adaptation.isolation_forest_promotion",
-                "isolation_forest_promotion",
-            ],
-        )
+        self.assertFalse(hasattr(adapter_module, "_promotion_runtime"))
+        source = Path(adapter_module.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("promote_isolation_forest_model", source)
+        self.assertNotIn("/save_model", source)
 
 
 class IsolationForestRuntimeTests(unittest.TestCase):

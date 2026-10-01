@@ -6,8 +6,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 K8S = ROOT / "k8s"
-GENERIC_IMAGE = "jojojochem/anomaly_detection_generic:generic-detection-1"
-LEARNING_IMAGE = "jojojochem/learning_adaptation:generic-detection-1"
+GENERIC_IMAGE = "jojojochem/anomaly_detection_generic:generic-detection-migration-1"
+LEARNING_IMAGE = "jojojochem/learning_adaptation:generic-detection-migration-1"
 
 
 def documents(name):
@@ -123,6 +123,7 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
             worker_environment["MODEL_ARTIFACT_STORAGE_ROOT"],
             "/app/storage/model_artifacts",
         )
+        self.assertNotIn("API_ISOLATION_FOREST_ANOMALY_DETECTION_URL", worker_environment)
         worker_volumes = by_name(worker["spec"]["template"]["spec"]["volumes"])
         self.assertEqual(
             worker_volumes["model-artifacts"]["persistentVolumeClaim"]["claimName"],
@@ -243,6 +244,20 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         for detector_id in ("local-outlier-factor", "isolation-forest", "cgnn"):
             self.assertNotIn(f'app: {detector_id}', generic)
+
+    def test_data_processing_calls_only_the_server_configured_generic_runtime(self):
+        value = deployment("data_processing-deployment.yml")
+        runtime = container(value)
+        environment = {item["name"]: item["value"] for item in runtime["env"]}
+        self.assertEqual(
+            environment["API_GENERIC_ANOMALY_DETECTION_URL"],
+            "http://generic-anomaly-detection-service.cloudsentinel.svc.cluster.local:80",
+        )
+        self.assertEqual(
+            environment["API_LEARNING_ADAPTATION_URL"],
+            "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80",
+        )
+        self.assertNotIn("API_CGNN_ANOMALY_DETECTION_URL", environment)
 
 
 if __name__ == "__main__":
