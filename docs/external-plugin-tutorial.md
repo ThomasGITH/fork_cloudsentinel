@@ -31,6 +31,7 @@ schema_version: 1
 id: my-detector
 name: My detector
 version: 1.0.0
+description: Detects anomalies in multivariate metric observations.
 supported_modalities: [metrics]
 runtime:
   profile: python-ml-cpu/v1
@@ -39,8 +40,115 @@ capabilities:
     enabled: true
     protocol: cloudsentinel.training/v1
     input_profile: metrics-partition-v1
+input_requirements:
+  training:
+    format: Numeric two-dimensional matrix
+    finite_values_required: true
+training_parameters: {}
 entry_point: adapter:MyDetectorAdapter
 ```
+
+To start from a commented skeleton, copy the repository template:
+
+```bash
+cp -R examples/external_plugins/template_detector \
+  /home/ubuntu/plugins/my_detector
+```
+
+The template is intentionally not publishable until all `<replace-...>` values
+are replaced and its adapter methods are implemented.
+
+### Required manifest fields
+
+The current schema requires:
+
+- `schema_version`: currently exactly `1`;
+- `id`: unique lowercase identifier using letters, digits, `-` or `_`;
+- `name`: user-facing Detector Library name;
+- `version`: immutable release version;
+- `description`: user-facing explanation;
+- `supported_modalities`: non-empty list, currently normally `[metrics]`;
+- `capabilities.training.enabled`: required boolean;
+- `capabilities.training.protocol` and `input_profile` when training is enabled;
+- `input_requirements`: required mapping describing accepted data;
+- `training_parameters`: required mapping, which may be empty;
+- `entry_point`: plugin-relative `module:ClassName`, normally
+  `adapter:MyDetectorAdapter`.
+
+`input_requirements` is descriptive compatibility metadata. The adapter must
+still enforce dataset-dependent conditions in `validate_training()`.
+
+### Optional manifest fields
+
+- `runtime.profile`; omission currently selects `python-ml-cpu/v1`;
+- `capabilities.inference`; when enabled, `protocol`, `input_profile` and
+  `artifact_format` become required;
+- individual parameter constraints such as bounds, allowed values and UI
+  grouping;
+- additional descriptive nested input-requirement fields.
+
+The currently supported training contract is
+`cloudsentinel.training/v1` with `metrics-partition-v1`. The current generic
+inference contract is `cloudsentinel.inference/v1` with
+`metrics-matrix/v1`.
+
+### Training parameters
+
+Every entry under `training_parameters` requires:
+
+```yaml
+parameter_name:
+  type: integer
+  default: 10
+  description: User-facing explanation of the parameter.
+```
+
+Supported types are `boolean`, `integer`, `number`, and `string`. Optional
+metadata includes:
+
+- `minimum` or `exclusive_minimum`;
+- `maximum` or `exclusive_maximum`;
+- `allowed_values`;
+- `excluded_values`;
+- `nullable: true`, required when the default is `null`;
+- `advanced: true|false` for UI grouping.
+
+Defaults and allowed values must match the declared type and bounds. A default
+must be included in `allowed_values` and may not appear in `excluded_values`.
+Unknown submitted parameter names are rejected and never forwarded to the
+adapter. Relationships that cannot be expressed as a simple bound, such as
+`n_neighbors < training observations`, belong in `validate_training()`.
+
+### Adapter contract
+
+An enabled training plugin must expose a class that can be constructed without
+arguments and implements:
+
+```python
+def validate_training(context: TrainingContext) -> None: ...
+def run_training(
+    context: TrainingContext,
+    progress: ProgressReporter,
+) -> TrainingResult: ...
+```
+
+The adapter owns detector-specific validation, preprocessing, fitting,
+evaluation and artifact creation. It may write only inside the supplied
+artifact workspace. The generic executor owns run lifecycle, artifact
+validation/publication and Saved Model creation.
+
+When inference is enabled, the same adapter must additionally implement:
+
+```python
+def load_model(context: ModelLoadContext) -> Any: ...
+def predict_inference(
+    model: Any,
+    context: InferenceContext,
+) -> PredictionResult: ...
+```
+
+Predictions use `0 = normal`, `1 = anomaly`, and larger scores must mean more
+anomalous.
 
 Use a unique detector ID. External plugins cannot replace built-in detector
 IDs. The version identifies an immutable release, so publish changed content
@@ -57,9 +165,9 @@ It is a compatibility declaration, not an installation request. Every listed
 package and exact version must already exist in the learning runtime image.
 Adding a dependency to this file does not install it. Runtime profiles state
 which prebuilt environment the plugin expects. Training capability makes the
-plugin eligible for the generic TrainingRun flow. Inference capability can be
-declared for future runtimes, but the current external repository does not
-provide the future Generic Detection Runtime.
+plugin eligible for the generic TrainingRun flow. Inference capability makes a
+correctly published model eligible for the Generic Detection Runtime when its
+artifact contract is supported by the adapter.
 
 ## 2. Publish and activate
 

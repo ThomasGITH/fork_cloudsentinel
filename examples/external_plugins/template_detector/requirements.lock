@@ -1,0 +1,7 @@
+# Add only exact versions already installed in the selected runtime profile.
+# Examples (replace versions with the versions actually deployed):
+# numpy==X.Y.Z
+# scikit-learn==X.Y.Z
+#
+# This file may remain comment-only if the adapter has no additional third-party
+# dependencies. Publishing never runs pip install.

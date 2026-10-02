@@ -24,6 +24,14 @@ RUN pip install --no-cache-dir ./shared
 # Copy the rest of the application code into the container
 COPY --chown=10001:10001 learning_adaptation .
 
+# Fail the image build if the API and worker would contain the registered
+# comparison task without its runtime modules.
+RUN test -f /app/comparison_api.py \
+    && test -f /app/comparison_execution.py \
+    && test -f /app/comparison_evaluation.py \
+    && test -f /app/comparison_storage.py \
+    && python -c "import comparison_api, comparison_evaluation, comparison_execution, comparison_storage"
+
 RUN groupadd --system --gid 10001 cloudsentinel \
     && useradd --system --uid 10001 --gid cloudsentinel --home-dir /app cloudsentinel \
     && mkdir -p /app/storage/dataset_snapshots \

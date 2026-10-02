@@ -1,0 +1,86 @@
+# Copy this entire directory and replace every <replace-...> placeholder.
+# This file is intentionally NOT publishable in its template state.
+schema_version: 1
+id: <replace-with-unique-detector-id>
+name: <replace-with-display-name>
+version: <replace-with-version>
+description: <replace-with-a-short-user-facing-description>
+
+supported_modalities:
+  - metrics
+
+# Optional. Omit this block to use the current default python-ml-cpu/v1.
+runtime:
+  profile: python-ml-cpu/v1
+
+capabilities:
+  # The training block is required. When enabled is true, protocol and
+  # input_profile are required and must be supported by CloudSentinel.
+  training:
+    enabled: true
+    protocol: cloudsentinel.training/v1
+    input_profile: metrics-partition-v1
+
+  # Inference is optional. Leave it disabled until adapter.py implements both
+  # load_model() and predict_inference() and your artifact format is stable.
+  inference:
+    enabled: false
+    # When enabling inference, add all three fields below:
+    # protocol: cloudsentinel.inference/v1
+    # input_profile: metrics-matrix/v1
+    # artifact_format: <replace-with-stable-artifact-format>
+
+# Required mapping. These fields describe compatibility to users and adapters.
+# Adapter validation remains authoritative for dataset-dependent requirements.
+input_requirements:
+  training:
+    format: Numeric two-dimensional matrix
+    shape: [n_samples, n_features]
+    feature_identity: Stable positional feature order
+    finite_values_required: true
+  evaluation:
+    format: Numeric two-dimensional matrix
+    feature_order_must_match_training: true
+    labels_required: true
+    labels:
+      normal: 0
+      anomaly: 1
+
+# Required mapping; it may be empty. Every declared parameter requires type,
+# default and description. Remove these commented examples or adapt them.
+training_parameters: {}
+  # integer_example:
+  #   type: integer
+  #   default: 10
+  #   minimum: 1
+  #   maximum: 1000
+  #   advanced: false
+  #   description: Replace with a user-facing explanation.
+  # number_example:
+  #   type: number
+  #   default: 0.5
+  #   exclusive_minimum: 0
+  #   maximum: 1
+  #   advanced: false
+  #   description: Replace with a user-facing explanation.
+  # boolean_example:
+  #   type: boolean
+  #   default: false
+  #   advanced: true
+  #   description: Replace with a user-facing explanation.
+  # choice_example:
+  #   type: string
+  #   default: auto
+  #   allowed_values: [auto, option-a, option-b]
+  #   advanced: true
+  #   description: Replace with a user-facing explanation.
+  # nullable_example:
+  #   type: number
+  #   default: null
+  #   nullable: true
+  #   minimum: 0
+  #   advanced: true
+  #   description: Replace with a user-facing explanation.
+
+# External entry points are relative to this plugin directory.
+entry_point: adapter:TemplateDetectorAdapter

@@ -124,7 +124,7 @@ Build from the repository root:
 docker build -f data_ingestion/Dockerfile \
   -t jojojochem/data_ingestion:comparison-mvp-1 data_ingestion
 docker build -f learning_adaptation/Dockerfile \
-  -t jojojochem/learning_adaptation:comparison-mvp-1 .
+  -t jojojochem/learning_adaptation:comparison-mvp-1.1 .
 docker build -f anomaly_detection/generic/Dockerfile \
   -t jojojochem/anomaly_detection_generic:comparison-mvp-1 .
 docker build -f user_interface/monitoring_project/Dockerfile \
@@ -136,7 +136,7 @@ For a local Minikube Docker driver, load the four exact tags:
 
 ```bash
 minikube image load jojojochem/data_ingestion:comparison-mvp-1
-minikube image load jojojochem/learning_adaptation:comparison-mvp-1
+minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-mvp-1.1
 minikube image load jojojochem/anomaly_detection_generic:comparison-mvp-1
 minikube image load jojojochem/monitoring_project:comparison-mvp-1
 ```
@@ -166,6 +166,27 @@ kubectl rollout status -n cloudsentinel deployment/monitoring-project-deployment
 
 Deployment names should be checked with `kubectl get deploy -n cloudsentinel`
 if a staging cluster still uses an older data-ingestion worker name.
+
+### Learning worker reports a missing comparison module
+
+If the worker receives `tasks.execute_comparison_task` but reports
+`No module named 'comparison_execution'`, the running image contains a stale
+`tasks.py` without the complete Comparison runtime. Build and load the newer
+`comparison-mvp-1.1` Learning image above, then apply both Learning manifests.
+The Dockerfile now fails its build when any required Comparison module is
+missing. Verify the resulting worker before retrying:
+
+```bash
+WORKER_POD="$(kubectl get pod -n cloudsentinel \
+  -l app=learning-adaptation-celery \
+  -o jsonpath='{.items[0].metadata.name}')"
+
+kubectl exec -n cloudsentinel "$WORKER_POD" -- \
+  sh -c 'ls -l /app/comparison_*.py && python -c "import comparison_execution"'
+```
+
+A comparison whose task already crashed before importing the executor remains
+`queued`; create a new comparison after the corrected worker is running.
 
 ## Live acceptance flow
 
