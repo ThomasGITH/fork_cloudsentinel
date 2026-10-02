@@ -319,5 +319,16 @@ class ComparisonApiTests(unittest.TestCase):
         self.assertNotIn("celery-secret", text); self.assertNotIn("/app/private", text)
 
 
+class ComparisonTimelineAssetTests(unittest.TestCase):
+    def test_chart_uses_chartjs_parsing_for_labelled_numeric_series(self):
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "user_interface/monitoring_project/config_app/static/js/comparison_detail.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn('new Chart(canvas', source)
+        self.assertNotIn('parsing: false', source)
+        self.assertIn('data-timeline-error', source)
+
+
 if __name__ == "__main__":
     unittest.main()

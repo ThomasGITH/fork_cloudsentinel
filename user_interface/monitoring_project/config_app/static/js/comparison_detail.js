@@ -34,17 +34,67 @@
 
   const data = document.getElementById("comparison-results");
   const canvas = document.getElementById("comparison-timeline");
-  if (!data || !canvas || typeof Chart === "undefined") return;
-  const results = JSON.parse(data.textContent);
-  const colors = ["#004080", "#198754", "#d97706", "#6f42c1", "#0dcaf0"];
-  const labels = Array.from(new Set(results.flatMap(item => (item.timeline || []).map(point => point.timestamp)))).sort();
-  const datasets = results.filter(item => item.timeline && item.timeline.length).map((item, index) => ({
-    label: item.display_name,
-    data: (() => { const byTimestamp = new Map(item.timeline.map(point => [point.timestamp, point.score])); return labels.map(timestamp => byTimestamp.has(timestamp) ? byTimestamp.get(timestamp) : null); })(),
-    borderColor: colors[index % colors.length],
-    pointBackgroundColor: colors[index % colors.length],
-    pointRadius: (() => { const anomalies = new Map(item.timeline.map(point => [point.timestamp, point.prediction === 1])); return labels.map(timestamp => anomalies.get(timestamp) ? 4 : 1); })(),
-    tension: .15
-  }));
-  new Chart(canvas, {type: "line", data: {labels, datasets}, options: {responsive: true, maintainAspectRatio: false, parsing: false, plugins: {legend: {position: "bottom"}}, scales: {x: {ticks: {maxTicksLimit: 10}}, y: {title: {display: true, text: "Anomaly score"}}}}});
+  const chartError = document.querySelector("[data-timeline-error]");
+  if (!data || !canvas) return;
+
+  function showChartError() {
+    canvas.hidden = true;
+    if (chartError) chartError.hidden = false;
+  }
+
+  if (typeof Chart === "undefined") {
+    showChartError();
+    return;
+  }
+
+  try {
+    const results = JSON.parse(data.textContent);
+    const colors = ["#004080", "#198754", "#d97706", "#6f42c1", "#0dcaf0"];
+    const labels = Array.from(new Set(
+      results.flatMap(item => (item.timeline || []).map(point => point.timestamp))
+    )).sort();
+    const datasets = results
+      .filter(item => item.timeline && item.timeline.length)
+      .map((item, index) => {
+        const byTimestamp = new Map(
+          item.timeline.map(point => [point.timestamp, point.score])
+        );
+        const anomalies = new Map(
+          item.timeline.map(point => [point.timestamp, point.prediction === 1])
+        );
+        const color = colors[index % colors.length];
+        return {
+          label: item.display_name || item.model_id,
+          data: labels.map(timestamp => (
+            byTimestamp.has(timestamp) ? byTimestamp.get(timestamp) : null
+          )),
+          borderColor: color,
+          pointBackgroundColor: color,
+          pointRadius: labels.map(timestamp => anomalies.get(timestamp) ? 4 : 1),
+          spanGaps: true,
+          tension: .15
+        };
+      });
+
+    if (!labels.length || !datasets.length) {
+      showChartError();
+      return;
+    }
+
+    new Chart(canvas, {
+      type: "line",
+      data: {labels, datasets},
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {legend: {position: "bottom"}},
+        scales: {
+          x: {ticks: {maxTicksLimit: 10}},
+          y: {title: {display: true, text: "Anomaly score"}}
+        }
+      }
+    });
+  } catch (_error) {
+    showChartError();
+  }
 })();

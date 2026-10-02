@@ -128,7 +128,7 @@ docker build -f learning_adaptation/Dockerfile \
 docker build -f anomaly_detection/generic/Dockerfile \
   -t jojojochem/anomaly_detection_generic:comparison-mvp-1 .
 docker build -f user_interface/monitoring_project/Dockerfile \
-  -t jojojochem/monitoring_project:comparison-mvp-1 \
+  -t jojojochem/monitoring_project:comparison-mvp-1.1 \
   user_interface/monitoring_project
 ```
 
@@ -138,7 +138,7 @@ For a local Minikube Docker driver, load the four exact tags:
 minikube image load jojojochem/data_ingestion:comparison-mvp-1
 minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-mvp-1.2
 minikube image load jojojochem/anomaly_detection_generic:comparison-mvp-1
-minikube image load jojojochem/monitoring_project:comparison-mvp-1
+minikube image load --overwrite=true jojojochem/monitoring_project:comparison-mvp-1.1
 ```
 
 Apply the already-provisioned storage and changed workloads in this order:

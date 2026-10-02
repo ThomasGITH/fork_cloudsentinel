@@ -116,6 +116,8 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertNotContains(overview, "Suggested investigation")
         timeline = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "timeline"})
         self.assertContains(timeline, "comparison-timeline")
+        self.assertContains(timeline, "data-timeline-error")
+        self.assertContains(timeline, '"timestamp": "2026-10-01T10:00:00Z"')
         models = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "models"})
         self.assertContains(models, reverse("models_saved_detail", args=["model-one"]))
         robustness = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "robustness"})
