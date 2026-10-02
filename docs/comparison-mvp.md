@@ -124,7 +124,7 @@ Build from the repository root:
 docker build -f data_ingestion/Dockerfile \
   -t jojojochem/data_ingestion:comparison-mvp-1 data_ingestion
 docker build -f learning_adaptation/Dockerfile \
-  -t jojojochem/learning_adaptation:comparison-mvp-1.1 .
+  -t jojojochem/learning_adaptation:comparison-mvp-1.2 .
 docker build -f anomaly_detection/generic/Dockerfile \
   -t jojojochem/anomaly_detection_generic:comparison-mvp-1 .
 docker build -f user_interface/monitoring_project/Dockerfile \
@@ -136,7 +136,7 @@ For a local Minikube Docker driver, load the four exact tags:
 
 ```bash
 minikube image load jojojochem/data_ingestion:comparison-mvp-1
-minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-mvp-1.1
+minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-mvp-1.2
 minikube image load jojojochem/anomaly_detection_generic:comparison-mvp-1
 minikube image load jojojochem/monitoring_project:comparison-mvp-1
 ```
@@ -170,20 +170,28 @@ if a staging cluster still uses an older data-ingestion worker name.
 ### Learning worker reports a missing comparison module
 
 If the worker receives `tasks.execute_comparison_task` but reports
-`No module named 'comparison_execution'`, the running image contains a stale
-`tasks.py` without the complete Comparison runtime. Build and load the newer
-`comparison-mvp-1.1` Learning image above, then apply both Learning manifests.
-The Dockerfile now fails its build when any required Comparison module is
-missing. Verify the resulting worker before retrying:
+`No module named 'comparison_execution'`, the worker accepted the task without
+having loaded its executor. In `comparison-mvp-1.2` the executor is imported
+during worker startup, so an incomplete worker cannot become ready. The
+Dockerfile also fails its build when the task and its runtime modules cannot be
+imported together. Build and load that Learning image, then apply both Learning
+manifests. Verify every matching worker pod before retrying:
 
 ```bash
 WORKER_POD="$(kubectl get pod -n cloudsentinel \
   -l app=learning-adaptation-celery \
   -o jsonpath='{.items[0].metadata.name}')"
 
-kubectl exec -n cloudsentinel "$WORKER_POD" -- \
-  sh -c 'ls -l /app/comparison_*.py && python -c "import comparison_execution"'
+kubectl get pods -n cloudsentinel -l app=learning-adaptation-celery \
+  -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image,IMAGE_ID:.status.containerStatuses[0].imageID,PHASE:.status.phase'
+
+kubectl exec -n cloudsentinel "$WORKER_POD" -- sh -c \
+  'ls -l /app/comparison_*.py && python -c "import tasks; print(tasks.execute_comparison.__module__); assert '\''tasks.execute_comparison_task'\'' in tasks.celery.tasks"'
 ```
+
+There must be exactly one active Learning worker for the staging setup. If
+another old worker consumes the same Redis queue, remove or scale down that old
+deployment before submitting a new comparison.
 
 A comparison whose task already crashed before importing the executor remains
 `queued`; create a new comparison after the corrected worker is running.

@@ -39,6 +39,15 @@ except ModuleNotFoundError as exc:
     }:
         raise
     from plugin_training import execute_detector_plugin_training
+try:
+    from learning_adaptation.comparison_execution import execute_comparison
+except ModuleNotFoundError as exc:
+    if exc.name not in {
+        "learning_adaptation",
+        "learning_adaptation.comparison_execution",
+    }:
+        raise
+    from comparison_execution import execute_comparison
 # Configure and initialize Celery
 celery = Celery(
     __name__,
@@ -130,17 +139,6 @@ def train_detector_plugin_task(self, context_payload):
 @celery.task(bind=True, dont_autoretry_for=(Exception,))
 def execute_comparison_task(self, comparison_id):
     """Evaluate all immutable Saved Models through the generic runtime."""
-
-    try:
-        from learning_adaptation.comparison_execution import execute_comparison
-    except ModuleNotFoundError as exc:
-        if exc.name not in {
-            "learning_adaptation",
-            "learning_adaptation.comparison_execution",
-        }:
-            raise
-        from comparison_execution import execute_comparison
-
     return execute_comparison(
         comparison_id,
         storage_root=os.getenv("COMPARISON_STORAGE_ROOT", "comparisons"),

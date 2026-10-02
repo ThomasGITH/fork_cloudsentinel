@@ -7,7 +7,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 K8S = ROOT / "k8s"
 GENERIC_IMAGE = "jojojochem/anomaly_detection_generic:comparison-mvp-1"
-LEARNING_IMAGE = "jojojochem/learning_adaptation:comparison-mvp-1.1"
+LEARNING_IMAGE = "jojojochem/learning_adaptation:comparison-mvp-1.2"
 
 
 def documents(name):
@@ -142,9 +142,10 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
         ):
             self.assertIn(f"test -f /app/{module}", dockerfile)
         self.assertIn(
-            "import comparison_api, comparison_evaluation, comparison_execution, comparison_storage",
+            "import comparison_api, comparison_evaluation, comparison_execution, comparison_storage, tasks",
             dockerfile,
         )
+        self.assertIn("tasks.execute_comparison_task", dockerfile)
 
     def test_external_plugin_mount_and_learning_image_remain_consistent(self):
         images = []

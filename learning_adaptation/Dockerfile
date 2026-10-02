@@ -30,7 +30,7 @@ RUN test -f /app/comparison_api.py \
     && test -f /app/comparison_execution.py \
     && test -f /app/comparison_evaluation.py \
     && test -f /app/comparison_storage.py \
-    && python -c "import comparison_api, comparison_evaluation, comparison_execution, comparison_storage"
+    && python -c "import comparison_api, comparison_evaluation, comparison_execution, comparison_storage, tasks; assert 'tasks.execute_comparison_task' in tasks.celery.tasks"
 
 RUN groupadd --system --gid 10001 cloudsentinel \
     && useradd --system --uid 10001 --gid cloudsentinel --home-dir /app cloudsentinel \
