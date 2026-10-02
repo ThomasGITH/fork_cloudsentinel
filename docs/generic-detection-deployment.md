@@ -9,20 +9,20 @@ services.
 Both images use the repository root as build context. The manifests use these
 immutable staging tags:
 
-- `jojojochem/learning_adaptation:generic-detection-migration-1`
-- `jojojochem/anomaly_detection_generic:generic-detection-migration-1`
+- `jojojochem/learning_adaptation:comparison-mvp-1`
+- `jojojochem/anomaly_detection_generic:comparison-mvp-1`
 
 Run from the repository root:
 
 ```bash
 docker build \
   -f learning_adaptation/Dockerfile \
-  -t jojojochem/learning_adaptation:generic-detection-migration-1 \
+  -t jojojochem/learning_adaptation:comparison-mvp-1 \
   .
 
 docker build \
   -f anomaly_detection/generic/Dockerfile \
-  -t jojojochem/anomaly_detection_generic:generic-detection-migration-1 \
+  -t jojojochem/anomaly_detection_generic:comparison-mvp-1 \
   .
 ```
 
@@ -41,7 +41,7 @@ step, use:
 ```bash
 minikube image build \
   -f anomaly_detection/generic/Dockerfile \
-  -t jojojochem/anomaly_detection_generic:generic-detection-migration-1 \
+  -t jojojochem/anomaly_detection_generic:comparison-mvp-1 \
   .
 ```
 
@@ -55,8 +55,8 @@ wheel versions.
 Load both images into Minikube:
 
 ```bash
-minikube image load jojojochem/learning_adaptation:generic-detection-migration-1
-minikube image load jojojochem/anomaly_detection_generic:generic-detection-migration-1
+minikube image load jojojochem/learning_adaptation:comparison-mvp-1
+minikube image load jojojochem/anomaly_detection_generic:comparison-mvp-1
 
 minikube image ls | grep -E 'learning_adaptation|anomaly_detection_generic'
 ```

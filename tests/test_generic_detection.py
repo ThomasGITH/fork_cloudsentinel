@@ -292,6 +292,46 @@ class GenericDetectionTests(unittest.TestCase):
             413,
         )
 
+    def test_internal_evaluation_uses_activated_generic_model_and_is_bounded(self):
+        _source, train = self.create_if_model("model_if_evaluation")
+        client = self.app(MAX_EVALUATION_OUTPUTS=10).test_client()
+        matrix = train[:5]
+        before_activation = client.post(
+            "/internal/evaluate",
+            data=self.multipart("model_if_evaluation", matrix),
+        )
+        self.assertEqual(before_activation.status_code, 409)
+        self.assertEqual(
+            client.post("/models/model_if_evaluation/activate").status_code, 200
+        )
+        response = client.post(
+            "/internal/evaluate",
+            data=self.multipart_metadata(
+                matrix,
+                {
+                    "model_id": "model_if_evaluation",
+                    "feature_order": ["cpu", "memory"],
+                    "timestamps": [
+                        f"2026-10-01T10:0{index}:00Z" for index in range(5)
+                    ],
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        payload = response.get_json()
+        self.assertEqual(len(payload["binary_predictions"]), 5)
+        self.assertEqual(len(payload["anomaly_scores"]), 5)
+        self.assertGreaterEqual(payload["runtime_ms"], 0)
+        self.assertEqual(len(payload["artifact_manifest_sha256"]), 64)
+        limited = self.app(MAX_EVALUATION_OUTPUTS=2).test_client()
+        self.assertEqual(
+            limited.post(
+                "/internal/evaluate",
+                data=self.multipart("model_if_evaluation", matrix),
+            ).status_code,
+            400,
+        )
+
     def test_unknown_inference_protocol_and_missing_contract_are_rejected(self):
         plugin_root = self.root / "protocol-fixtures"
         module_name = "generic_inference_protocol_fixture"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import re
+import time
 
 from flask import Flask, jsonify, request
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -39,6 +40,9 @@ def create_app(config: dict | None = None) -> Flask:
         MAX_OBSERVATIONS=int(os.getenv("GENERIC_DETECTION_MAX_OBSERVATIONS", "100000")),
         MAX_FEATURES=int(os.getenv("GENERIC_DETECTION_MAX_FEATURES", "1000")),
         MODEL_CACHE_SIZE=int(os.getenv("GENERIC_DETECTION_MODEL_CACHE_SIZE", "4")),
+        MAX_EVALUATION_OUTPUTS=int(
+            os.getenv("GENERIC_DETECTION_MAX_EVALUATION_OUTPUTS", "100000")
+        ),
     )
     if config:
         app.config.update(config)
@@ -88,6 +92,7 @@ def create_app(config: dict | None = None) -> Flask:
                     "model_id": model_id,
                     "detector_id": record["detector_id"],
                     "detector_version": record["detector_version"],
+                    "artifact_manifest_sha256": verified["manifest_sha256"],
                 }
             )
         except ModelNotFoundError:
@@ -108,6 +113,7 @@ def create_app(config: dict | None = None) -> Flask:
                     "model_id": model_id,
                     "detector_id": record["detector_id"],
                     "detector_version": record["detector_version"],
+                    "artifact_manifest_sha256": inference["artifact_manifest_sha256"],
                     "status": "ready" if value is not None else inference.get("status", "not_ready"),
                     "activated": value is not None,
                 }
@@ -157,6 +163,7 @@ def create_app(config: dict | None = None) -> Flask:
                     "model_id": record["model_id"],
                     "detector_id": record["detector_id"],
                     "detector_version": record["detector_version"],
+                    "artifact_manifest_sha256": inference["artifact_manifest_sha256"],
                     "input_observation_count": int(matrix.shape[0]),
                     **summary,
                 }
@@ -188,6 +195,89 @@ def create_app(config: dict | None = None) -> Flask:
             return error("request exceeds configured size limit", 413)
         except Exception:
             return error("detection failed", 500)
+
+    @app.post("/internal/evaluate")
+    def internal_evaluate():
+        """Return bounded per-observation output to trusted comparison workers.
+
+        This route uses the exact same activated model cache and adapter contract
+        as `/detect`. It is intentionally exposed only by the internal ClusterIP
+        service; browsers receive comparison summaries from learning adaptation.
+        """
+        try:
+            metadata = parse_metadata(request.form.get("metadata"))
+            matrix_file = request.files.get("matrix")
+            if matrix_file is None:
+                raise DetectionRequestError("matrix file is required")
+            matrix = read_matrix(
+                matrix_file,
+                max_observations=min(
+                    int(app.config["MAX_OBSERVATIONS"]),
+                    int(app.config["MAX_EVALUATION_OUTPUTS"]),
+                ),
+                max_features=int(app.config["MAX_FEATURES"]),
+            )
+            record, inference, key, loaded = activated(metadata["model_id"])
+            if inference.get("status") != "ready":
+                raise ModelNotReadyError(
+                    f"model is not ready for generic inference ({inference.get('status')})"
+                )
+            if loaded is None:
+                raise ModelNotReadyError("model must be activated before evaluation")
+            validate_feature_identity(metadata, record, matrix.shape[1])
+            timestamps = tuple(metadata.get("timestamps") or ())
+            if timestamps and len(timestamps) != matrix.shape[0]:
+                raise DetectionRequestError("timestamps must match matrix observations")
+            adapter, opaque_model = loaded
+            started = time.perf_counter()
+            prediction = adapter.predict_inference(
+                opaque_model,
+                InferenceContext(
+                    matrix=matrix,
+                    feature_order=tuple(metadata.get("feature_order") or ()),
+                    feature_order_sha256=metadata.get("feature_order_sha256"),
+                    timestamps=timestamps,
+                    metadata=metadata.get("context") or {},
+                ),
+            )
+            runtime_ms = (time.perf_counter() - started) * 1000.0
+            summary = validate_prediction(prediction, matrix.shape[0])
+            predictions = [int(value) for value in prediction.binary_predictions]
+            scores = [float(value) for value in prediction.anomaly_scores]
+            if len(predictions) > int(app.config["MAX_EVALUATION_OUTPUTS"]):
+                raise DetectionRequestError("evaluation output exceeds configured limit")
+            return jsonify(
+                {
+                    "status": "success",
+                    "model_id": record["model_id"],
+                    "detector_id": record["detector_id"],
+                    "detector_version": record["detector_version"],
+                    "artifact_manifest_sha256": inference["artifact_manifest_sha256"],
+                    "input_observation_count": int(matrix.shape[0]),
+                    "runtime_ms": runtime_ms,
+                    "warmup_observations": summary["warmup_observations"],
+                    "prediction_count": summary["prediction_count"],
+                    "anomaly_count": summary["anomaly_count"],
+                    "binary_predictions": predictions,
+                    "anomaly_scores": scores,
+                }
+            )
+        except DetectionRequestError as exc:
+            return error(str(exc), 400)
+        except ModelNotFoundError:
+            return error("unknown model", 404)
+        except ModelNotReadyError as exc:
+            return error(str(exc), 409)
+        except DetectorInferenceError as exc:
+            return error(str(exc), 422)
+        except PredictionContractError as exc:
+            return error(str(exc), 500)
+        except (ModelArtifactError, ModelRecordError) as exc:
+            return error(str(exc), 503)
+        except RequestEntityTooLarge:
+            return error("request exceeds configured size limit", 413)
+        except Exception:
+            return error("model evaluation failed", 500)
 
     return app
 

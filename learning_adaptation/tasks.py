@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import shutil
+import sys
 import traceback
 from pathlib import Path
 import numpy as np
@@ -38,7 +39,6 @@ except ModuleNotFoundError as exc:
     }:
         raise
     from plugin_training import execute_detector_plugin_training
-
 # Configure and initialize Celery
 celery = Celery(
     __name__,
@@ -102,10 +102,14 @@ def _persist_terminal_task_failure(sender=None, exception=None, args=None, **_kw
     """Celery emits task_failure only after retry handling reaches terminal failure."""
     context = _failure_context(getattr(sender, "name", None), args or ())
     if context:
-        try:
-            from learning_adaptation.training_lifecycle import mark_child_failed
-        except ModuleNotFoundError:
-            from training_lifecycle import mark_child_failed
+        lifecycle = sys.modules.get("learning_adaptation.training_lifecycle")
+        if lifecycle is not None:
+            mark_child_failed = lifecycle.mark_child_failed
+        else:
+            try:
+                from learning_adaptation.training_lifecycle import mark_child_failed
+            except ModuleNotFoundError:
+                from training_lifecycle import mark_child_failed
         mark_child_failed(context, exception)
 
 
@@ -120,6 +124,36 @@ def train_detector_plugin_task(self, context_payload):
     return execute_detector_plugin_training(
         context_payload,
         lambda state, detail: self.update_state(state=state, meta=detail),
+    )
+
+
+@celery.task(bind=True, dont_autoretry_for=(Exception,))
+def execute_comparison_task(self, comparison_id):
+    """Evaluate all immutable Saved Models through the generic runtime."""
+
+    try:
+        from learning_adaptation.comparison_execution import execute_comparison
+    except ModuleNotFoundError as exc:
+        if exc.name not in {
+            "learning_adaptation",
+            "learning_adaptation.comparison_execution",
+        }:
+            raise
+        from comparison_execution import execute_comparison
+
+    return execute_comparison(
+        comparison_id,
+        storage_root=os.getenv("COMPARISON_STORAGE_ROOT", "comparisons"),
+        catalogue_url=os.getenv("API_DATA_CATALOGUE_URL", "http://127.0.0.1:5001"),
+        generic_runtime_url=os.getenv(
+            "API_GENERIC_ANOMALY_DETECTION_URL", "http://127.0.0.1:5015"
+        ),
+        maximum_bundle_bytes=int(
+            os.getenv("COMPARISON_MAX_BUNDLE_BYTES", str(250 * 1024 * 1024))
+        ),
+        maximum_timeline_points=int(
+            os.getenv("COMPARISON_MAX_TIMELINE_POINTS", "1000")
+        ),
     )
 
 

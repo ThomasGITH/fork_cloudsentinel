@@ -380,3 +380,208 @@ def materialize_training_bundle(
 
         shutil.rmtree(temporary_directory, ignore_errors=True)
         raise
+
+
+def materialize_evaluation_bundle(
+    repository: FileCatalogueRepository,
+    legacy_root: str | Path,
+    dataset_id: str,
+    version_number: int,
+    partition_id: str,
+) -> tuple[Path, dict[str, Any]]:
+    """Materialize the test side of a partition for detector-agnostic evaluation.
+
+    Unlike the v1 training bundle, labels are optional. Timestamps are included
+    when the canonical time-range source provides them. The source data remains
+    immutable; the returned ZIP is a temporary, checksummed transport envelope.
+    """
+
+    dataset_id = validate_identifier(dataset_id)
+    version_number = validate_version(version_number)
+    partition_id = validate_identifier(partition_id, "partition_id")
+    version = repository.read_version(dataset_id, version_number)
+    if version.get("status") != "available":
+        raise CatalogueMaterializationError("dataset version must be available")
+    partition = _partition_definition(repository, version, partition_id)
+    if partition.get("mode") == "none":
+        raise CatalogueMaterializationError("selected partition has mode none")
+
+    feature_order = version.get("technical_schema", {}).get("feature_order", [])
+    if not feature_order or len(set(feature_order)) != len(feature_order):
+        raise CatalogueMaterializationError("dataset feature order is missing or invalid")
+    feature_hash = _feature_order_hash(feature_order)
+    reference = partition.get("feature_order_reference") or {}
+    if reference and (
+        reference.get("feature_count") != len(feature_order)
+        or reference.get("sha256") != feature_hash
+    ):
+        raise CatalogueMaterializationError("feature-order checksum mismatch")
+
+    labels: list[str] | None = None
+    timestamps: list[str] | None = None
+    source_hashes: dict[str, str] = {}
+    label_source: dict[str, Any] | None = None
+
+    if partition["mode"] == "predefined":
+        test_part = partition.get("test")
+        if not isinstance(test_part, dict):
+            raise CatalogueMaterializationError("selected partition has no test artifact")
+        test_path = _safe_relative(Path(legacy_root).resolve(), test_part["artifact"], "partition.test")
+        test_record = version.get("artifacts", {}).get("test", {})
+        if test_record.get("path") != test_part["artifact"]:
+            raise CatalogueMaterializationError("partition.test is not a known version artifact")
+        source_hashes["test"] = _verify_known_artifact(
+            test_path, test_record.get("sha256"), "test"
+        )
+        matrix = _read_matrix(test_path, "test", allow_missing=True)
+        labels_part = partition.get("labels")
+        if isinstance(labels_part, dict):
+            labels_path = _safe_relative(
+                Path(legacy_root).resolve(), labels_part["artifact"], "partition.labels"
+            )
+            labels_record = version.get("artifacts", {}).get("labels", {})
+            if labels_record.get("path") != labels_part["artifact"]:
+                raise CatalogueMaterializationError(
+                    "partition.labels is not a known version artifact"
+                )
+            source_hashes["labels"] = _verify_known_artifact(
+                labels_path, labels_record.get("sha256"), "labels"
+            )
+            labels = _read_labels(labels_path, header=False)
+            label_source = {"type": "predefined", "sha256": source_hashes["labels"]}
+    elif partition["mode"] == "time_range":
+        active = repository.artifact_directory(dataset_id, version_number)
+        observations = active / "canonical" / "observations.csv"
+        records = version.get("artifacts", {})
+        source_hashes["canonical/observations.csv"] = _verify_known_artifact(
+            observations,
+            records.get("canonical/observations.csv", {}).get("sha256"),
+            "canonical observations",
+        )
+        test_start = validate_timestamp(
+            partition["test"]["start_time"], "partition.test.start_time"
+        )[1]
+        test_end = validate_timestamp(
+            partition["test"]["end_time"], "partition.test.end_time"
+        )[1]
+        matrix = []
+        timestamps = []
+        test_indices: list[int] = []
+        try:
+            with observations.open("r", encoding="utf-8", newline="") as source:
+                reader = csv.DictReader(source)
+                if reader.fieldnames != ["timestamp", *feature_order]:
+                    raise CatalogueMaterializationError(
+                        "canonical observations do not match the stored feature order"
+                    )
+                for index, row in enumerate(reader):
+                    canonical_timestamp, parsed = validate_timestamp(
+                        row["timestamp"], "observation timestamp"
+                    )
+                    if test_start <= parsed <= test_end:
+                        values = [row[name] for name in feature_order]
+                        for raw in values:
+                            if raw != "":
+                                try:
+                                    float(raw)
+                                except ValueError as exc:
+                                    raise CatalogueMaterializationError(
+                                        "canonical observations contain a non-numeric value"
+                                    ) from exc
+                        matrix.append(values)
+                        timestamps.append(canonical_timestamp)
+                        test_indices.append(index)
+        except (OSError, UnicodeError) as exc:
+            raise CatalogueMaterializationError(
+                f"could not read canonical observations: {exc}"
+            ) from exc
+
+        active_labels = version.get("ground_truth", {}).get("active_label_source")
+        if partition.get("labels_source") == "active_row_labels" and active_labels:
+            label_path = _safe_relative(repository.root, active_labels["artifact"], "labels")
+            source_hashes["labels/row_labels.csv"] = _verify_known_artifact(
+                label_path, active_labels.get("sha256"), "labels"
+            )
+            all_labels = _read_labels(label_path, header=True)
+            if len(all_labels) != version["technical_schema"].get("observation_count"):
+                raise CatalogueMaterializationError("labels do not cover all observations")
+            labels = [all_labels[index] for index in test_indices]
+            label_source = {
+                "type": active_labels.get("type", "row_labels"),
+                "sha256": active_labels.get("sha256"),
+            }
+    else:
+        raise CatalogueMaterializationError("unsupported partition mode")
+
+    if len(matrix) < 1:
+        raise CatalogueMaterializationError("evaluation partition contains no observations")
+    if any(len(row) != len(feature_order) for row in matrix):
+        raise CatalogueMaterializationError("evaluation partition feature count mismatch")
+    if labels is not None and len(labels) != len(matrix):
+        raise CatalogueMaterializationError("labels do not cover the evaluation partition")
+    if timestamps is not None and len(timestamps) != len(matrix):
+        raise CatalogueMaterializationError("timestamps do not cover the evaluation partition")
+
+    temporary_directory = Path(tempfile.mkdtemp(prefix="catalogue-evaluation-bundle-"))
+    try:
+        payloads: dict[str, list[list[str]]] = {"matrix.csv": matrix}
+        if labels is not None:
+            payloads["labels.csv"] = [[item] for item in labels]
+        if timestamps is not None:
+            payloads["timestamps.csv"] = [[item] for item in timestamps]
+        file_records: dict[str, dict[str, Any]] = {}
+        for filename, rows in payloads.items():
+            path = temporary_directory / filename
+            _write_csv(path, rows)
+            file_records[filename] = {
+                "sha256": _sha256(path),
+                "bytes": path.stat().st_size,
+            }
+        incidents = version.get("incident_context") or []
+        safe_incidents = [
+            {
+                key: item.get(key)
+                for key in ("incident_id", "start_time", "end_time", "scenario")
+                if item.get(key) is not None
+            }
+            for item in incidents[:20]
+            if isinstance(item, dict)
+        ]
+        manifest = {
+            "schema_version": 1,
+            "profile": "metrics-evaluation/v1",
+            "dataset_id": dataset_id,
+            "dataset_version": version_number,
+            "partition_id": partition_id,
+            "partition_checksum": partition["checksum"],
+            "partition_mode": partition["mode"],
+            "modality": version.get("technical_schema", {}).get("modality", "metrics"),
+            "feature_order": feature_order,
+            "feature_order_sha256": feature_hash,
+            "ground_truth_available": labels is not None,
+            "label_source": label_source,
+            "counts": {
+                "observations": len(matrix),
+                "features": len(feature_order),
+                "labels": len(labels) if labels is not None else 0,
+            },
+            "known_incident_windows": safe_incidents,
+            "workload_context": version.get("workload_context", {}),
+            "source_artifact_checksums": source_hashes,
+            "files": file_records,
+        }
+        manifest_path = temporary_directory / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        )
+        bundle_path = temporary_directory / "evaluation-bundle.zip"
+        with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.write(manifest_path, arcname="manifest.json")
+            for filename in sorted(payloads):
+                archive.write(temporary_directory / filename, arcname=filename)
+        return bundle_path, manifest
+    except Exception:
+        import shutil
+
+        shutil.rmtree(temporary_directory, ignore_errors=True)
+        raise

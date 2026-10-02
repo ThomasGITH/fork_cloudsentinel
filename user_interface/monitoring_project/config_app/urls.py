@@ -29,6 +29,12 @@ from .views.models_ui import (
     training_run_detail,
     training_run_status,
 )
+from .views.comparison import (
+    comparison_detail,
+    comparison_new,
+    comparison_overview,
+    comparison_status,
+)
 
 urlpatterns = [
     path('', home, name='home'),
@@ -51,6 +57,11 @@ urlpatterns = [
     path('models/training-runs/<str:run_id>/', training_run_detail, name='models_training_run_detail'),
     path('models/training-runs/<str:run_id>/status/', training_run_status, name='models_training_run_status'),
     path('models/saved/<str:model_id>/', saved_model_detail, name='models_saved_detail'),
+
+    path('comparison/', comparison_overview, name='comparison_overview'),
+    path('comparison/new/', comparison_new, name='comparison_new'),
+    path('comparison/<str:comparison_id>/', comparison_detail, name='comparison_detail'),
+    path('comparison/<str:comparison_id>/status/', comparison_status, name='comparison_status'),
 
     path('config/', config, name='config'),
     path('config-cgnn/', config_cgnn, name='config_cgnn'),

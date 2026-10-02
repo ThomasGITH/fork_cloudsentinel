@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: generic-anomaly-detection
-          image: jojojochem/anomaly_detection_generic:generic-detection-migration-1
+          image: jojojochem/anomaly_detection_generic:comparison-mvp-1
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -54,6 +54,8 @@ spec:
               value: "1000"
             - name: GENERIC_DETECTION_MODEL_CACHE_SIZE
               value: "2"
+            - name: GENERIC_DETECTION_MAX_EVALUATION_OUTPUTS
+              value: "100000"
             - name: HOME
               value: /tmp
           volumeMounts:

@@ -15,6 +15,19 @@ from tasks import (
     train_detector_plugin_task,
 )
 
+try:
+    from tasks import execute_comparison_task
+except ImportError:
+    # Legacy route tests inject a deliberately minimal `tasks` module. Keep
+    # those routes importable; a comparison submit still fails safely instead
+    # of being dispatched without its registered production task.
+    class _UnavailableComparisonTask:
+        @staticmethod
+        def apply_async(*_args, **_kwargs):
+            raise RuntimeError("comparison task is unavailable")
+
+    execute_comparison_task = _UnavailableComparisonTask()
+
 from detectors.api import create_detectors_blueprint
 from detectors.isolation_forest.training_request import (
     IsolationForestRequestError,
@@ -41,11 +54,22 @@ except ModuleNotFoundError as exc:  # The service image copies modules into /app
         create_training_runs_blueprint,
     )
 
+try:
+    from learning_adaptation.comparison_api import (
+        configure_comparison_defaults,
+        create_comparisons_blueprint,
+    )
+except ModuleNotFoundError as exc:
+    if exc.name not in {"learning_adaptation", "learning_adaptation.comparison_api"}:
+        raise
+    from comparison_api import configure_comparison_defaults, create_comparisons_blueprint
+
 # Initialize Flask app and configure CORS
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.register_blueprint(create_detectors_blueprint())
 configure_training_run_defaults(app)
+configure_comparison_defaults(app)
 
 # Set the environment variable
 os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
@@ -79,6 +103,7 @@ app.register_blueprint(
         status_reader=lambda task_id: celery.AsyncResult(task_id),
     )
 )
+app.register_blueprint(create_comparisons_blueprint(execute_comparison_task))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

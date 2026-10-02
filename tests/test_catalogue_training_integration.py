@@ -247,6 +247,73 @@ class CatalogueMaterializationTests(unittest.TestCase):
                 self.assertEqual(len(files["test.csv"].decode().splitlines()), 3)
                 self.assertEqual(len(files["labels.csv"].decode().splitlines()), 3)
 
+    def test_evaluation_bundle_preserves_timestamps_and_allows_missing_labels(self):
+        self._available("evaluation-unlabelled")
+        partition_payload = self._partition()
+        partition_payload.pop("labels_source")
+        partition_payload["labeled_evaluation"] = False
+        partition_response = self.client.post(
+            "/datasets/evaluation-unlabelled/versions/1/partitions",
+            json=partition_payload,
+        )
+        self.assertEqual(
+            partition_response.status_code, 201, partition_response.get_json()
+        )
+        partition = partition_response.get_json()
+        response = self.client.get(
+            "/datasets/evaluation-unlabelled/versions/1/partitions/"
+            f"{partition['partition_id']}/evaluation-bundle"
+        )
+        self.assertEqual(response.status_code, 200, response.get_json(silent=True))
+        with zipfile.ZipFile(io.BytesIO(response.data)) as archive:
+            self.assertEqual(
+                set(archive.namelist()),
+                {"manifest.json", "matrix.csv", "timestamps.csv"},
+            )
+            manifest = json.loads(archive.read("manifest.json"))
+            self.assertFalse(manifest["ground_truth_available"])
+            self.assertEqual(manifest["counts"]["observations"], 3)
+            self.assertEqual(len(archive.read("timestamps.csv").decode().splitlines()), 3)
+
+    def test_labelled_evaluation_bundle_contains_labels_and_incident_context(self):
+        self._available("evaluation-labelled")
+        incident = {
+            "incident_id": "incident-one",
+            "start_time": "2026-09-25T10:04:30Z",
+            "end_time": "2026-09-25T10:05:30Z",
+            "scenario": "CPU stress",
+        }
+        self.assertEqual(
+            self.client.post(
+                "/datasets/evaluation-labelled/versions/1/incidents", json=incident
+            ).status_code,
+            201,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/datasets/evaluation-labelled/versions/1/labels",
+                json={"source": "incident_windows"},
+            ).status_code,
+            201,
+        )
+        partition = self.client.post(
+            "/datasets/evaluation-labelled/versions/1/partitions",
+            json=self._partition(),
+        ).get_json()
+        response = self.client.get(
+            "/datasets/evaluation-labelled/versions/1/partitions/"
+            f"{partition['partition_id']}/evaluation-bundle"
+        )
+        self.assertEqual(response.status_code, 200)
+        with zipfile.ZipFile(io.BytesIO(response.data)) as archive:
+            self.assertIn("labels.csv", archive.namelist())
+            manifest = json.loads(archive.read("manifest.json"))
+            self.assertTrue(manifest["ground_truth_available"])
+            self.assertEqual(
+                manifest["known_incident_windows"][0]["incident_id"],
+                "incident-one",
+            )
+
     def test_unknown_dataset_version_and_partition_are_targeted_errors(self):
         self.assertEqual(
             self.client.get(

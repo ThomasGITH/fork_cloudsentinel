@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation-celery
-        image: jojojochem/learning_adaptation:generic-detection-migration-1
+        image: jojojochem/learning_adaptation:comparison-mvp-1
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent", "--concurrency=1"]
         securityContext:
@@ -42,8 +42,16 @@ spec:
           value: "/app/storage/training_runs"
         - name: MODEL_CATALOGUE_STORAGE_ROOT
           value: "/app/storage/models"
+        - name: COMPARISON_STORAGE_ROOT
+          value: "/app/storage/comparisons"
         - name: MODEL_ARTIFACT_STORAGE_ROOT
           value: "/app/storage/model_artifacts"
+        - name: API_DATA_CATALOGUE_URL
+          value: "http://data-ingestion-service.cloudsentinel.svc.cluster.local:80"
+        - name: API_GENERIC_ANOMALY_DETECTION_URL
+          value: "http://generic-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
+        - name: COMPARISON_MAX_TIMELINE_POINTS
+          value: "1000"
         - name: DETECTOR_PLUGIN_ROOTS
           value: "/opt/cloudsentinel/detectors/active"
         volumeMounts:

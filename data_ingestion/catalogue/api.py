@@ -23,6 +23,7 @@ from .fetching import (
 from .models import build_draft_dataset
 from .materialization import (
     CatalogueMaterializationError,
+    materialize_evaluation_bundle,
     materialize_training_bundle,
 )
 from .lifecycle import (
@@ -450,6 +451,47 @@ def create_catalogue_blueprint() -> Blueprint:
             )
             response.headers["Content-Disposition"] = (
                 f'attachment; filename="{dataset_id}-v{version}-{partition_id}.zip"'
+            )
+            response.headers["X-Partition-SHA256"] = manifest["partition_checksum"]
+            return response
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+        except (CatalogueMaterializationError, OSError, ValueError) as exc:
+            return jsonify({"error": str(exc)}), 409
+
+    @blueprint.get(
+        "/datasets/<dataset_id>/versions/<int:version>/partitions/"
+        "<partition_id>/evaluation-bundle"
+    )
+    def evaluation_bundle(dataset_id: str, version: int, partition_id: str):
+        try:
+            repository, projector = components()
+            projector.project_all()
+            bundle_path, manifest = materialize_evaluation_bundle(
+                repository,
+                current_app.config["LEGACY_DATASETS_ROOT"],
+                dataset_id,
+                version,
+                partition_id,
+            )
+
+            def generate():
+                try:
+                    with bundle_path.open("rb") as source:
+                        for chunk in iter(lambda: source.read(64 * 1024), b""):
+                            yield chunk
+                finally:
+                    import shutil
+
+                    shutil.rmtree(bundle_path.parent, ignore_errors=True)
+
+            response = Response(
+                stream_with_context(generate()), mimetype="application/zip"
+            )
+            response.headers["Content-Disposition"] = (
+                f'attachment; filename="{dataset_id}-v{version}-{partition_id}-evaluation.zip"'
             )
             response.headers["X-Partition-SHA256"] = manifest["partition_checksum"]
             return response

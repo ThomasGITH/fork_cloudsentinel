@@ -34,6 +34,7 @@ assert str(tasks.TRAINED_MODELS_TEMP_ROOT) == '/tmp/infra-trained-models'
 assert 'tasks.train_and_evaluate_task' in app.celery.tasks
 assert 'tasks.train_and_evaluate_isolation_forest_task' in app.celery.tasks
 assert 'tasks.train_detector_plugin_task' in app.celery.tasks
+assert 'tasks.execute_comparison_task' in app.celery.tasks
 health = app.app.test_client().get('/healthz')
 assert health.status_code == 200
 assert health.get_json() == {'status': 'healthy'}

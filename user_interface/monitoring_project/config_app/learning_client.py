@@ -122,6 +122,38 @@ class LearningAdaptationClient:
     def get_model(self, model_id: str) -> dict[str, Any]:
         return self._request("GET", f"/models/{self._identifier(model_id)}")
 
+    def list_comparisons(self, filters: dict[str, Any]) -> dict[str, Any]:
+        return self._request("GET", "/api/comparisons", params=filters)
+
+    def get_comparison(self, comparison_id: str) -> dict[str, Any]:
+        return self._request(
+            "GET", f"/api/comparisons/{self._identifier(comparison_id)}"
+        )
+
+    def create_comparison(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", "/api/comparisons", json=payload)
+
+    def get_comparison_status(self, comparison_id: str) -> dict[str, Any]:
+        return self._request(
+            "GET", f"/api/comparisons/{self._identifier(comparison_id)}/status"
+        )
+
+    def list_evaluation_datasets(self) -> dict[str, Any]:
+        return self._request("GET", "/api/comparisons/evaluation-datasets")
+
+    def list_compatible_models(
+        self, dataset_id: str, version: int, partition_id: str
+    ) -> dict[str, Any]:
+        return self._request(
+            "GET",
+            "/api/comparisons/compatible-models",
+            params={
+                "dataset_id": dataset_id,
+                "version": version,
+                "partition_id": partition_id,
+            },
+        )
+
 
 def get_learning_client() -> LearningAdaptationClient:
     return LearningAdaptationClient()
