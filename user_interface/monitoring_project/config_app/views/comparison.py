@@ -171,6 +171,11 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
         comparison["has_timeline"] = any(
             bool(result.get("timeline")) for result in comparison.get("results", [])
         )
+        incident_windows = comparison.get("known_incident_windows")
+        if not isinstance(incident_windows, list):
+            incident = comparison.get("known_incident_window")
+            incident_windows = [incident] if isinstance(incident, dict) else []
+        comparison["timeline_incident_windows"] = incident_windows
         results_by_model = {
             result.get("model_id"): result for result in comparison.get("results", [])
         }

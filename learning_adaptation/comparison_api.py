@@ -167,7 +167,7 @@ def public_comparison(record: dict[str, Any], *, summary: bool = False) -> dict[
         "schema_version", "comparison_id", "name", "analysis_type", "configuration_version",
         "status", "created_at", "started_at", "updated_at", "completed_at",
         "evaluation_dataset", "modality", "feature_identity", "ground_truth_available",
-        "known_incident_window", "result_reference", "safe_failure_summary",
+        "known_incident_window", "known_incident_windows", "result_reference", "safe_failure_summary",
         "deterministic_summary", "results",
     }
     value = {key: deepcopy(item) for key, item in record.items() if key in allowed}
@@ -361,6 +361,7 @@ def create_comparisons_blueprint(comparison_task: Any) -> Blueprint:
                 },
                 "ground_truth_available": dataset["ground_truth_available"],
                 "known_incident_window": (dataset["known_incident_windows"] or [None])[0],
+                "known_incident_windows": deepcopy(dataset["known_incident_windows"]),
                 "selected_models": selected,
                 "results": [
                     {

@@ -101,6 +101,7 @@ def comparison_record(models=None):
         "client_request_id": "client-one", "evaluation_dataset": dataset,
         "modality": "metrics", "feature_identity": {"feature_order": ["cpu", "memory"], "sha256": FEATURE_HASH},
         "ground_truth_available": True, "known_incident_window": dataset["known_incident_windows"][0],
+        "known_incident_windows": dataset["known_incident_windows"],
         "selected_models": selected, "results": [], "result_reference": None,
         "safe_failure_summary": None, "deterministic_summary": None,
     }
@@ -177,6 +178,7 @@ class ComparisonMetricTests(unittest.TestCase):
                 runtime_client=FakeRuntimeClient(),
             )
             self.assertEqual(result["status"], "completed")
+            self.assertEqual(result["known_incident_windows"], dataset_context()["known_incident_windows"])
             self.assertFalse(result["results"][0]["ground_truth_available"])
             self.assertEqual(result["results"][0]["metrics"], {})
             self.assertEqual(
@@ -302,6 +304,7 @@ class ComparisonApiTests(unittest.TestCase):
         self.assertEqual(len(self.task.calls), 1)
         stored = ComparisonStore(Path(self.temp.name) / "comparisons").read(first.get_json()["comparison_id"])
         self.assertEqual(stored["selected_models"][0]["artifact_identity"]["artifact_manifest_sha256"], ARTIFACT_HASH)
+        self.assertEqual(stored["known_incident_windows"], self.dataset["known_incident_windows"])
 
     def test_filters_pagination_and_safe_serialisation(self):
         payload = {"name": "CPU comparison", "evaluation_dataset": {"dataset_id": "ds-eval", "version": 2, "partition_id": "part-eval"}, "model_ids": ["model-one", "model-two"], "client_request_id": "request-filter"}
@@ -328,6 +331,8 @@ class ComparisonTimelineAssetTests(unittest.TestCase):
         self.assertIn('new Chart(canvas', source)
         self.assertNotIn('parsing: false', source)
         self.assertIn('data-timeline-error', source)
+        self.assertIn('incidentBands', source)
+        self.assertIn('comparison-incident-windows', source)
 
 
 if __name__ == "__main__":

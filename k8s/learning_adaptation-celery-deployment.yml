@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation-celery
-        image: jojojochem/learning_adaptation:comparison-mvp-1.2
+        image: jojojochem/learning_adaptation:comparison-mvp-1.3
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent", "--concurrency=1"]
         securityContext:

@@ -264,6 +264,7 @@ def execute_comparison(
                 deterministic_summary=summary,
                 ground_truth_available=manifest["ground_truth_available"],
                 known_incident_window=(manifest.get("known_incident_windows") or [None])[0],
+                known_incident_windows=deepcopy(manifest.get("known_incident_windows") or []),
             )
 
         return store.update(comparison_id, finish)

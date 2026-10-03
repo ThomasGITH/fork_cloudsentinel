@@ -7,7 +7,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 K8S = ROOT / "k8s"
 GENERIC_IMAGE = "jojojochem/anomaly_detection_generic:comparison-mvp-1"
-LEARNING_IMAGE = "jojojochem/learning_adaptation:comparison-mvp-1.2"
+LEARNING_IMAGE = "jojojochem/learning_adaptation:comparison-mvp-1.3"
 
 
 def documents(name):
