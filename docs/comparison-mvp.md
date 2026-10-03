@@ -2,8 +2,9 @@
 
 COMPARISON-MVP-1 compares two or more immutable Saved Model artefacts on the
 same Data Catalogue evaluation partition. It supports anomaly detection only.
-Root-cause analysis, remediation, exports, robustness scoring and model
-training are outside this feature.
+Root-cause analysis, remediation, exports, composite robustness scoring and
+model training are outside this feature. Historical per-context robustness is
+documented in `docs/comparison-robustness.md`.
 
 ## Execution and persistence
 
@@ -38,6 +39,7 @@ Learning adaptation exposes:
 - `POST /api/comparisons`;
 - `GET /api/comparisons/<comparison_id>`;
 - `GET /api/comparisons/<comparison_id>/status`;
+- `GET /api/comparisons/<comparison_id>/robustness`;
 - `GET /api/comparisons/evaluation-datasets`;
 - `GET /api/comparisons/compatible-models?dataset_id=...&version=...&partition_id=...`.
 
@@ -106,8 +108,8 @@ The server-rendered UI provides:
 
 - `/comparison/` for Past comparisons;
 - `/comparison/new/` for the three-step dataset, model and review flow;
-- `/comparison/<comparison_id>/` for Overview, Timeline, Model details and the
-  honest Robustness fallback;
+- `/comparison/<comparison_id>/` for Overview, Timeline, Model details and
+  historical Robustness;
 - `/comparison/<comparison_id>/status/` as the safe polling proxy.
 
 The wizard signs its state with Django signing. It permits datasets without
@@ -124,11 +126,11 @@ Build from the repository root:
 docker build -f data_ingestion/Dockerfile \
   -t jojojochem/data_ingestion:comparison-mvp-1 data_ingestion
 docker build -f learning_adaptation/Dockerfile \
-  -t jojojochem/learning_adaptation:comparison-mvp-1.3 .
+  -t jojojochem/learning_adaptation:comparison-robustness-1 .
 docker build -f anomaly_detection/generic/Dockerfile \
   -t jojojochem/anomaly_detection_generic:comparison-mvp-1 .
 docker build -f user_interface/monitoring_project/Dockerfile \
-  -t jojojochem/monitoring_project:comparison-mvp-1.2 \
+  -t jojojochem/monitoring_project:comparison-robustness-1 \
   user_interface/monitoring_project
 ```
 
@@ -136,9 +138,9 @@ For a local Minikube Docker driver, load the four exact tags:
 
 ```bash
 minikube image load jojojochem/data_ingestion:comparison-mvp-1
-minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-mvp-1.3
+minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-robustness-1
 minikube image load jojojochem/anomaly_detection_generic:comparison-mvp-1
-minikube image load --overwrite=true jojojochem/monitoring_project:comparison-mvp-1.2
+minikube image load --overwrite=true jojojochem/monitoring_project:comparison-robustness-1
 ```
 
 Apply the already-provisioned storage and changed workloads in this order:

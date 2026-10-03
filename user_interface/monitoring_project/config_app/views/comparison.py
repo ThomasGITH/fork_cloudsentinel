@@ -49,7 +49,10 @@ def _page_links(payload: dict, filters: dict) -> tuple[dict | None, dict | None]
 
 @require_GET
 def comparison_overview(request: HttpRequest):
-    allowed = {"search", "modality", "workload", "status", "page", "page_size"}
+    allowed = {
+        "search", "modality", "workload", "status", "page", "page_size",
+        "model_id", "artifact_id", "artifact_manifest_sha256",
+    }
     filters = {key: value for key, value in request.GET.items() if key in allowed and value}
     context = {"filters": filters, "error": None, "retryable": False}
     try:
@@ -166,7 +169,8 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
     if tab not in {"overview", "timeline", "models", "robustness"}:
         tab = "overview"
     try:
-        comparison = get_learning_client().get_comparison(comparison_id)
+        client = get_learning_client()
+        comparison = client.get_comparison(comparison_id)
         comparison["is_active"] = comparison.get("status") in {"queued", "running"}
         comparison["has_timeline"] = any(
             bool(result.get("timeline")) for result in comparison.get("results", [])
@@ -181,10 +185,32 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
         }
         for model in comparison.get("selected_models", []):
             model["evaluation_result"] = results_by_model.get(model.get("model_id"), {})
+        robustness = None
+        robustness_error = None
+        robustness_filters = {}
+        if tab == "robustness":
+            allowed = {"workload", "scenario", "labelled_only", "shared_only"}
+            robustness_filters = {
+                key: value
+                for key, value in request.GET.items()
+                if key in allowed and value
+            }
+            try:
+                robustness = client.get_comparison_robustness(
+                    comparison_id, robustness_filters
+                )
+            except LearningClientError as exc:
+                robustness_error = _safe_error(exc)
         return render(
             request,
             "config_app/comparison/detail.html",
-            {"comparison": comparison, "active_tab": tab},
+            {
+                "comparison": comparison,
+                "active_tab": tab,
+                "robustness": robustness,
+                "robustness_error": robustness_error,
+                "robustness_filters": robustness_filters,
+            },
         )
     except LearningClientError as exc:
         if exc.status_code == 404:

@@ -46,6 +46,49 @@ def comparison(status="completed"):
     }
 
 
+def robustness_payload():
+    context = {
+        "dataset_id": "ds-eval", "display_name": "CPU incident", "version": 2,
+        "partition_id": "part-eval", "partition_checksum": "p" * 64,
+        "workload_context": {"workload_intensity": "High"},
+        "scenario": "CPU stress", "dominant_characteristic": "CPU-intensive",
+        "ground_truth_available": True, "known_incident_windows": [],
+    }
+    artifact = {"artifact_id": "artifact-one", "artifact_manifest_sha256": "a" * 64}
+    row = {
+        "comparison_id": "comparison-one", "comparison_name": "CPU comparison",
+        "comparison_date": "2026-10-01", "model_id": "model-one",
+        "display_name": "IF baseline", "detector_id": "isolation-forest",
+        "detector_version": "1.0.0", "artifact_identity": artifact,
+        "context": context, "ground_truth_available": True,
+        "metrics": {"precision": .8, "recall": .7, "f1_score": .746},
+        "runtime_ms": 12.5, "lead_time_seconds": 120.0,
+        "lead_time_status": "before_or_at_incident_start",
+    }
+    statistics = {
+        "f1_score": {"count": 1, "median": .746, "minimum": .746, "maximum": .746, "range": 0.0, "standard_deviation": None},
+        "precision": {"count": 1, "median": .8, "minimum": .8, "maximum": .8},
+        "recall": {"count": 1, "median": .7, "minimum": .7, "maximum": .7},
+        "runtime_ms": {"count": 1, "median": 12.5, "minimum": 12.5, "maximum": 12.5},
+        "lead_time_seconds": {"count": 1, "median": 120.0, "minimum": 120.0, "maximum": 120.0},
+    }
+    model = {
+        "model_id": "model-one", "display_name": "IF baseline",
+        "detector_id": "isolation-forest", "detector_version": "1.0.0",
+        "artifact_identity": artifact, "context_count": 1,
+        "labelled_context_count": 1, "sufficient_contexts": False,
+        "statistics": statistics, "contexts": [row],
+        "related_comparison_ids": ["comparison-one"],
+    }
+    return {
+        "comparison_id": "comparison-one",
+        "aggregation_version": "cloudsentinel.comparison-robustness/v1",
+        "models": [model], "shared_context_matrix": [],
+        "coverage_warnings": ["Showing the latest completed result per evaluation context."],
+        "deduplicated_repeat_count": 1, "truncated": False,
+    }
+
+
 class ComparisonUiTests(SimpleTestCase):
     def setUp(self):
         self.learning = Mock()
@@ -55,6 +98,7 @@ class ComparisonUiTests(SimpleTestCase):
         self.learning.create_comparison.return_value = {"comparison_id": "comparison-created", "status": "queued"}
         self.learning.get_comparison.return_value = comparison()
         self.learning.get_comparison_status.return_value = {"comparison_id": "comparison-one", "status": "running", "results": []}
+        self.learning.get_comparison_robustness.return_value = robustness_payload()
         patcher = patch("config_app.views.comparison.get_learning_client", return_value=self.learning)
         self.addCleanup(patcher.stop); patcher.start()
 
@@ -78,6 +122,16 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertContains(response, "Retry")
         self.assertNotContains(response, "http://secret")
         self.assertNotContains(response, "/app/private")
+
+    def test_related_comparison_filter_is_preserved_and_explained(self):
+        query = {
+            "model_id": "model-one",
+            "artifact_id": "artifact-one",
+            "artifact_manifest_sha256": "a" * 64,
+        }
+        response = self.client.get(reverse("comparison_overview"), query)
+        self.assertContains(response, "Showing comparisons for the exact Saved Model artefact")
+        self.learning.list_comparisons.assert_called_once_with(query)
 
     def _step(self, target):
         response = self.client.get(reverse("comparison_new"))
@@ -123,7 +177,19 @@ class ComparisonUiTests(SimpleTestCase):
         models = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "models"})
         self.assertContains(models, reverse("models_saved_detail", args=["model-one"]))
         robustness = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "robustness"})
-        self.assertContains(robustness, "Robustness requires completed comparisons")
+        self.assertContains(robustness, "Robustness across workload contexts")
+        self.assertContains(robustness, "same saved model artefact")
+        self.assertContains(robustness, "One evaluation context found")
+        self.assertContains(robustness, "View related comparisons")
+        self.assertNotContains(robustness, "robustness score")
+        filtered = self.client.get(
+            reverse("comparison_detail", args=["comparison-one"]),
+            {"tab": "robustness", "workload": "High", "labelled_only": "true"},
+        )
+        self.assertContains(filtered, 'value="High" selected', html=False)
+        self.learning.get_comparison_robustness.assert_called_with(
+            "comparison-one", {"workload": "High", "labelled_only": "true"}
+        )
         status = self.client.get(reverse("comparison_status", args=["comparison-one"]))
         self.assertEqual(status.json()["status"], "running")
         self.assertNotContains(status, "task_id")
@@ -140,6 +206,7 @@ class ComparisonLearningClientTests(SimpleTestCase):
         client = LearningAdaptationClient("http://learning.internal", transport=transport)
         client.list_comparisons({"page": 2}); client.get_comparison("comparison-one")
         client.create_comparison({"name": "test"}); client.get_comparison_status("comparison-one")
+        client.get_comparison_robustness("comparison-one", {"labelled_only": "true"})
         client.list_evaluation_datasets(); client.list_compatible_models("ds-one", 2, "part-one")
         paths = [call.args[1] for call in transport.request.call_args_list]
         self.assertEqual(paths, [
@@ -147,6 +214,7 @@ class ComparisonLearningClientTests(SimpleTestCase):
             "http://learning.internal/api/comparisons/comparison-one",
             "http://learning.internal/api/comparisons",
             "http://learning.internal/api/comparisons/comparison-one/status",
+            "http://learning.internal/api/comparisons/comparison-one/robustness",
             "http://learning.internal/api/comparisons/evaluation-datasets",
             "http://learning.internal/api/comparisons/compatible-models",
         ])

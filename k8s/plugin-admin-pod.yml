@@ -12,7 +12,7 @@ spec:
     fsGroupChangePolicy: OnRootMismatch
   containers:
     - name: plugin-admin
-      image: jojojochem/learning_adaptation:comparison-mvp-1.3
+      image: jojojochem/learning_adaptation:comparison-robustness-1
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "mkdir -p /opt/cloudsentinel/detectors/staging/incoming && sleep 3600"]
       securityContext:

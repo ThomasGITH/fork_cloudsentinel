@@ -9,7 +9,7 @@ services.
 Both images use the repository root as build context. The manifests use these
 immutable staging tags:
 
-- `jojojochem/learning_adaptation:comparison-mvp-1.3`
+- `jojojochem/learning_adaptation:comparison-robustness-1`
 - `jojojochem/anomaly_detection_generic:comparison-mvp-1`
 
 Run from the repository root:
@@ -17,7 +17,7 @@ Run from the repository root:
 ```bash
 docker build \
   -f learning_adaptation/Dockerfile \
-  -t jojojochem/learning_adaptation:comparison-mvp-1.3 \
+  -t jojojochem/learning_adaptation:comparison-robustness-1 \
   .
 
 docker build \
@@ -55,7 +55,7 @@ wheel versions.
 Load both images into Minikube:
 
 ```bash
-minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-mvp-1.3
+minikube image load --overwrite=true jojojochem/learning_adaptation:comparison-robustness-1
 minikube image load jojojochem/anomaly_detection_generic:comparison-mvp-1
 
 minikube image ls | grep -E 'learning_adaptation|anomaly_detection_generic'

@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:comparison-mvp-1.3
+        image: jojojochem/learning_adaptation:comparison-robustness-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -44,6 +44,8 @@ spec:
           value: "/app/storage/models" 
         - name: COMPARISON_STORAGE_ROOT
           value: "/app/storage/comparisons"
+        - name: COMPARISON_ROBUSTNESS_MAX_CONTEXTS_PER_MODEL
+          value: "200"
         - name: DETECTOR_PLUGIN_ROOTS
           value: "/opt/cloudsentinel/detectors/active"
         - name: CELERY_BROKER_URL

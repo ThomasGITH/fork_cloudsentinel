@@ -138,6 +138,15 @@ class LearningAdaptationClient:
             "GET", f"/api/comparisons/{self._identifier(comparison_id)}/status"
         )
 
+    def get_comparison_robustness(
+        self, comparison_id: str, filters: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        return self._request(
+            "GET",
+            f"/api/comparisons/{self._identifier(comparison_id)}/robustness",
+            params=filters or {},
+        )
+
     def list_evaluation_datasets(self) -> dict[str, Any]:
         return self._request("GET", "/api/comparisons/evaluation-datasets")
 

@@ -20,6 +20,7 @@ from learning_adaptation.comparison_evaluation import (
     ComparisonEvaluationError,
     GenericEvaluationClient,
 )
+from learning_adaptation.comparison_robustness import aggregate_robustness
 from learning_adaptation.comparison_storage import ComparisonStore
 from learning_adaptation.model_catalogue import ModelCatalogueStore
 
@@ -207,6 +208,186 @@ class ComparisonMetricTests(unittest.TestCase):
             self.assertNotIn(detector_id, source)
         self.assertIn("GenericEvaluationClient", source)
 
+
+class ComparisonRobustnessTests(unittest.TestCase):
+    @staticmethod
+    def _terminal_record(
+        comparison_id,
+        *,
+        models=None,
+        checksum,
+        completed_at,
+        status="completed",
+        labelled=True,
+        f1_values=None,
+        failed_models=None,
+        workload="High",
+        scenario="CPU stress",
+    ):
+        record = comparison_record(models=models)
+        record.update(
+            comparison_id=comparison_id,
+            name=f"Comparison {comparison_id}",
+            status=status,
+            completed_at=completed_at,
+            updated_at=completed_at,
+            ground_truth_available=labelled,
+        )
+        record["evaluation_dataset"].update(
+            dataset_id=f"ds-{checksum[-4:]}",
+            display_name=f"Dataset {checksum[-4:]}",
+            version=1,
+            partition_id=f"part-{checksum[-4:]}",
+            partition_checksum=checksum,
+            ground_truth_available=labelled,
+            workload_context={
+                "workload_intensity": workload,
+                "dominant_workload_characteristic": "CPU-intensive",
+                "anomaly_scenario": scenario,
+            },
+        )
+        f1_values = f1_values or {}
+        failed_models = set(failed_models or [])
+        results = []
+        for selected in record["selected_models"]:
+            model_id = selected["model_id"]
+            failed = model_id in failed_models
+            f1 = f1_values.get(model_id, 0.5)
+            results.append(
+                {
+                    "model_id": model_id,
+                    "display_name": selected["display_name"],
+                    "detector_id": selected["detector_id"],
+                    "detector_version": selected["detector_version"],
+                    "status": "failed" if failed else "completed",
+                    "ground_truth_available": labelled,
+                    "metrics": (
+                        {"precision": f1 + 0.05, "recall": f1 - 0.05, "f1_score": f1}
+                        if labelled and not failed
+                        else {}
+                    ),
+                    "runtime_ms": 10.0 + f1,
+                    "lead_time_status": "before_or_at_incident_start" if labelled else "ground_truth_unavailable",
+                    "lead_time_seconds": 60.0 if labelled else None,
+                }
+            )
+        record["results"] = results
+        return record
+
+    def test_exact_artifact_dedup_metrics_shared_matrix_and_coverage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = ComparisonStore(Path(temp) / "comparisons")
+            models = [model_record("model-one"), model_record("model-two")]
+            current = self._terminal_record(
+                "comparison-current", models=models, checksum="a" * 64,
+                completed_at="2026-10-03T10:00:00Z",
+                f1_values={"model-one": 0.6, "model-two": 0.7},
+            )
+            older_duplicate = self._terminal_record(
+                "comparison-old", models=models, checksum="a" * 64,
+                completed_at="2026-10-01T10:00:00Z",
+                f1_values={"model-one": 0.1, "model-two": 0.2},
+            )
+            second = self._terminal_record(
+                "comparison-second", models=[models[0]], checksum="b" * 64,
+                completed_at="2026-10-02T10:00:00Z", status="partial",
+                f1_values={"model-one": 0.8}, workload="Variable",
+            )
+            unlabelled = self._terminal_record(
+                "comparison-unlabelled", models=[models[0]], checksum="c" * 64,
+                completed_at="2026-10-02T11:00:00Z", labelled=False,
+            )
+            failed_run = self._terminal_record(
+                "comparison-failed", models=[models[0]], checksum="d" * 64,
+                completed_at="2026-10-02T12:00:00Z", status="failed",
+                f1_values={"model-one": 0.99},
+            )
+            failed_child = self._terminal_record(
+                "comparison-child-failed", models=[models[0]], checksum="e" * 64,
+                completed_at="2026-10-02T13:00:00Z", status="partial",
+                failed_models={"model-one"},
+            )
+            changed_artifact_model = model_record("model-one")
+            changed_artifact_model["inference"]["artifact_id"] = "artifact-other"
+            changed_artifact = self._terminal_record(
+                "comparison-other-artifact", models=[changed_artifact_model],
+                checksum="f" * 64, completed_at="2026-10-02T14:00:00Z",
+                f1_values={"model-one": 1.0},
+            )
+            for record in (
+                current, older_duplicate, second, unlabelled, failed_run,
+                failed_child, changed_artifact,
+            ):
+                store.create(record)
+
+            payload = aggregate_robustness(store, current)
+            by_model = {model["model_id"]: model for model in payload["models"]}
+            one = by_model["model-one"]
+            self.assertEqual(one["context_count"], 3)
+            self.assertEqual(one["labelled_context_count"], 2)
+            self.assertEqual(one["statistics"]["f1_score"]["median"], 0.7)
+            self.assertEqual(one["statistics"]["f1_score"]["minimum"], 0.6)
+            self.assertEqual(one["statistics"]["f1_score"]["maximum"], 0.8)
+            self.assertAlmostEqual(one["statistics"]["f1_score"]["range"], 0.2)
+            self.assertAlmostEqual(one["statistics"]["f1_score"]["standard_deviation"], 0.1)
+            self.assertEqual(one["statistics"]["precision"]["median"], 0.75)
+            self.assertAlmostEqual(one["statistics"]["recall"]["median"], 0.65)
+            self.assertEqual(one["statistics"]["runtime_ms"]["median"], 10.6)
+            self.assertEqual(one["statistics"]["lead_time_seconds"]["median"], 60.0)
+            self.assertNotIn("comparison-old", one["related_comparison_ids"])
+            self.assertNotIn("comparison-other-artifact", one["related_comparison_ids"])
+            self.assertEqual(by_model["model-two"]["context_count"], 1)
+            self.assertEqual(len(payload["shared_context_matrix"]), 1)
+            self.assertEqual(len(payload["shared_context_matrix"][0]["models"]), 2)
+            self.assertTrue(any("coverage differs" in warning for warning in payload["coverage_warnings"]))
+            self.assertTrue(any("latest completed" in warning for warning in payload["coverage_warnings"]))
+
+            labelled = aggregate_robustness(store, current, filters={"labelled_only": True})
+            self.assertEqual(
+                {model["model_id"]: model["context_count"] for model in labelled["models"]},
+                {"model-one": 2, "model-two": 1},
+            )
+            shared = aggregate_robustness(store, current, filters={"shared_only": True})
+            self.assertEqual(
+                {model["model_id"]: model["context_count"] for model in shared["models"]},
+                {"model-one": 1, "model-two": 1},
+            )
+            variable = aggregate_robustness(
+                store,
+                current,
+                filters={"workload": "Variable", "scenario": "CPU stress"},
+            )
+            self.assertEqual(
+                {model["model_id"]: model["context_count"] for model in variable["models"]},
+                {"model-one": 1, "model-two": 0},
+            )
+
+    def test_unlabelled_contexts_do_not_produce_accuracy_or_lead_time(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = ComparisonStore(Path(temp) / "comparisons")
+            model = model_record("model-one")
+            current = self._terminal_record(
+                "comparison-current", models=[model], checksum="a" * 64,
+                completed_at="2026-10-03T10:00:00Z", labelled=False,
+            )
+            store.create(current)
+            payload = aggregate_robustness(store, current)
+            aggregate = payload["models"][0]
+            self.assertEqual(aggregate["context_count"], 1)
+            self.assertEqual(aggregate["labelled_context_count"], 0)
+            self.assertIsNone(aggregate["statistics"]["f1_score"]["median"])
+            self.assertIsNone(aggregate["statistics"]["precision"]["median"])
+            self.assertIsNone(aggregate["statistics"]["recall"]["median"])
+            self.assertEqual(aggregate["statistics"]["lead_time_seconds"]["count"], 0)
+            self.assertFalse(aggregate["sufficient_contexts"])
+
+    def test_robustness_has_no_detector_specific_branch(self):
+        source = Path("learning_adaptation/comparison_robustness.py").read_text(
+            encoding="utf-8"
+        )
+        for detector_id in ("cgnn", "isolation-forest", "local-outlier-factor"):
+            self.assertNotIn(detector_id, source)
+
     def test_generic_evaluation_response_is_bounded(self):
         class Response:
             status_code = 200
@@ -316,6 +497,59 @@ class ComparisonApiTests(unittest.TestCase):
         for forbidden in ("/app/", "http://catalogue.internal", "task_id", "entry_point"):
             self.assertNotIn(forbidden, text)
 
+        selected = self.models.read("model-one")["inference"]
+        related = self.client.get(
+            "/api/comparisons",
+            query_string={
+                "model_id": "model-one",
+                "artifact_id": selected["artifact_id"],
+                "artifact_manifest_sha256": selected["artifact_manifest_sha256"],
+            },
+        )
+        self.assertEqual(related.status_code, 200)
+        self.assertEqual(related.get_json()["total"], 1)
+        incomplete = self.client.get("/api/comparisons?model_id=model-one")
+        self.assertEqual(incomplete.status_code, 400)
+
+    def test_robustness_endpoint_is_safe_bounded_and_filterable(self):
+        store = ComparisonStore(Path(self.temp.name) / "comparisons")
+        models = [model_record("model-one"), model_record("model-two")]
+        current = ComparisonRobustnessTests._terminal_record(
+            "comparison-robust", models=models, checksum="a" * 64,
+            completed_at="2026-10-03T10:00:00Z",
+            f1_values={"model-one": 0.6, "model-two": 0.7},
+        )
+        current["private_path"] = "/app/private"
+        current["internal_url"] = "http://secret.internal"
+        current["selected_models"][0]["artifact_identity"]["path"] = "/app/artifact"
+        current["results"][0]["binary_predictions"] = [0, 1]
+        store.create(current)
+        corrupt = store.root / "comparison-corrupt"
+        corrupt.mkdir(parents=True)
+        (corrupt / "comparison.json").write_text("{broken", encoding="utf-8")
+        response = self.client.get(
+            "/api/comparisons/comparison-robust/robustness?labelled_only=true&shared_only=true"
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["aggregation_version"], "cloudsentinel.comparison-robustness/v1")
+        self.assertEqual(len(payload["shared_context_matrix"]), 1)
+        self.assertEqual(payload["skipped_corrupt_records"], 1)
+        text = response.get_data(as_text=True)
+        for forbidden in (
+            "/app/private", "/app/artifact", "http://secret.internal", "binary_predictions",
+            "anomaly_scores", "entry_point", "task_id",
+        ):
+            self.assertNotIn(forbidden, text)
+        invalid = self.client.get(
+            "/api/comparisons/comparison-robust/robustness?labelled_only=perhaps"
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(
+            self.client.get("/api/comparisons/comparison-missing/robustness").status_code,
+            404,
+        )
+
     def test_public_projection_hides_internal_fields(self):
         record = comparison_record(); record["task_id"] = "celery-secret"; record["private_path"] = "/app/private"
         text = json.dumps(public_comparison(record))
@@ -333,6 +567,23 @@ class ComparisonTimelineAssetTests(unittest.TestCase):
         self.assertIn('data-timeline-error', source)
         self.assertIn('incidentBands', source)
         self.assertIn('comparison-incident-windows', source)
+
+    def test_robustness_template_is_grounded_and_contains_no_rca(self):
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "user_interface/monitoring_project/config_app/templates/config_app/comparison/_robustness.html"
+        ).read_text(encoding="utf-8")
+        for expected in (
+            "same saved model artefact",
+            "Shared evaluation contexts",
+            "Historical context results",
+            "No completed comparisons found for this exact saved model artefact",
+            "Metrics are unavailable because the available contexts have no ground truth",
+            "View related comparisons",
+        ):
+            self.assertIn(expected, source)
+        for forbidden in ("Root Cause Analysis", "View RCA", "robustness score"):
+            self.assertNotIn(forbidden, source)
 
 
 if __name__ == "__main__":

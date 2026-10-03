@@ -19,11 +19,13 @@ try:
         ComparisonNotFoundError,
         ComparisonStore,
     )
+    from learning_adaptation.comparison_robustness import aggregate_robustness
     from learning_adaptation.model_catalogue import ModelCatalogueStore, ModelNotFoundError
     from learning_adaptation.training_lifecycle import safe_failure_summary, utc_now
     from learning_adaptation.training_run_storage import validate_identifier
 except ModuleNotFoundError:
     from comparison_storage import ComparisonConflictError, ComparisonNotFoundError, ComparisonStore
+    from comparison_robustness import aggregate_robustness
     from model_catalogue import ModelCatalogueStore, ModelNotFoundError
     from training_lifecycle import safe_failure_summary, utc_now
     from training_run_storage import validate_identifier
@@ -47,6 +49,14 @@ def _positive(value: str | None, field: str, default: int, maximum: int) -> int:
     if parsed < 1 or parsed > maximum:
         raise ComparisonValidationError(f"{field} must be between 1 and {maximum}")
     return parsed
+
+
+def _boolean_query(value: str | None, field: str) -> bool:
+    if value in (None, "", "false", "0"):
+        return False
+    if value in {"true", "1"}:
+        return True
+    raise ComparisonValidationError(f"{field} must be true or false")
 
 
 def _catalogue_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -219,6 +229,25 @@ def create_comparisons_blueprint(comparison_task: Any) -> Blueprint:
                 raise ComparisonValidationError("unsupported comparison status")
             modality = request.args.get("modality")
             workload = request.args.get("workload")
+            related_model_id = request.args.get("model_id")
+            related_artifact_id = request.args.get("artifact_id")
+            related_artifact_hash = request.args.get("artifact_manifest_sha256")
+            if any((related_model_id, related_artifact_id, related_artifact_hash)) and not all(
+                (related_model_id, related_artifact_id, related_artifact_hash)
+            ):
+                raise ComparisonValidationError(
+                    "related artifact filtering requires model_id, artifact_id and artifact_manifest_sha256"
+                )
+            if related_model_id:
+                validate_identifier(related_model_id, "model_id")
+                validate_identifier(related_artifact_id, "artifact_id")
+                if len(related_artifact_hash) != 64 or any(
+                    character not in "0123456789abcdef"
+                    for character in related_artifact_hash.lower()
+                ):
+                    raise ComparisonValidationError(
+                        "artifact_manifest_sha256 must be a SHA-256 digest"
+                    )
             search = request.args.get("search", "").strip().lower()
             store, _models = stores()
             items = []
@@ -239,6 +268,20 @@ def create_comparisons_blueprint(comparison_task: Any) -> Blueprint:
                     continue
                 if workload and workload not in context.values():
                     continue
+                if related_model_id:
+                    related = any(
+                        selected.get("model_id") == related_model_id
+                        and (selected.get("artifact_identity") or {}).get("artifact_id")
+                        == related_artifact_id
+                        and (selected.get("artifact_identity") or {}).get(
+                            "artifact_manifest_sha256"
+                        )
+                        == related_artifact_hash
+                        for selected in item.get("selected_models", [])
+                        if isinstance(selected, dict)
+                    )
+                    if not related:
+                        continue
                 items.append(public_comparison(item, summary=True))
             items.sort(key=lambda item: (item.get("created_at", ""), item["comparison_id"]), reverse=True)
             total = len(items)
@@ -409,6 +452,50 @@ def create_comparisons_blueprint(comparison_task: Any) -> Blueprint:
         except ComparisonNotFoundError as exc:
             return jsonify({"error": str(exc)}), 404
 
+    @blueprint.get("/<comparison_id>/robustness")
+    def comparison_robustness(comparison_id: str):
+        try:
+            store, _models = stores()
+            current = store.read(comparison_id)
+            filters = {
+                "workload": request.args.get("workload", "").strip(),
+                "scenario": request.args.get("scenario", "").strip(),
+                "labelled_only": _boolean_query(
+                    request.args.get("labelled_only"), "labelled_only"
+                ),
+                "shared_only": _boolean_query(
+                    request.args.get("shared_only"), "shared_only"
+                ),
+            }
+            filters = {key: value for key, value in filters.items() if value}
+            if filters.get("workload") not in {
+                None, "Low", "Normal", "High", "Variable"
+            }:
+                raise ComparisonValidationError("unsupported workload filter")
+            if filters.get("scenario") not in {
+                None,
+                "Normal operation",
+                "CPU stress",
+                "Memory stress",
+                "Network delay",
+                "Unknown",
+            }:
+                raise ComparisonValidationError("unsupported scenario filter")
+            return jsonify(
+                aggregate_robustness(
+                    store,
+                    current,
+                    filters=filters,
+                    maximum_contexts_per_model=current_app.config.get(
+                        "COMPARISON_ROBUSTNESS_MAX_CONTEXTS_PER_MODEL", 200
+                    ),
+                )
+            )
+        except ComparisonNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
+        except (ComparisonValidationError, ValueError) as exc:
+            return jsonify({"error": str(exc)}), 400
+
     @blueprint.get("/<comparison_id>/status")
     def comparison_status(comparison_id: str):
         try:
@@ -450,3 +537,13 @@ def configure_comparison_defaults(app: Any) -> None:
     )
     app.config.setdefault("COMPARISON_MAX_BUNDLE_BYTES", 250 * 1024 * 1024)
     app.config.setdefault("COMPARISON_MAX_TIMELINE_POINTS", 1000)
+    robustness_limit = int(
+        os.getenv("COMPARISON_ROBUSTNESS_MAX_CONTEXTS_PER_MODEL", "200")
+    )
+    if robustness_limit < 1 or robustness_limit > 1_000:
+        raise ValueError(
+            "COMPARISON_ROBUSTNESS_MAX_CONTEXTS_PER_MODEL must be between 1 and 1000"
+        )
+    app.config.setdefault(
+        "COMPARISON_ROBUSTNESS_MAX_CONTEXTS_PER_MODEL", robustness_limit
+    )

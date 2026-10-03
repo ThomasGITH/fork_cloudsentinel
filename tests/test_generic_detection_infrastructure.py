@@ -7,7 +7,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 K8S = ROOT / "k8s"
 GENERIC_IMAGE = "jojojochem/anomaly_detection_generic:comparison-mvp-1"
-LEARNING_IMAGE = "jojojochem/learning_adaptation:comparison-mvp-1.3"
+LEARNING_IMAGE = "jojojochem/learning_adaptation:comparison-robustness-1"
 
 
 def documents(name):
@@ -112,6 +112,13 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
         worker_container = container(worker)
         self.assertEqual(api_container["image"], LEARNING_IMAGE)
         self.assertEqual(worker_container["image"], LEARNING_IMAGE)
+        api_environment = {
+            item["name"]: item["value"] for item in api_container["env"]
+        }
+        self.assertEqual(
+            api_environment["COMPARISON_ROBUSTNESS_MAX_CONTEXTS_PER_MODEL"],
+            "200",
+        )
         self.assertNotIn("model-artifacts", by_name(api_container["volumeMounts"]))
         worker_mount = by_name(worker_container["volumeMounts"])["model-artifacts"]
         self.assertEqual(worker_mount["mountPath"], "/app/storage/model_artifacts")
@@ -138,11 +145,12 @@ class GenericDetectionInfrastructureTests(unittest.TestCase):
             "comparison_api.py",
             "comparison_execution.py",
             "comparison_evaluation.py",
+            "comparison_robustness.py",
             "comparison_storage.py",
         ):
             self.assertIn(f"test -f /app/{module}", dockerfile)
         self.assertIn(
-            "import comparison_api, comparison_evaluation, comparison_execution, comparison_storage, tasks",
+            "import comparison_api, comparison_evaluation, comparison_execution, comparison_robustness, comparison_storage, tasks",
             dockerfile,
         )
         self.assertIn("tasks.execute_comparison_task", dockerfile)
