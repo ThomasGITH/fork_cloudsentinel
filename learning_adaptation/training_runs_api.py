@@ -8,6 +8,7 @@ from pathlib import Path
 import csv
 from typing import Any, Callable
 import uuid
+from copy import deepcopy
 
 from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
@@ -589,6 +590,41 @@ def create_training_runs_blueprint(
                 "total": total,
                 "pages": math.ceil(total / page_size) if total else 0,
                 "skipped_corrupt_records": corrupt,
+            }
+        )
+
+    @blueprint.get("/internal/models/<model_id>/live-input-recipe")
+    def get_model_live_input_recipe(model_id: str):
+        """Return a pinned recipe to trusted server-side monitoring callers."""
+        try:
+            validate_identifier(model_id, "model_id")
+            _snapshot_store, _run_store, model_store = stores()
+            record = model_store.read(model_id)
+        except TrainingRunValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except ModelNotFoundError:
+            return jsonify({"error": "unknown model"}), 404
+        inference = record.get("inference", {})
+        live = record.get("live_monitoring", {})
+        recipe = live.get("recipe") if isinstance(live, dict) else None
+        if (
+            record.get("status") != "available"
+            or inference.get("status") != "ready"
+            or inference.get("contract") != "cloudsentinel.inference/v1"
+            or live.get("status") != "ready"
+            or not isinstance(recipe, dict)
+        ):
+            return jsonify({"error": "model is not ready for live monitoring"}), 409
+        return jsonify(
+            {
+                "model_id": record["model_id"],
+                "detector_id": record["detector_id"],
+                "detector_version": record["detector_version"],
+                "artifact_manifest_sha256": inference.get(
+                    "artifact_manifest_sha256"
+                ),
+                "feature_identity": deepcopy(record["feature_identity"]),
+                "recipe": deepcopy(recipe),
             }
         )
 

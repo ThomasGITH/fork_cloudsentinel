@@ -388,6 +388,15 @@ def record_successful_model(
     record["inference"] = deepcopy(
         inference if inference is not None else {"status": "not_supported"}
     )
+    record["live_monitoring"] = deepcopy(
+        context.get(
+            "live_monitoring",
+            {
+                "status": "not_ready",
+                "reason": "The model has no pinned live input recipe",
+            },
+        )
+    )
     try:
         existing = model_store.read(record["model_id"])
     except ModelNotFoundError:
@@ -404,6 +413,7 @@ def record_successful_model(
             "feature_identity",
             "training_parameters",
             "plugin",
+            "live_monitoring",
         )
         if any(existing.get(field) != record.get(field) for field in identity_fields):
             raise ModelRecordError(
@@ -613,6 +623,7 @@ def model_summary(record: dict[str, Any]) -> dict[str, Any]:
         },
         "promotion": {"status": record["promotion"]["status"]},
         "inference": deepcopy(record.get("inference", {"status": "legacy_external"})),
+        "live_monitoring": _public_live_monitoring(record),
         "stored_evaluation": stored_evaluation_projection(record),
     }
 
@@ -656,4 +667,29 @@ def public_model_record(record: dict[str, Any]) -> dict[str, Any]:
     public["inference"] = deepcopy(
         record.get("inference", {"status": "legacy_external"})
     )
+    public["live_monitoring"] = _public_live_monitoring(record)
     return public
+
+
+def _public_live_monitoring(record: dict[str, Any]) -> dict[str, Any]:
+    value = record.get("live_monitoring")
+    if not isinstance(value, dict) or value.get("status") != "ready":
+        return {
+            "status": "not_ready",
+            "reason": (
+                value.get("reason")
+                if isinstance(value, dict) and isinstance(value.get("reason"), str)
+                else "The model has no pinned live input recipe"
+            ),
+        }
+    return {
+        key: deepcopy(value[key])
+        for key in (
+            "status",
+            "contract",
+            "recipe_sha256",
+            "feature_order_sha256",
+            "sampling_interval_seconds",
+        )
+        if key in value
+    }

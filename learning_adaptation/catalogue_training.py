@@ -36,6 +36,70 @@ def _feature_order_hash(value: list[str]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _verify_live_input_recipe(manifest: dict[str, Any], feature_order: list[str]) -> None:
+    recipe = manifest.get("live_input_recipe")
+    declared = manifest.get("live_input_recipe_sha256")
+    if recipe is None and declared is None:
+        return
+    if not isinstance(recipe, dict) or not isinstance(declared, str):
+        raise CatalogueBundleError("Data Catalogue live input recipe is incomplete")
+    copied = dict(recipe)
+    embedded = copied.pop("recipe_sha256", None)
+    if (
+        recipe.get("schema_version") != 1
+        or recipe.get("contract") != "cloudsentinel.live-input/v1"
+        or embedded != declared
+        or _canonical_sha256(copied) != declared
+        or recipe.get("feature_order") != feature_order
+        or recipe.get("feature_order_sha256") != _feature_order_hash(feature_order)
+    ):
+        raise CatalogueBundleError("Data Catalogue live input recipe checksum mismatch")
+    executions = recipe.get("query_executions")
+    mappings = recipe.get("series_mapping")
+    execution_ids = {
+        item.get("execution_id")
+        for item in executions or []
+        if isinstance(item, dict)
+        and isinstance(item.get("execution_id"), str)
+        and isinstance(item.get("resolved_query"), str)
+        and item.get("resolved_query")
+    }
+    if (
+        not isinstance(executions, list)
+        or not executions
+        or len(execution_ids) != len(executions)
+        or not isinstance(mappings, list)
+        or [item.get("feature_id") for item in mappings if isinstance(item, dict)]
+        != feature_order
+        or any(
+            not isinstance(item, dict)
+            or item.get("execution_id") not in execution_ids
+            or not isinstance(item.get("metric_labels"), dict)
+            for item in mappings
+        )
+        or recipe.get("alignment")
+        != {
+            "grid": "inclusive_utc_range",
+            "timestamp_match": "exact_microsecond",
+            "off_grid_samples": "drop_with_warning",
+        }
+        or recipe.get("missing_data")
+        != {
+            "offline_representation": "empty",
+            "live_policy": "reject_window",
+            "imputation": "none",
+        }
+    ):
+        raise CatalogueBundleError("Data Catalogue live input recipe is invalid")
+
+
 def _safe_error(response: Any) -> str:
     try:
         payload = response.json()
@@ -155,6 +219,7 @@ def verify_bundle(
         or manifest.get("feature_order_sha256") != _feature_order_hash(feature_order)
     ):
         raise CatalogueBundleError("Data Catalogue feature-order checksum mismatch")
+    _verify_live_input_recipe(manifest, feature_order)
     files = manifest.get("files")
     if not isinstance(files, dict) or set(files) != EXPECTED_FILES - {"manifest.json"}:
         raise CatalogueBundleError("Data Catalogue training manifest file list is invalid")

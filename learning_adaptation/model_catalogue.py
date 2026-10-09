@@ -120,6 +120,20 @@ def validate_model_record(record: Any) -> dict[str, Any]:
             }
             if not required_inference.issubset(inference):
                 raise ModelRecordError("ready inference metadata is incomplete")
+    if "live_monitoring" in record:
+        live = _object(record["live_monitoring"], "live_monitoring")
+        if live.get("status") not in {"ready", "not_ready"}:
+            raise ModelRecordError("unsupported live monitoring status")
+        if live.get("status") == "ready":
+            required_live = {
+                "contract",
+                "recipe_sha256",
+                "feature_order_sha256",
+                "sampling_interval_seconds",
+                "recipe",
+            }
+            if not required_live.issubset(live):
+                raise ModelRecordError("ready live monitoring metadata is incomplete")
     if "plugin" in record:
         plugin = _object(record["plugin"], "plugin")
         required_plugin_fields = {

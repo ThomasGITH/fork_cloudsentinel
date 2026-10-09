@@ -19,7 +19,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: celery-worker
-        image: jojojochem/data_ingestion:comparison-mvp-1
+        image: jojojochem/data_ingestion:generic-live-monitoring-1
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "--concurrency=1"]
         securityContext:
@@ -36,6 +36,8 @@ spec:
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
         - name: CELERY_RESULT_BACKEND
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
+        - name: API_GENERIC_ANOMALY_DETECTION_URL
+          value: "http://generic-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
         volumeMounts:
         - name: catalogue-storage
           mountPath: /app/storage

@@ -11,6 +11,7 @@ from typing import Any
 import zipfile
 
 from .repository import FileCatalogueRepository
+from .live_input import LiveInputRecipeError, validate_live_input_recipe
 from .validation import (
     CatalogueValidationError,
     partition_checksum,
@@ -366,6 +367,21 @@ def materialize_training_bundle(
             },
             "files": file_records,
         }
+        live_recipe = version.get("live_input_recipe")
+        if live_recipe is not None:
+            try:
+                manifest["live_input_recipe"] = validate_live_input_recipe(
+                    live_recipe,
+                    expected_feature_order=feature_order,
+                    expected_feature_order_sha256=feature_hash,
+                )
+                manifest["live_input_recipe_sha256"] = manifest[
+                    "live_input_recipe"
+                ]["recipe_sha256"]
+            except LiveInputRecipeError as exc:
+                raise CatalogueMaterializationError(
+                    f"live input recipe is invalid: {exc}"
+                ) from exc
         manifest_path = temporary_directory / "manifest.json"
         manifest_path.write_text(
             json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"

@@ -17,6 +17,7 @@ from data_ingestion.catalogue.api import (
     create_catalogue_blueprint,
 )
 from data_ingestion.catalogue.models import version_summary
+from data_ingestion.catalogue.live_input import build_live_input_recipe
 from data_ingestion.catalogue.repository import FileCatalogueRepository
 from learning_adaptation.catalogue_training import (
     CatalogueBundleError,
@@ -140,6 +141,32 @@ class CatalogueMaterializationTests(unittest.TestCase):
             "normalization": "none",
             "imputation": "none",
         }
+        executions = [
+            {
+                "execution_id": "q0000-t0000",
+                "query_id": "metrics",
+                "display_name": "Metrics",
+                "feature_name": "metric",
+                "required": True,
+                "execution_mode": "single",
+                "target_type": None,
+                "identity_labels": ["feature"],
+                "resolved_target": None,
+                "query_template": "up{namespace=\"default\"}",
+                "resolved_query": "up{namespace=\"default\"}",
+            }
+        ]
+        version["live_input_recipe"] = build_live_input_recipe(
+            version,
+            executions,
+            {
+                "features": ["cpu", "memory"],
+                "series_mappings": [
+                    {"feature_id": "cpu", "execution_id": "q0000-t0000", "metric_labels": {"feature": "cpu"}},
+                    {"feature_id": "memory", "execution_id": "q0000-t0000", "metric_labels": {"feature": "memory"}},
+                ],
+            },
+        )
         version["artifacts"] = {
             "canonical/observations.csv": {
                 "path": str(observations.relative_to(self.catalogue_root.resolve())),
@@ -243,6 +270,8 @@ class CatalogueMaterializationTests(unittest.TestCase):
                 files = self._read_bundle(bundle)
                 manifest = json.loads(files["manifest.json"])
                 self.assertEqual(manifest["feature_order"], ["cpu", "memory"])
+                self.assertEqual(manifest["live_input_recipe"]["contract"], "cloudsentinel.live-input/v1")
+                self.assertEqual(manifest["live_input_recipe_sha256"], manifest["live_input_recipe"]["recipe_sha256"])
                 self.assertEqual(manifest["label_source"]["type"], source)
                 self.assertEqual(len(files["test.csv"].decode().splitlines()), 3)
                 self.assertEqual(len(files["labels.csv"].decode().splitlines()), 3)
@@ -403,6 +432,24 @@ class CatalogueTrainingRunTests(unittest.TestCase):
             },
             "files": file_manifest,
         }
+        recipe_base = {
+            "schema_version": 1,
+            "contract": "cloudsentinel.live-input/v1",
+            "prometheus_source_id": "cluster-default",
+            "sampling_interval_seconds": 60,
+            "feature_order": feature_order,
+            "feature_order_sha256": feature_hash,
+            "query_executions": [{"execution_id": "q0000-t0000", "resolved_query": "up", "query_id": "up"}],
+            "series_mapping": [
+                {"feature_id": feature, "execution_id": "q0000-t0000", "metric_labels": {"feature": feature}}
+                for feature in feature_order
+            ],
+            "alignment": {"grid": "inclusive_utc_range", "timestamp_match": "exact_microsecond", "off_grid_samples": "drop_with_warning"},
+            "missing_data": {"offline_representation": "empty", "live_policy": "reject_window", "imputation": "none"},
+        }
+        recipe_sha = hashlib.sha256(json.dumps(recipe_base, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        manifest["live_input_recipe"] = {**recipe_base, "recipe_sha256": recipe_sha}
+        manifest["live_input_recipe_sha256"] = recipe_sha
         return {
             "directory": temporary,
             "temporary_root": temporary,
@@ -444,6 +491,7 @@ class CatalogueTrainingRunTests(unittest.TestCase):
         self.assertEqual((snapshot / "train.csv").read_bytes(), original)
         metadata = json.loads((snapshot / "snapshot.json").read_text())
         self.assertEqual(metadata["catalogue_provenance"]["partition_id"], "partition-one")
+        self.assertEqual(metadata["catalogue_provenance"]["live_input_recipe_sha256"], source["manifest"]["live_input_recipe_sha256"])
         self.assertFalse(source["temporary_root"].exists())
         self.assertEqual(self.training_task.apply_async.call_count, 2)
 

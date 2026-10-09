@@ -17,6 +17,7 @@ from typing import Any, Callable
 import requests
 
 from .models import utc_now, version_summary
+from .live_input import build_live_input_recipe
 from .repository import FileCatalogueRepository, atomic_write_json
 from .validation import (
     CatalogueValidationError,
@@ -322,6 +323,7 @@ def assemble_time_series(
     columns: list[list[float | None]] = []
     total_series = 0
     provenance_executions = []
+    series_mappings = []
     for result in results:
         execution = result["execution"]
         raw_result = result["response"]["payload"]["data"]["result"]
@@ -367,6 +369,15 @@ def assemble_time_series(
                 sample_count += 1
             features.append(feature_id)
             columns.append(column)
+            series_mappings.append(
+                {
+                    "feature_id": feature_id,
+                    "execution_id": execution["execution_id"],
+                    "metric_labels": {
+                        str(key): str(value) for key, value in sorted(metric.items())
+                    },
+                }
+            )
         warnings.extend(result["response"]["warnings"])
         provenance_executions.append(
             {
@@ -406,6 +417,7 @@ def assemble_time_series(
         "warnings": list(dict.fromkeys(warnings)),
         "missing_by_feature": missing_by_feature,
         "provenance_executions": provenance_executions,
+        "series_mappings": series_mappings,
     }
 
 
@@ -652,6 +664,7 @@ def execute_catalogue_fetch(
         if progress_callback:
             progress_callback("validating", total, total)
         assembled = assemble_time_series(version, results, limits)
+        live_input_recipe = build_live_input_recipe(version, executions, assembled)
         observations = [
             [timestamp, *row]
             for timestamp, row in zip(assembled["timestamps"], assembled["rows"])
@@ -714,6 +727,7 @@ def execute_catalogue_fetch(
         atomic_write_json(staging / "provenance.json", provenance)
         atomic_write_json(staging / "schema.json", schema)
         atomic_write_json(staging / "validation.json", validation)
+        atomic_write_json(staging / "live_input_recipe.json", live_input_recipe)
         atomic_write_json(staging / "attempt.json", attempt)
         if version.get("ground_truth", {}).get("labels_available") or version.get(
             "incident_context"
@@ -769,6 +783,7 @@ def execute_catalogue_fetch(
             "query_warnings": assembled["warnings"],
         }
         version["technical_schema"] = schema
+        version["live_input_recipe"] = live_input_recipe
         version["validation"] = validation
         version["checksums"] = checksums
         version["artifacts"] = {

@@ -70,6 +70,8 @@ def model_payload():
         "training_parameters": {"n_estimators": 100}, "evaluation": {"f1": 0.9},
         "stored_evaluation": {"available": True, "context": {"dataset_id": "ds_demo", "version": 3, "partition_id": "partition_demo"}, "metric_sets": [{"method": "stored evaluation", "metrics": {"precision": 0.88, "recall": 0.92, "f1_score": 0.9}}]},
         "promotion": {"status": "promoted", "promoted_at": "2026-09-29T10:02:00Z"},
+        "inference": {"status": "ready", "contract": "cloudsentinel.inference/v1"},
+        "live_monitoring": {"status": "ready", "recipe_sha256": "r" * 64, "sampling_interval_seconds": 60},
         "artifact": {"safe_reference": "/app/private/model.joblib"}, "internal_url": "http://learning.internal/model",
     }
 
@@ -134,6 +136,8 @@ class ModelsUiTests(SimpleTestCase):
         self.assertContains(model, "partition-sha")
         self.assertContains(model, "Stored post-training evaluation")
         self.assertContains(model, "They are not a ranking")
+        self.assertContains(model, "Use for live monitoring")
+        self.assertContains(model, "/monitoring/?model_id=model_demo")
         self.assertNotContains(model, "/app/private")
         self.assertNotContains(model, "learning.internal")
         run = self.client.get(reverse("models_training_run_detail", args=["run_demo"]))

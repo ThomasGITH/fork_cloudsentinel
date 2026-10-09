@@ -1,158 +1,102 @@
+"""Existing monitoring screens backed by generic Saved Model inference."""
+
+from __future__ import annotations
+
 import requests
-from requests.exceptions import RequestException
-from django.shortcuts import render
-from ..forms import MonitoringForm, create_dynamic_form
-from .utils import get_pods, get_available_models, get_config, get_settings
 from django.conf import settings
 from django.http import JsonResponse
-import json
-import logging
-import traceback
+from django.shortcuts import render
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+from ..forms import MonitoringForm
+from ..learning_client import LearningClientError, get_learning_client
+
+
+def _models():
+    payload = get_learning_client().list_models(
+        {"page": 1, "page_size": 100, "status": "available", "sort": "newest"}
+    )
+    return [item for item in payload.get("items", []) if isinstance(item, dict)]
+
+
+def _ready(item):
+    return (
+        item.get("inference", {}).get("status") == "ready"
+        and item.get("inference", {}).get("contract") == "cloudsentinel.inference/v1"
+        and item.get("live_monitoring", {}).get("status") == "ready"
+    )
+
+
+def _choices(items):
+    return [
+        (
+            item["model_id"],
+            f"{item.get('detector_id', 'Detector')} v{item.get('detector_version', '—')} — {item['model_id']}",
+        )
+        for item in items
+        if _ready(item)
+    ]
 
 
 def monitoring_home(request):
-    """
-    Renders the home page for monitoring, loading the Kubernetes configuration and pod names.
-
-    Args:
-        request (HttpRequest): The request object.
-
-    Returns:
-        HttpResponse: The rendered monitoring home page with pod names.
-    """
-    logger.info("Rendering monitoring home page")
-    load_kube_config()
-    pod_names = get_pods(settings.CLUSTER_NAMESPACE)
-    return render(request, 'config_app/monitoring/monitoring_home.html', {'pod_names': pod_names})
+    return render(request, "config_app/monitoring/monitoring_home.html")
 
 
 def monitoring(request):
-    """
-    Handles the monitoring setup, including form handling and initiating monitoring.
-
-    Args:
-        request (HttpRequest): The request object.
-
-    Returns:
-        HttpResponse: The rendered monitoring setup page with form and models data.
-        JsonResponse: A JSON response indicating success or failure of the monitoring initiation.
-    """
-    logger.info("Initializing monitoring setup")
-    load_kube_config()
-    config_data = get_config(settings.API_CRCA_ANOMALY_DETECTION_URL)
-    crca_form = create_dynamic_form(config_data)()
-
-    if request.method == 'POST':
-        pods = get_pods(settings.CLUSTER_NAMESPACE)
-        pod_choices = [(pod, pod) for pod in pods]
-        model_choices = get_available_models(settings.API_CGNN_ANOMALY_DETECTION_URL)
-        form = MonitoringForm(request.POST)
-        form.fields['containers'].choices = pod_choices
-        form.fields['model'].choices = [(model, model) for model in model_choices]
-        form.fields['crca_pods'].choices = pod_choices
-
-        if form.is_valid():
-            logger.info("Form is valid, processing data")
-            # Collect data from the form
-            containers = form.cleaned_data['containers']
-            selected_model = form.cleaned_data['model']
-            data_interval = form.cleaned_data['data_interval']
-            duration = form.cleaned_data['duration']
-            test_interval = form.cleaned_data['test_interval']
-            crca_threshold = form.cleaned_data['crca_threshold']
-            crca_pods = form.cleaned_data['crca_pods']
-            crca_config = json.loads(request.POST.get('crca_config_data', '{}'))
-
-            # Prepare the monitoring data
-            monitor_data = {
-                'metrics': model_choices[selected_model]['model_params']['metrics'],
-                'containers': containers,
-                'data_interval': data_interval,
-                'duration': duration,
-                'test_interval': test_interval,
-                'model': selected_model,
-                'crca_threshold': crca_threshold,
-                'crca_pods': crca_pods,
-                'crca_config': crca_config
-            }
-            monitor_info = {
-                'settings': get_settings(),
-                'data': monitor_data
-            }
-            monitor_info_json = json.dumps(monitor_info)
-
-            # Send the monitoring data to the API
+    try:
+        models = _models()
+        upstream_error = None
+    except LearningClientError:
+        models = []
+        upstream_error = "Saved Models are temporarily unavailable."
+    form = MonitoringForm(
+        request.POST or None,
+        initial={"model_id": request.GET.get("model_id", "")},
+    )
+    form.fields["model_id"].choices = _choices(models)
+    if request.method == "POST" and form.is_valid():
+        selected = next(
+            (item for item in models if item.get("model_id") == form.cleaned_data["model_id"]),
+            None,
+        )
+        if selected is None or not _ready(selected):
+            form.add_error("model_id", "This model is not ready for live monitoring.")
+        else:
             try:
-                logger.info("Sending monitoring data to the API")
-                requests.post(f'{settings.API_DATA_INGESTION_URL}/start_monitoring', data={'monitor_info': monitor_info_json})
-                logger.info("Monitoring data sent successfully")
-                return JsonResponse({'status': 'success'})
-            except RequestException as e:
-                logger.error(f"Failed to initiate monitoring: {traceback.format_exc()}")
-                return JsonResponse({'status': 'error', 'message': str(e)})
-
-    # Handle the GET request and initialize the form
-    pods = get_pods(settings.CLUSTER_NAMESPACE)
-    pod_choices = [(pod, pod) for pod in pods]
-    model_choices = get_available_models(settings.API_CGNN_ANOMALY_DETECTION_URL)
-
-    form = MonitoringForm()
-    form.fields['containers'].choices = pod_choices
-    form.fields['model'].choices = [(model, model) for model in model_choices]
-    form.fields['crca_pods'].choices = pod_choices
-
-    logger.info("Rendering monitoring setup page")
-    return render(request, 'config_app/monitoring/monitoring_setup.html', {'form': form, 'models': model_choices, 'crca_form': crca_form})
+                response = requests.post(
+                    f"{settings.API_DATA_INGESTION_URL.rstrip('/')}/start_monitoring",
+                    json={
+                        "model_id": selected["model_id"],
+                        "window_seconds": form.cleaned_data["window_minutes"] * 60,
+                        "poll_interval_seconds": form.cleaned_data["poll_interval_seconds"],
+                    },
+                    timeout=(5, 30),
+                )
+                payload = response.json()
+            except (requests.RequestException, ValueError):
+                return JsonResponse(
+                    {"status": "error", "message": "Live monitoring could not be started."},
+                    status=502,
+                )
+            if response.status_code >= 400:
+                return JsonResponse(
+                    {"status": "error", "message": str(payload.get("error") or "The model could not be started.")[:500]},
+                    status=response.status_code,
+                )
+            return JsonResponse(payload, status=202)
+    return render(
+        request,
+        "config_app/monitoring/monitoring_setup.html",
+        {"form": form, "models": models, "upstream_error": upstream_error, "ready_count": len(_choices(models))},
+    )
 
 
 def monitoring_overview(request):
-    """
-    Renders the monitoring overview dashboard.
-
-    Args:
-        request (HttpRequest): The request object.
-
-    Returns:
-        HttpResponse: The rendered monitoring dashboard page.
-    """
-    logger.info("Rendering monitoring overview dashboard")
-    return render(request, 'config_app/monitoring/monitoring_dashboard.html',
-                  {'flask_url': settings.API_CGNN_ANOMALY_DETECTION_URL, 'monitoring_id': 234})
+    return render(request, "config_app/monitoring/monitoring_dashboard.html")
 
 
 def load_kube_config():
-    """
-    Loads the Kubernetes configuration.
-
-    Returns:
-        JsonResponse: A JSON response indicating success or failure of the operation.
-    """
-    try:
-        logger.info("Loading Kubernetes configuration")
-        requests.post(f'{settings.API_DATA_INGESTION_URL}/load_kube_config')
-        logger.info("Kubernetes configuration loaded successfully")
-        return JsonResponse({'status': 'success'})
-    except RequestException as e:
-        logger.error(f"Failed to load Kubernetes configuration: {traceback.format_exc()}")
-        return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({"status": "not_required"})
 
 
 def task_manager(request):
-    """
-    Renders the task manager page for monitoring.
-
-    Args:
-        request (HttpRequest): The request object.
-
-    Returns:
-        HttpResponse: The rendered task manager page.
-    """
-    logger.info("Rendering task manager page")
-    return render(request, 'config_app/monitoring/monitoring_task_manager.html',
-                  {'data_ingestion_url': settings.API_DATA_INGESTION_URL,
-                   'cgnn_url': settings.API_CGNN_ANOMALY_DETECTION_URL,
-                   'crca_url': settings.API_CRCA_ANOMALY_DETECTION_URL})
+    return render(request, "config_app/monitoring/monitoring_dashboard.html")

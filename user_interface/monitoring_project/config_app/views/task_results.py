@@ -164,7 +164,7 @@ def stop_task(request, taskId):
 @csrf_exempt
 def fetch_results(request):
     try:
-        response = requests.get(f'{settings.API_CGNN_ANOMALY_DETECTION_URL}/get_all_results')
+        response = requests.get(f'{settings.API_DATA_INGESTION_URL}/get_active_tasks')
         response.raise_for_status()
         return JsonResponse(response.json())
     except requests.RequestException as e:
@@ -174,7 +174,7 @@ def fetch_results(request):
 @csrf_exempt
 def delete_result(request, taskId):
     try:
-        response = requests.post(f'{settings.API_CGNN_ANOMALY_DETECTION_URL}/delete_results', json={'taskId': taskId, 'crcaLink': settings.API_CRCA_ANOMALY_DETECTION_URL})
+        response = requests.delete(f'{settings.API_DATA_INGESTION_URL}/stop_monitoring/{taskId}')
         response.raise_for_status()
         return JsonResponse(response.json())
     except requests.RequestException as e:
@@ -184,7 +184,7 @@ def delete_result(request, taskId):
 @csrf_exempt
 def fetch_cgnn_results(request):
     try:
-        response = requests.get(f'{settings.API_CGNN_ANOMALY_DETECTION_URL}/get_all_results')
+        response = requests.get(f'{settings.API_DATA_INGESTION_URL}/get_active_tasks')
         response.raise_for_status()
         return JsonResponse(response.json())
     except requests.RequestException as e:

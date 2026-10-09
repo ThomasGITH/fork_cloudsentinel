@@ -257,6 +257,24 @@ def _build_context(payload: dict[str, Any]) -> TrainingContext:
         "training_parameters": parameters,
         **({"plugin": dict(stored_plugin_reference)} if stored_plugin_reference else {}),
     }
+    catalogue_provenance = snapshot.get("catalogue_provenance", {})
+    recipe = catalogue_provenance.get("live_input_recipe")
+    if isinstance(recipe, dict):
+        model_context["live_monitoring"] = {
+            "status": "ready",
+            "contract": recipe.get("contract"),
+            "recipe_sha256": catalogue_provenance.get(
+                "live_input_recipe_sha256"
+            ),
+            "feature_order_sha256": recipe.get("feature_order_sha256"),
+            "sampling_interval_seconds": recipe.get("sampling_interval_seconds"),
+            "recipe": recipe,
+        }
+    else:
+        model_context["live_monitoring"] = {
+            "status": "not_ready",
+            "reason": "The training snapshot has no validated live input recipe",
+        }
     return TrainingContext(
         run_id=run_id,
         child_id=model_context["training_child_id"],

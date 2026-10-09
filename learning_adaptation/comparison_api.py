@@ -162,6 +162,18 @@ def _selected_snapshot(record: dict[str, Any]) -> dict[str, Any]:
         "training_run_id": record["training_run_id"],
         "training_dataset": deepcopy(record.get("dataset", {})),
         "stored_evaluation": stored_evaluation_projection(record),
+        "live_monitoring": {
+            key: deepcopy(record.get("live_monitoring", {}).get(key))
+            for key in (
+                "status",
+                "contract",
+                "recipe_sha256",
+                "feature_order_sha256",
+                "sampling_interval_seconds",
+                "reason",
+            )
+            if record.get("live_monitoring", {}).get(key) is not None
+        },
         "feature_identity": deepcopy(record["feature_identity"]),
         "artifact_identity": {
             "artifact_id": inference["artifact_id"],
@@ -194,6 +206,7 @@ def public_comparison(record: dict[str, Any], *, summary: bool = False) -> dict[
                 "model_id", "display_name", "detector_id", "detector_version",
                 "model_created_at", "training_run_id", "training_dataset", "stored_evaluation",
                 "feature_identity", "artifact_identity", "plugin",
+                "live_monitoring",
             )
         })
     value["selected_models"] = selected

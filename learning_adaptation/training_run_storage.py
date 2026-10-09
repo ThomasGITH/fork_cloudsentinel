@@ -12,6 +12,7 @@ import tempfile
 import fcntl
 from typing import Any
 import uuid
+from copy import deepcopy
 
 
 SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -205,6 +206,13 @@ class DatasetSnapshotStore:
                     "provenance_reference",
                 )
             }
+            if manifest.get("live_input_recipe") is not None:
+                provenance["live_input_recipe"] = deepcopy(
+                    manifest["live_input_recipe"]
+                )
+                provenance["live_input_recipe_sha256"] = manifest[
+                    "live_input_recipe_sha256"
+                ]
             metadata = {
                 "schema_version": 2,
                 "snapshot_id": snapshot_id,

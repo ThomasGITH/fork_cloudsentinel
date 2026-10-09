@@ -323,6 +323,53 @@ class ModelsBackendTests(unittest.TestCase):
         self.assertEqual(missing["metric_sets"], [])
         self.assertEqual(missing["context"]["partition_id"], "partition-one")
 
+    def test_live_recipe_is_private_and_internal_resolution_is_pinned(self):
+        record = self.model_record("model-live")
+        record["inference"] = {
+            "status": "ready",
+            "artifact_id": "artifact-model-live",
+            "artifact_manifest_sha256": "e" * 64,
+            "contract": "cloudsentinel.inference/v1",
+            "artifact_format": "test-v1",
+        }
+        record["live_monitoring"] = {
+            "status": "ready",
+            "contract": "cloudsentinel.live-input/v1",
+            "recipe_sha256": "f" * 64,
+            "feature_order_sha256": "d" * 64,
+            "sampling_interval_seconds": 60,
+            "recipe": {
+                "contract": "cloudsentinel.live-input/v1",
+                "recipe_sha256": "f" * 64,
+                "resolved_query": "secret PromQL",
+            },
+        }
+        self.model_store.write(record)
+        public = self.client.get("/models/model-live").get_json()
+        self.assertEqual(public["live_monitoring"]["status"], "ready")
+        self.assertNotIn("recipe", public["live_monitoring"])
+        self.assertNotIn("PromQL", json.dumps(public))
+        internal = self.client.get(
+            "/internal/models/model-live/live-input-recipe"
+        )
+        self.assertEqual(internal.status_code, 200)
+        self.assertEqual(
+            internal.get_json()["artifact_manifest_sha256"], "e" * 64
+        )
+        self.assertEqual(
+            internal.get_json()["recipe"]["resolved_query"], "secret PromQL"
+        )
+
+        old = self.model_record("model-offline-only")
+        old["inference"] = record["inference"]
+        self.model_store.write(old)
+        self.assertEqual(
+            self.client.get(
+                "/internal/models/model-offline-only/live-input-recipe"
+            ).status_code,
+            409,
+        )
+
     def test_successful_cgnn_and_if_lifecycle_create_model_records(self):
         with patch.dict(
             os.environ,

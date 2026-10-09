@@ -36,7 +36,7 @@ def comparison(status="completed"):
         "known_incident_window": evaluation_dataset()["known_incident_windows"][0],
         "deterministic_summary": "IF baseline has the highest F1-score.",
         "selected_models": [
-            {"model_id": "model-one", "display_name": "IF baseline", "detector_id": "isolation-forest", "detector_version": "1.0.0", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "artifact_identity": {"artifact_id": "artifact-one", "artifact_manifest_sha256": "a" * 64}},
+            {"model_id": "model-one", "display_name": "IF baseline", "detector_id": "isolation-forest", "detector_version": "1.0.0", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "artifact_identity": {"artifact_id": "artifact-one", "artifact_manifest_sha256": "a" * 64}, "live_monitoring": {"status": "ready"}},
             {"model_id": "model-two", "display_name": "LOF baseline", "detector_id": "local-outlier-factor", "detector_version": "1.0.1", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "artifact_identity": {"artifact_id": "artifact-two", "artifact_manifest_sha256": "b" * 64}},
         ],
         "results": [
@@ -181,6 +181,8 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertContains(timeline, '"timestamp": "2026-10-01T10:00:00Z"')
         models = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "models"})
         self.assertContains(models, reverse("models_saved_detail", args=["model-one"]))
+        self.assertContains(models, "Use for live monitoring")
+        self.assertContains(models, "/monitoring/?model_id=model-one")
         robustness = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "robustness"})
         self.assertContains(robustness, "Robustness across workload contexts")
         self.assertContains(robustness, "same saved model artefact")

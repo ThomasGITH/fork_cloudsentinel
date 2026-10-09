@@ -6,12 +6,16 @@ import traceback
 import time
 import uuid
 import os
+import re
+import csv
+from io import StringIO
+from datetime import datetime, timezone
 from celery import Celery
 from kubernetes import client, config
 from flask_cors import CORS
 import redis
 
-from data_collector import collect_crca_data, fetch_metrics
+from data_collector import collect_crca_data
 from config import set_initial_metric_config, get_config, set_config
 
 try:
@@ -25,6 +29,29 @@ except ModuleNotFoundError as exc:  # The service image copies catalogue beside 
         raise
     from catalogue import configure_catalogue_defaults, create_catalogue_blueprint
     from catalogue.fetching import execute_catalogue_fetch
+
+try:
+    from data_ingestion.live_monitoring import (
+        LiveMonitoringError,
+        collect_recipe_window,
+        decode_session,
+        encode_session,
+        merge_bounded_buffer,
+        safe_session_projection,
+        stopped_session,
+        validate_resolved_live_model,
+    )
+except ModuleNotFoundError:
+    from live_monitoring import (
+        LiveMonitoringError,
+        collect_recipe_window,
+        decode_session,
+        encode_session,
+        merge_bounded_buffer,
+        safe_session_projection,
+        stopped_session,
+        validate_resolved_live_model,
+    )
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -84,7 +111,7 @@ def _dispatch_catalogue_fetch(dataset_id, version, attempt_id, task_id):
 app.extensions["catalogue_fetch_dispatch"] = _dispatch_catalogue_fetch
 
 # Configure Redis
-redis_client = redis.StrictRedis(host='redis', port=6379, db=0)
+redis_client = redis.StrictRedis.from_url(app.config['broker_url'])
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -100,57 +127,142 @@ def health_check():
 # celery -A app.celery worker --loglevel=info
 
 
-def store_scheduled_task_id(task_id, monitor_task_id):
-    redis_client.sadd(f"scheduled_tasks:{monitor_task_id}", task_id)
+SESSION_PREFIX = "live_monitoring_session:"
 
 
-def get_scheduled_task_ids(monitor_task_id):
-    return redis_client.smembers(f"scheduled_tasks:{monitor_task_id}")
+def _session_key(session_id):
+    return f"{SESSION_PREFIX}{session_id}"
 
 
-def remove_scheduled_task_ids(monitor_task_id):
-    redis_client.delete(f"scheduled_tasks:{monitor_task_id}")
+def _stop_key(session_id):
+    return f"{SESSION_PREFIX}stopped:{session_id}"
+
+
+def _read_session(session_id):
+    return decode_session(redis_client.get(_session_key(session_id)))
+
+
+def _write_session(session, *, force=False):
+    if not force and redis_client.get(_stop_key(session["session_id"])):
+        return False
+    session["updated_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    redis_client.setex(
+        _session_key(session["session_id"]),
+        int(os.getenv("LIVE_MONITORING_SESSION_TTL_SECONDS", str(30 * 24 * 3600))),
+        encode_session(session),
+    )
+    return True
+
+
+def _safe_upstream_error(response, fallback):
+    try:
+        message = response.json().get("error")
+    except (ValueError, AttributeError):
+        message = None
+    return str(message or fallback)[:500]
+
+
+def _generic_detect(session, collected):
+    base_url = os.getenv(
+        "API_GENERIC_ANOMALY_DETECTION_URL",
+        "http://generic-anomaly-detection-service.cloudsentinel.svc.cluster.local:80",
+    ).rstrip("/")
+    activate = requests.post(
+        f"{base_url}/models/{session['model_id']}/activate", timeout=(5, 60)
+    )
+    if activate.status_code != 200:
+        raise LiveMonitoringError(_safe_upstream_error(activate, "model activation failed"))
+    stream = StringIO()
+    csv.writer(stream).writerows(collected["rows"])
+    metadata = {
+        "model_id": session["model_id"],
+        "feature_order": collected["feature_order"],
+        "feature_order_sha256": collected["feature_order_sha256"],
+        "timestamps": collected["timestamps"],
+        "context": {
+            "live_monitoring_session_id": session["session_id"],
+            "recipe_sha256": session["recipe_sha256"],
+        },
+    }
+    response = requests.post(
+        f"{base_url}/detect",
+        files={"matrix": ("matrix.csv", stream.getvalue(), "text/csv")},
+        data={"metadata": json.dumps(metadata)},
+        timeout=(5, 120),
+    )
+    if response.status_code != 200:
+        raise LiveMonitoringError(_safe_upstream_error(response, "generic detection failed"))
+    payload = response.json()
+    return {
+        key: payload.get(key)
+        for key in (
+            "status",
+            "model_id",
+            "input_observation_count",
+            "warmup_observations",
+            "prediction_count",
+            "anomaly_count",
+            "anomaly_percentage",
+            "result_reference",
+        )
+        if key in payload
+    }
 
 
 @celery.task(bind=True)
-def monitoring_task(self, monitor_info, iteration=0):
-    """
-    Celery task to perform continuous monitoring.
-
-    Args:
-        self (Task): The Celery task instance.
-        monitor_info (dict): Information required for monitoring.
-        iteration (int): The current iteration of the task.
-
-    Returns:
-        None
-    """
+def monitoring_task(self, session_id):
+    """Run one recipe-pinned collection cycle and schedule the next cycle."""
+    session = _read_session(session_id)
+    if not session or session.get("status") == "stopped":
+        return
     try:
-        # Check for task revocation by querying the backend
-        task = monitoring_task.AsyncResult(self.request.id)
-        if task.state == 'REVOKED':
-            logger.info(f"Task {self.request.id} revoked")
+        session["status"] = "collecting"
+        session["current_task_id"] = self.request.id
+        if not _write_session(session):
             return
-
         end_time = int(time.time())
-        start_time = end_time - (monitor_info['data']['duration'] * 60)
-        dataframe = fetch_metrics(monitor_info['data']['containers'], monitor_info['data']['metrics'], start_time, end_time,
-                                  monitor_info['settings']['PROMETHEUS_URL'], monitor_info['data']['data_interval'])
-        test_files = {'test_array': dataframe.to_csv(header=False, index=False)}
-        monitor_info['data']['start_time'] = start_time
-        monitor_info['data']['end_time'] = end_time
-        monitor_info['data']['iteration'] = iteration
-        monitor_info_json = json.dumps(monitor_info)
-        logger.info(f"Sending data for task {self.request.id}, iteration {iteration}")
-        requests.post(f"{monitor_info['settings']['API_DATA_PROCESSING_URL']}/preprocess_cgnn_data",
-                      files=test_files, data={'test_info': monitor_info_json})
-
-        # Schedule next iteration
-        next_task = monitoring_task.apply_async(args=[monitor_info, iteration + 1], countdown=monitor_info['data']['test_interval'] * 60)
-        store_scheduled_task_id(next_task.id, self.request.id)
-
-    except Exception:
-        logger.error(f"Error in monitoring task {self.request.id}: {traceback.format_exc()}")
+        start_time = end_time - int(session["window_seconds"])
+        collected = collect_recipe_window(
+            session["recipe"], start_time, end_time, dict(app.config)
+        )
+        maximum = int(os.getenv("LIVE_MONITORING_MAX_BUFFER_OBSERVATIONS", "5000"))
+        session["buffer"] = merge_bounded_buffer(
+            session.get("buffer", []),
+            collected["timestamps"],
+            collected["rows"],
+            maximum,
+        )
+        bounded = {
+            **collected,
+            "timestamps": [item["timestamp"] for item in session["buffer"]],
+            "rows": [item["values"] for item in session["buffer"]],
+        }
+        result = _generic_detect(session, bounded)
+        session.update(
+            {
+                "status": "warmup" if not result.get("prediction_count") else "active",
+                "iteration": int(session.get("iteration", 0)) + 1,
+                "buffered_observations": len(session["buffer"]),
+                "missing_values": collected["missing_values"],
+                "warnings": collected["warnings"][:20],
+                "warmup_observations": result.get("warmup_observations", 0),
+                "latest_result": result,
+                "error": None,
+            }
+        )
+        if not _write_session(session):
+            return
+        next_task = monitoring_task.apply_async(
+            args=[session_id], countdown=int(session["poll_interval_seconds"])
+        )
+        session["next_task_id"] = next_task.id
+        if not _write_session(session):
+            celery.control.revoke(next_task.id, terminate=True)
+    except Exception as exc:
+        session["status"] = "error"
+        session["error"] = str(exc)[:500] if isinstance(exc, LiveMonitoringError) else "live monitoring failed"
+        _write_session(session)
+        logger.error("Live monitoring session %s failed", session_id)
 
 
 @app.route('/start_monitoring', methods=['POST'])
@@ -162,16 +274,61 @@ def start_monitoring():
         Response: JSON response with the status and task ID.
     """
     try:
-        monitor_info_json = request.form.get('monitor_info')
-        monitor_info = json.loads(monitor_info_json)
-        monitor_info['task_id'] = str(uuid.uuid4())
-        task = monitoring_task.apply_async(args=[monitor_info])
-
-        logger.info(f"Task {task.id} started")
-        return jsonify({'status': 'monitoring_started', 'task_id': task.id}), 200
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            return jsonify({"error": "a JSON request is required"}), 400
+        model_id = payload.get("model_id")
+        if (
+            not isinstance(model_id, str)
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", model_id) is None
+        ):
+            return jsonify({"error": "a valid model_id is required"}), 400
+        window_seconds = int(payload.get("window_seconds", 600))
+        poll_seconds = int(payload.get("poll_interval_seconds", 300))
+        if not 10 <= window_seconds <= 86400 or not 5 <= poll_seconds <= 3600:
+            return jsonify({"error": "monitoring timing is outside safe limits"}), 400
+        learning_url = os.getenv(
+            "API_LEARNING_ADAPTATION_URL",
+            "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80",
+        ).rstrip("/")
+        response = requests.get(
+            f"{learning_url}/internal/models/{model_id}/live-input-recipe",
+            timeout=(5, 30),
+        )
+        if response.status_code != 200:
+            return jsonify({"error": _safe_upstream_error(response, "model is not ready for live monitoring")}), 409
+        try:
+            resolved = validate_resolved_live_model(response.json(), model_id)
+        except (ValueError, LiveMonitoringError) as exc:
+            return jsonify({"error": str(exc)[:500]}), 409
+        recipe = resolved["recipe"]
+        session_id = f"monitor_{uuid.uuid4().hex}"
+        now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        session = {
+            "session_id": session_id,
+            "model_id": model_id,
+            "status": "queued",
+            "created_at": now,
+            "started_at": now,
+            "artifact_manifest_sha256": resolved["artifact_manifest_sha256"],
+            "recipe_sha256": recipe["recipe_sha256"],
+            "feature_order_sha256": recipe["feature_order_sha256"],
+            "sampling_interval_seconds": recipe["sampling_interval_seconds"],
+            "window_seconds": window_seconds,
+            "poll_interval_seconds": poll_seconds,
+            "iteration": 0,
+            "buffer": [],
+            "buffered_observations": 0,
+            "recipe": recipe,
+        }
+        _write_session(session)
+        task = monitoring_task.apply_async(args=[session_id])
+        session["current_task_id"] = task.id
+        _write_session(session)
+        return jsonify({"status": "monitoring_started", "session": safe_session_projection(session)}), 202
     except Exception as e:
         logger.error(f"Error starting monitoring task: {traceback.format_exc()}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({'status': 'error', 'message': 'live monitoring could not be started'}), 500
 
 
 @app.route('/get_active_tasks', methods=['GET'])
@@ -183,24 +340,28 @@ def get_tasks():
         Response: JSON response containing the scheduled tasks with their IDs.
     """
     try:
-        inspector = celery.control.inspect()
-        scheduled_tasks = inspector.scheduled()
-        scheduled_task_ids = []
-
-        if scheduled_tasks:
-            for worker, tasks in scheduled_tasks.items():
-                for task in tasks:
-                    scheduled_task_ids.append(task['request']['id'])
-
-        logger.info("Retrieved scheduled tasks")
-        return jsonify(scheduled_task_ids), 200
+        sessions = []
+        for key in redis_client.scan_iter(f"{SESSION_PREFIX}*"):
+            value = decode_session(redis_client.get(key))
+            if value:
+                sessions.append(safe_session_projection(value))
+        sessions.sort(key=lambda item: item.get("created_at", ""), reverse=True)
+        return jsonify(sessions[:100]), 200
     except Exception as e:
         logger.error(f"Error retrieving scheduled tasks: {traceback.format_exc()}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-@app.route('/stop_monitoring/<task_id>', methods=['DELETE'])
-def stop_monitoring(task_id):
+@app.route('/monitoring-sessions/<session_id>', methods=['GET'])
+def monitoring_session_status(session_id):
+    session = _read_session(session_id)
+    if not session:
+        return jsonify({"error": "unknown monitoring session"}), 404
+    return jsonify(safe_session_projection(session)), 200
+
+
+@app.route('/stop_monitoring/<session_id>', methods=['DELETE'])
+def stop_monitoring(session_id):
     """
     Stops a running monitoring task and its scheduled instances.
 
@@ -211,26 +372,24 @@ def stop_monitoring(task_id):
         Response: JSON response with the status of the operation.
     """
     try:
-        if task_id:
-            # Revoke active task
-            celery.control.revoke(task_id, terminate=True)
-
-            # Revoke scheduled tasks
-            scheduled_task_ids = get_scheduled_task_ids(task_id)
-            for scheduled_task_id in scheduled_task_ids:
-                celery.control.revoke(scheduled_task_id.decode('utf-8'), terminate=True)
-
-            # Remove the task ID from Redis
-            remove_scheduled_task_ids(task_id)
-
-            logger.info(f"Task {task_id} and its scheduled instances stopped")
-            return jsonify({'status': f'monitoring_stopped for task_id {task_id}'}), 200
-        else:
-            logger.warning("Task ID is missing")
-            return jsonify({'status': 'task_id_missing'}), 400
+        session = _read_session(session_id)
+        if not session:
+            return jsonify({"error": "unknown monitoring session"}), 404
+        redis_client.setex(
+            _stop_key(session_id),
+            int(os.getenv("LIVE_MONITORING_SESSION_TTL_SECONDS", str(30 * 24 * 3600))),
+            "1",
+        )
+        session = stopped_session(
+            session,
+            lambda task_id: celery.control.revoke(task_id, terminate=True),
+            stopped_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        )
+        _write_session(session, force=True)
+        return jsonify({"status": "monitoring_stopped", "session": safe_session_projection(session)}), 200
     except Exception as e:
-        logger.error(f"Error stopping task {task_id}: {traceback.format_exc()}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        logger.error(f"Error stopping session {session_id}: {traceback.format_exc()}")
+        return jsonify({'status': 'error', 'message': 'monitoring could not be stopped'}), 500
 
 
 

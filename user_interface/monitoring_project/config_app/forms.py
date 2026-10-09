@@ -25,13 +25,9 @@ class FileUploadForm(forms.Form):
 
 
 class MonitoringForm(forms.Form):
-    containers = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=[], label='Containers', required=True, help_text="Select containers to monitor (should match the number of containers in the model)")
-    model = forms.ChoiceField(choices=[], label='Model', required=True)
-    data_interval = forms.IntegerField(min_value=1, required=True, initial=5, help_text="Measurement Interval in Seconds")
-    duration = forms.IntegerField(min_value=10, required=True, initial=10, help_text="Test Duration in Minutes (> 30 minutes recommended)")
-    test_interval = forms.FloatField(min_value=0.1, required=True, initial=5, help_text="Test Interval in Minutes (> 5 minutes recommended)")
-    crca_threshold = forms.FloatField(min_value=0.0, required=True, initial=0.5, help_text="Threshold of Anomalies detected in Percentages to trigger RCA")
-    crca_pods = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=[], label='Crca Containers', required=True, help_text="Select containers to perform CRCA on if threshold is triggered (can be any number)")
+    model_id = forms.ChoiceField(choices=[], label="Saved model artefact", required=True)
+    window_minutes = forms.IntegerField(min_value=1, max_value=1440, initial=10, help_text="Amount of recent Prometheus data retained per detection cycle.")
+    poll_interval_seconds = forms.IntegerField(min_value=5, max_value=3600, initial=300, help_text="How often CloudSentinel collects and evaluates a new window.")
 
 
 class UploadCGNNTrainDataForm(forms.Form):

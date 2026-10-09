@@ -156,6 +156,7 @@ def build_draft_dataset(payload: Any) -> tuple[dict[str, Any], dict[str, Any]]:
             "query_warnings": [],
         },
         "technical_schema": technical_schema,
+        "live_input_recipe": None,
         "artifacts": {},
         "checksums": {},
         "ground_truth": ground_truth,

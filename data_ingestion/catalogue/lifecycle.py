@@ -143,6 +143,7 @@ def create_dataset_version(
             "query_warnings": [],
         },
         "technical_schema": _new_empty_schema(),
+        "live_input_recipe": None,
         "artifacts": {},
         "checksums": {},
         "ground_truth": {

@@ -296,6 +296,7 @@ class CatalogueFetchTests(unittest.TestCase):
             "provenance.json",
             "schema.json",
             "validation.json",
+            "live_input_recipe.json",
             "checksums.json",
             "attempt.json",
             "raw/q0000-t0000.json",
