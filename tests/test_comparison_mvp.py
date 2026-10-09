@@ -43,7 +43,7 @@ def model_record(model_id="model-one", *, ready=True, feature_hash=FEATURE_HASH)
         "snapshot": {"snapshot_id": "snapshot-one", "snapshot_sha256": "c" * 64},
         "feature_identity": {"feature_order": ["cpu", "memory"], "feature_order_sha256": feature_hash},
         "training_parameters": {},
-        "evaluation": {},
+        "evaluation": {"precision": 0.8, "recall": 0.75, "f1": 0.774},
         "promotion": {"status": "not_applicable", "promoted_at": None, "safe_reference": None},
         "artifact": {"format": "dummy"},
         "model_metadata": {"modality": "metrics", "display_name": model_id},
@@ -465,8 +465,20 @@ class ComparisonApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         items = {item["model_id"]: item for item in response.get_json()["items"]}
         self.assertTrue(items["model-one"]["compatible"])
+        self.assertEqual(
+            items["model-one"]["stored_evaluation"]["context"]["partition_id"],
+            "part-train",
+        )
+        self.assertEqual(
+            items["model-one"]["stored_evaluation"]["metric_sets"][0]["metrics"]["f1_score"],
+            0.774,
+        )
         self.assertIn("not inference-ready", items["model-legacy"]["compatibility_reasons"][0])
         self.assertIn("Feature identity", items["model-mismatch"]["compatibility_reasons"][-1])
+        self.assertEqual(
+            [item["model_id"] for item in response.get_json()["items"][:2]],
+            ["model-one", "model-two"],
+        )
         logs_model = model_record("model-logs")
         logs_model["model_metadata"]["modality"] = "logs"
         compatible, reasons = _model_compatibility(logs_model, dataset_context())

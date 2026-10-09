@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -93,6 +94,84 @@ def evaluation_summary(value: Any) -> dict[str, Any]:
     return summary
 
 
+def stored_evaluation_projection(record: dict[str, Any]) -> dict[str, Any]:
+    """Project stored metrics together with their original evaluation context.
+
+    IF and LOF store one flat metric set, while CGNN stores several named
+    evaluation methods. Preserve those names instead of choosing or ranking a
+    result on the user's behalf.
+    """
+
+    evaluation = evaluation_summary(record.get("evaluation"))
+    dataset = record.get("dataset") if isinstance(record.get("dataset"), dict) else {}
+    context = {
+        key: deepcopy(dataset.get(key))
+        for key in (
+            "source",
+            "dataset_id",
+            "version",
+            "partition_id",
+            "partition_checksum",
+            "label_source",
+        )
+        if dataset.get(key) is not None
+    }
+    metric_names = {
+        "precision": "precision",
+        "recall": "recall",
+        "f1": "f1_score",
+        "f1_score": "f1_score",
+        "TP": "true_positive",
+        "FP": "false_positive",
+        "TN": "true_negative",
+        "FN": "false_negative",
+        "true_positive": "true_positive",
+        "false_positive": "false_positive",
+        "true_negative": "true_negative",
+        "false_negative": "false_negative",
+    }
+
+    def metric_set(method: str, value: Any) -> dict[str, Any] | None:
+        if not isinstance(value, dict):
+            return None
+        metrics: dict[str, int | float] = {}
+        for source_name, public_name in metric_names.items():
+            item = value.get(source_name)
+            if isinstance(item, bool) or not isinstance(item, (int, float)):
+                continue
+            if isinstance(item, float) and not math.isfinite(item):
+                continue
+            metrics[public_name] = item
+        return {"method": method, "metrics": metrics} if metrics else None
+
+    metric_sets: list[dict[str, Any]] = []
+    flat = metric_set("stored evaluation", evaluation)
+    if flat:
+        metric_sets.append(flat)
+    for name, value in evaluation.items():
+        nested = metric_set(str(name).replace("_", " "), value)
+        if nested:
+            metric_sets.append(nested)
+    return {
+        "available": bool(metric_sets),
+        "context": context,
+        "metric_sets": metric_sets[:10],
+    }
+
+
+def _set_child_stored_evaluation(run: dict[str, Any], child: dict[str, Any]) -> None:
+    result_metadata = child.get("result_metadata")
+    evaluation = (
+        result_metadata.get("evaluation")
+        if isinstance(result_metadata, dict)
+        and isinstance(result_metadata.get("evaluation"), dict)
+        else {}
+    )
+    child["stored_evaluation"] = stored_evaluation_projection(
+        {"evaluation": evaluation, "dataset": run.get("dataset", {})}
+    )
+
+
 def task_result_summary(value: Any) -> Any:
     """Keep only stable, compact task-result fields in run metadata."""
     if not isinstance(value, dict):
@@ -147,6 +226,7 @@ def normalize_run_record(run: dict[str, Any]) -> dict[str, Any]:
         child.setdefault("failure_summary", child.get("dispatch_error"))
         child.setdefault("result_metadata", None)
         child.setdefault("model_status", None)
+        _set_child_stored_evaluation(run, child)
     run["status"] = calculate_parent_status(run.get("children", []))
     return _refresh_parent_timestamps(run, run.get("updated_at") or created_at)
 
@@ -196,6 +276,7 @@ def update_child(
             return run
         updater(child, now)
         child["updated_at"] = now
+        _set_child_stored_evaluation(run, child)
         return _refresh_parent_timestamps(run, now)
 
     return store.update(run_id, mutate)
@@ -466,6 +547,8 @@ def reconcile_run(
                 if child.get("status_detail") != status_detail:
                     child["status_detail"] = status_detail
                     changed = True
+        for child in run.get("children", []):
+            _set_child_stored_evaluation(run, child)
         return _refresh_parent_timestamps(
             run, now if changed else run.get("updated_at") or now
         )
@@ -530,6 +613,7 @@ def model_summary(record: dict[str, Any]) -> dict[str, Any]:
         },
         "promotion": {"status": record["promotion"]["status"]},
         "inference": deepcopy(record.get("inference", {"status": "legacy_external"})),
+        "stored_evaluation": stored_evaluation_projection(record),
     }
 
 
@@ -550,6 +634,7 @@ def public_model_record(record: dict[str, Any]) -> dict[str, Any]:
         "feature_identity": deepcopy(record["feature_identity"]),
         "training_parameters": deepcopy(record["training_parameters"]),
         "evaluation": evaluation_summary(record["evaluation"]),
+        "stored_evaluation": stored_evaluation_projection(record),
         "promotion": deepcopy(record["promotion"]),
     }
     if "artifact" in record:

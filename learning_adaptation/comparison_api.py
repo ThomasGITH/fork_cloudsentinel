@@ -21,13 +21,17 @@ try:
     )
     from learning_adaptation.comparison_robustness import aggregate_robustness
     from learning_adaptation.model_catalogue import ModelCatalogueStore, ModelNotFoundError
-    from learning_adaptation.training_lifecycle import safe_failure_summary, utc_now
+    from learning_adaptation.training_lifecycle import (
+        safe_failure_summary,
+        stored_evaluation_projection,
+        utc_now,
+    )
     from learning_adaptation.training_run_storage import validate_identifier
 except ModuleNotFoundError:
     from comparison_storage import ComparisonConflictError, ComparisonNotFoundError, ComparisonStore
     from comparison_robustness import aggregate_robustness
     from model_catalogue import ModelCatalogueStore, ModelNotFoundError
-    from training_lifecycle import safe_failure_summary, utc_now
+    from training_lifecycle import safe_failure_summary, stored_evaluation_projection, utc_now
     from training_run_storage import validate_identifier
 
 
@@ -157,6 +161,7 @@ def _selected_snapshot(record: dict[str, Any]) -> dict[str, Any]:
         "model_created_at": record["created_at"],
         "training_run_id": record["training_run_id"],
         "training_dataset": deepcopy(record.get("dataset", {})),
+        "stored_evaluation": stored_evaluation_projection(record),
         "feature_identity": deepcopy(record["feature_identity"]),
         "artifact_identity": {
             "artifact_id": inference["artifact_id"],
@@ -187,7 +192,7 @@ def public_comparison(record: dict[str, Any], *, summary: bool = False) -> dict[
             key: deepcopy(item.get(key))
             for key in (
                 "model_id", "display_name", "detector_id", "detector_version",
-                "model_created_at", "training_run_id", "training_dataset",
+                "model_created_at", "training_run_id", "training_dataset", "stored_evaluation",
                 "feature_identity", "artifact_identity", "plugin",
             )
         })
@@ -332,6 +337,7 @@ def create_comparisons_blueprint(comparison_task: Any) -> Blueprint:
                     "detector_version": record["detector_version"],
                     "model_created_at": record["created_at"],
                     "training_dataset": deepcopy(record.get("dataset", {})),
+                    "stored_evaluation": stored_evaluation_projection(record),
                 }
                 snapshot.update(compatible=compatible, compatibility_reasons=reasons)
                 items.append(snapshot)

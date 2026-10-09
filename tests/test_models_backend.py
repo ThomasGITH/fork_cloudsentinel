@@ -202,6 +202,14 @@ class ModelsBackendTests(unittest.TestCase):
         result_metadata = result["children"][0]["result_metadata"]
         self.assertNotIn("artifact_dir", result_metadata)
         self.assertNotIn("binary_predictions", result_metadata["evaluation"])
+        self.assertEqual(
+            result["children"][0]["stored_evaluation"]["metric_sets"][0]["metrics"]["f1_score"],
+            0.8,
+        )
+        self.assertEqual(
+            result["children"][0]["stored_evaluation"]["context"]["partition_id"],
+            "partition-one",
+        )
 
         # Redis expiry must not downgrade a stored terminal result.
         result = reconcile_run(
@@ -260,6 +268,14 @@ class ModelsBackendTests(unittest.TestCase):
 
         body = self.client.get("/models?page_size=1").get_json()
         self.assertEqual(body["items"][0]["model_id"], "model-two")
+        self.assertEqual(
+            body["items"][0]["stored_evaluation"]["metric_sets"][0]["metrics"]["f1_score"],
+            0.8,
+        )
+        self.assertEqual(
+            body["items"][0]["stored_evaluation"]["context"]["partition_id"],
+            "partition-one",
+        )
         self.assertEqual(body["skipped_corrupt_records"], 1)
         filtered = self.client.get(
             "/models?detector_id=cgnn&dataset_id=dataset-one&training_run_id=run-one"
@@ -278,7 +294,34 @@ class ModelsBackendTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, encoded)
         self.assertIn("redacted", encoded)
+        self.assertTrue(detail.get_json()["stored_evaluation"]["available"])
         self.assertEqual(self.client.get("/models/missing").status_code, 404)
+
+    def test_stored_evaluation_preserves_named_methods_without_ranking(self):
+        record = self.model_record("model-cgnn-methods")
+        record["evaluation"] = {
+            "epsilon_result": {"precision": 0.7, "recall": 0.6, "f1": 0.64},
+            "pot_result": {"precision": 0.8, "recall": 0.5, "f1": 0.61},
+        }
+        self.model_store.write(record)
+        projection = self.client.get("/models/model-cgnn-methods").get_json()[
+            "stored_evaluation"
+        ]
+        self.assertEqual(
+            [item["method"] for item in projection["metric_sets"]],
+            ["epsilon result", "pot result"],
+        )
+        self.assertNotIn("winner", json.dumps(projection).lower())
+
+        unavailable = self.model_record("model-without-evaluation")
+        unavailable["evaluation"] = {}
+        self.model_store.write(unavailable)
+        missing = self.client.get("/models/model-without-evaluation").get_json()[
+            "stored_evaluation"
+        ]
+        self.assertFalse(missing["available"])
+        self.assertEqual(missing["metric_sets"], [])
+        self.assertEqual(missing["context"]["partition_id"], "partition-one")
 
     def test_successful_cgnn_and_if_lifecycle_create_model_records(self):
         with patch.dict(

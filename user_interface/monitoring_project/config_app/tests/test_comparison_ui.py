@@ -21,7 +21,7 @@ def evaluation_dataset(labelled=True):
 def compatible_models():
     return {
         "items": [
-            {"model_id": "model-one", "display_name": "IF baseline", "detector_id": "isolation-forest", "detector_version": "1.0.0", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "compatible": True, "compatibility_reasons": []},
+            {"model_id": "model-one", "display_name": "IF baseline", "detector_id": "isolation-forest", "detector_version": "1.0.0", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1, "partition_id": "part-train"}, "stored_evaluation": {"available": True, "context": {"dataset_id": "ds-train", "version": 1, "partition_id": "part-train"}, "metric_sets": [{"method": "stored evaluation", "metrics": {"precision": .8, "recall": .7, "f1_score": .746}}]}, "compatible": True, "compatibility_reasons": []},
             {"model_id": "model-two", "display_name": "LOF baseline", "detector_id": "local-outlier-factor", "detector_version": "1.0.1", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "compatible": True, "compatibility_reasons": []},
             {"model_id": "model-bad", "display_name": "Wrong features", "detector_id": "future", "detector_version": "1", "model_created_at": "2026-10-01", "training_dataset": {}, "compatible": False, "compatibility_reasons": ["Feature identity does not match this evaluation dataset"]},
         ]
@@ -147,6 +147,11 @@ class ComparisonUiTests(SimpleTestCase):
         second = self._step(2)
         self.assertContains(second, "Feature identity does not match")
         self.assertContains(second, 'value="model-bad" disabled', html=False)
+        self.assertContains(second, "Stored post-training evaluation")
+        self.assertContains(second, "F1 0.746")
+        self.assertContains(second, "partition part-train")
+        self.assertContains(second, "models are not ranked")
+        self.assertContains(second, "Unavailable — no evaluation metrics were stored")
         rejected = self.client.post(reverse("comparison_new"), {"step": 2, "wizard_state": second.context["state_token"], "model_ids": ["model-one", "model-bad"]})
         self.assertEqual(rejected.status_code, 400)
         self.learning.create_comparison.assert_not_called()

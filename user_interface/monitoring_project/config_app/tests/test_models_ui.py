@@ -55,7 +55,7 @@ def run_payload(status="partial_success"):
         "dataset": {"source": "catalogue", "dataset_id": "ds_demo", "version": 3, "partition_id": "partition_demo", "partition_checksum": "partition-sha", "feature_order_sha256": "feature-sha", "label_source": "incident-derived"},
         "snapshot_id": "snapshot_demo", "snapshot_sha256": "snapshot-sha",
         "children": [
-            {"detector_id": "isolation-forest", "model_id": "model_demo", "status": "completed", "model_status": "available", "parameters": {"n_estimators": 100}, "task_id": "celery-secret", "result_metadata": {"promotion": {"status": "promoted"}}},
+            {"detector_id": "isolation-forest", "model_id": "model_demo", "status": "completed", "model_status": "available", "parameters": {"n_estimators": 100}, "task_id": "celery-secret", "stored_evaluation": {"available": True, "context": {"dataset_id": "ds_demo", "version": 3, "partition_id": "partition_demo"}, "metric_sets": [{"method": "stored evaluation", "metrics": {"f1_score": 0.9}}]}, "result_metadata": {"promotion": {"status": "promoted"}}},
             {"detector_id": "cgnn", "model_id": "model_cgnn", "status": "validation_failed", "validation_error": "Insufficient observations", "parameters": {}},
         ],
     }
@@ -67,7 +67,9 @@ def model_payload():
         "dataset": {"source": "catalogue", "dataset_id": "ds_demo", "version": 3, "partition_id": "partition_demo", "partition_checksum": "partition-sha"},
         "snapshot": {"snapshot_id": "snapshot_demo", "snapshot_sha256": "snapshot-sha"},
         "feature_identity": {"feature_order": ["cpu", "memory"], "feature_order_sha256": "feature-sha"},
-        "training_parameters": {"n_estimators": 100}, "evaluation": {"f1": 0.9}, "promotion": {"status": "promoted", "promoted_at": "2026-09-29T10:02:00Z"},
+        "training_parameters": {"n_estimators": 100}, "evaluation": {"f1": 0.9},
+        "stored_evaluation": {"available": True, "context": {"dataset_id": "ds_demo", "version": 3, "partition_id": "partition_demo"}, "metric_sets": [{"method": "stored evaluation", "metrics": {"precision": 0.88, "recall": 0.92, "f1_score": 0.9}}]},
+        "promotion": {"status": "promoted", "promoted_at": "2026-09-29T10:02:00Z"},
         "artifact": {"safe_reference": "/app/private/model.joblib"}, "internal_url": "http://learning.internal/model",
     }
 
@@ -118,6 +120,8 @@ class ModelsUiTests(SimpleTestCase):
         saved = self.client.get(reverse("models_overview"), {"tab": "saved", "detector_id": "isolation-forest", "page": 2, "sort": "oldest"})
         self.assertContains(saved, "model_demo")
         self.assertContains(saved, "Checkout metrics v3")
+        self.assertContains(saved, "F1 0.900")
+        self.assertContains(saved, "partition partition_demo")
         self.learning.list_models.assert_called_once_with({"detector_id": "isolation-forest", "page": "2", "sort": "oldest"})
         history = self.client.get(reverse("models_overview"), {"tab": "history", "status": "partial_success", "page_size": 10})
         self.assertContains(history, "Partial success", count=None)
@@ -128,10 +132,14 @@ class ModelsUiTests(SimpleTestCase):
     def test_model_and_run_details_hide_runtime_internals(self):
         model = self.client.get(reverse("models_saved_detail", args=["model_demo"]))
         self.assertContains(model, "partition-sha")
+        self.assertContains(model, "Stored post-training evaluation")
+        self.assertContains(model, "They are not a ranking")
         self.assertNotContains(model, "/app/private")
         self.assertNotContains(model, "learning.internal")
         run = self.client.get(reverse("models_training_run_detail", args=["run_demo"]))
         self.assertContains(run, "validation_failed")
+        self.assertContains(run, "Stored post-training evaluation")
+        self.assertContains(run, "F1 0.900")
         self.assertNotContains(run, "celery-secret")
 
     def test_safe_upstream_error_translation(self):

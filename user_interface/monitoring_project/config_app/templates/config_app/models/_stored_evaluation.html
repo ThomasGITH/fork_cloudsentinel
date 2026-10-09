@@ -1,0 +1,16 @@
+{% if stored_evaluation.available %}
+  {% for metric_set in stored_evaluation.metric_sets %}
+    <div class="small mb-1">
+      {% if stored_evaluation.metric_sets|length > 1 %}<strong>{{ metric_set.method|title }}:</strong>{% endif %}
+      {% if metric_set.metrics.precision != None %}Precision {{ metric_set.metrics.precision|floatformat:3 }}{% endif %}
+      {% if metric_set.metrics.recall != None %}{% if metric_set.metrics.precision != None %} · {% endif %}Recall {{ metric_set.metrics.recall|floatformat:3 }}{% endif %}
+      {% if metric_set.metrics.f1_score != None %}{% if metric_set.metrics.precision != None or metric_set.metrics.recall != None %} · {% endif %}F1 {{ metric_set.metrics.f1_score|floatformat:3 }}{% endif %}
+    </div>
+  {% endfor %}
+  <div class="small models-muted">
+    {% if stored_evaluation.context.dataset_id %}Context: {{ stored_evaluation.context.dataset_id }} v{{ stored_evaluation.context.version|default:"—" }} · partition {{ stored_evaluation.context.partition_id|default:"—" }}{% else %}Context: {{ stored_evaluation.context.source|default:"Unavailable" }}{% endif %}
+  </div>
+{% else %}
+  <span class="small models-muted">Unavailable — no evaluation metrics were stored.</span>
+  {% if stored_evaluation.context.dataset_id %}<div class="small models-muted">Context: {{ stored_evaluation.context.dataset_id }} v{{ stored_evaluation.context.version|default:"—" }} · partition {{ stored_evaluation.context.partition_id|default:"—" }}</div>{% endif %}
+{% endif %}
