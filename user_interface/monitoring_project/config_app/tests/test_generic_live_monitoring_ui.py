@@ -84,4 +84,33 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         response = self.client.get(reverse("monitoring_overview"))
         self.assertContains(response, "Warm-up observations")
         self.assertContains(response, "Buffered observations")
+        self.assertContains(response, "Monitoring sessions could not be loaded")
+        self.assertContains(response, "response.text()")
         self.assertNotContains(response, "API_CGNN_ANOMALY_DETECTION_URL")
+
+    @patch("config_app.views.task_results.requests.get")
+    def test_active_session_proxy_accepts_json_array(self, get):
+        get.return_value.raise_for_status.return_value = None
+        get.return_value.json.return_value = [
+            {"session_id": "monitor-one", "model_id": "model-ready", "status": "active"}
+        ]
+
+        response = self.client.get(reverse("fetch_active_tasks"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]["session_id"], "monitor-one")
+        self.assertEqual(get.call_args.kwargs["timeout"], (5, 15))
+
+    @patch("config_app.views.task_results.requests.get")
+    def test_active_session_proxy_translates_invalid_json_safely(self, get):
+        get.return_value.raise_for_status.return_value = None
+        get.return_value.json.side_effect = ValueError("private upstream response")
+
+        response = self.client.get(reverse("fetch_active_tasks"))
+
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(
+            response.json()["message"],
+            "Monitoring status is temporarily unavailable.",
+        )
+        self.assertNotContains(response, "private upstream response", status_code=502)

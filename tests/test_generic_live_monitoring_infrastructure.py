@@ -41,7 +41,7 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
         ui = container("k8s/monitoring_project-deployment.yml")
         self.assertEqual(learning_api["image"], learning_worker["image"])
         self.assertTrue(learning_api["image"].endswith(":generic-live-monitoring-1"))
-        self.assertTrue(ui["image"].endswith(":generic-live-monitoring-1"))
+        self.assertTrue(ui["image"].endswith(":generic-live-monitoring-1.1"))
 
     def test_legacy_cgnn_resources_are_intentionally_retained(self):
         path = ROOT / "k8s/cgnn_anomaly_detection-deployment.yml"

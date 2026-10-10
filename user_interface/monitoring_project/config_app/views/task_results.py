@@ -144,11 +144,31 @@ def check_status(request, task_id, task_type):
 @csrf_exempt
 def fetch_active_tasks(request):
     try:
-        response = requests.get(f'{settings.API_DATA_INGESTION_URL}/get_active_tasks')
+        response = requests.get(
+            f'{settings.API_DATA_INGESTION_URL}/get_active_tasks',
+            timeout=(5, 15),
+        )
         response.raise_for_status()
-        return JsonResponse(response.json())
-    except requests.RequestException as e:
-        return JsonResponse({'state': 'FAILURE', 'status': str(e)}, status=500)
+        sessions = response.json()
+    except (requests.RequestException, ValueError):
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': 'Monitoring status is temporarily unavailable.',
+            },
+            status=502,
+        )
+    if not isinstance(sessions, list) or any(
+        not isinstance(session, dict) for session in sessions
+    ):
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': 'Monitoring status returned an invalid response.',
+            },
+            status=502,
+        )
+    return JsonResponse(sessions, safe=False)
 
 
 @csrf_exempt
