@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: generic-anomaly-detection
-          image: jojojochem/anomaly_detection_generic:comparison-mvp-1
+          image: jojojochem/anomaly_detection_generic:generic-live-monitoring-1.1
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

@@ -12,6 +12,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from anomaly_detection.generic.app import create_app
+from anomaly_detection.generic.validation import DetectionRequestError, parse_metadata
 from detectors import registry
 from detectors.contracts import ArtifactResult, ModelLoadContext
 from detectors.model_artifacts import ModelArtifactError, ModelArtifactStore
@@ -50,6 +51,36 @@ class GenericDetectionTests(unittest.TestCase):
                 if not path.is_symlink():
                     path.chmod(0o700)
         self.temporary.cleanup()
+
+    def test_live_monitoring_context_is_bounded_and_validated(self):
+        metadata = parse_metadata(
+            json.dumps(
+                {
+                    "model_id": "model_live",
+                    "feature_order": ["cpu"],
+                    "context": {
+                        "live_monitoring_session_id": "monitor_123",
+                        "recipe_sha256": "a" * 64,
+                    },
+                }
+            )
+        )
+        self.assertEqual(
+            metadata["context"]["live_monitoring_session_id"], "monitor_123"
+        )
+        with self.assertRaisesRegex(DetectionRequestError, "recipe_sha256"):
+            parse_metadata(
+                json.dumps(
+                    {
+                        "model_id": "model_live",
+                        "feature_order": ["cpu"],
+                        "context": {
+                            "live_monitoring_session_id": "monitor_123",
+                            "recipe_sha256": "not-a-digest",
+                        },
+                    }
+                )
+            )
 
     @staticmethod
     def feature_identity():

@@ -28,6 +28,8 @@ ALLOWED_CONTEXT_FIELDS = {
     "data_interval",
     "crca_threshold",
     "crca_pods",
+    "live_monitoring_session_id",
+    "recipe_sha256",
 }
 SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
@@ -110,6 +112,20 @@ def parse_metadata(raw: str | None) -> dict[str, Any]:
             raise DetectionRequestError(f"metadata.context.{field} is invalid")
         elif isinstance(item, (int, float)) and not math.isfinite(item):
             raise DetectionRequestError(f"metadata.context.{field} is invalid")
+    session_id = context.get("live_monitoring_session_id")
+    if session_id is not None and (
+        not isinstance(session_id, str) or not SAFE_IDENTIFIER.fullmatch(session_id)
+    ):
+        raise DetectionRequestError(
+            "metadata.context.live_monitoring_session_id is invalid"
+        )
+    recipe_digest = context.get("recipe_sha256")
+    if recipe_digest is not None and (
+        not isinstance(recipe_digest, str)
+        or len(recipe_digest) != 64
+        or any(character not in "0123456789abcdef" for character in recipe_digest)
+    ):
+        raise DetectionRequestError("metadata.context.recipe_sha256 is invalid")
     return value
 
 
