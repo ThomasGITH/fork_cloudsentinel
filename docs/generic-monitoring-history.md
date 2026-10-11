@@ -1,9 +1,16 @@
 # Generic Monitoring History
 
+> This document records the HISTORY-1 deployment. For the current image tags
+> and deployment sequence after automatic RCA restoration, use
+> [`generic-monitoring-rca.md`](generic-monitoring-rca.md).
+
 `GENERIC-MONITORING-HISTORY-1` restores the existing monitoring screen as a
 master-detail Monitoring History view while retaining explicit Saved Model
 selection, immutable live-input recipes and Generic Detection Runtime.
-Automatic CausalRCA remains disconnected in this tranche.
+Automatic CausalRCA was disconnected in this history tranche. It is reconnected
+additively by `GENERIC-MONITORING-RCA-1`; see
+[`generic-monitoring-rca.md`](generic-monitoring-rca.md). Existing sessions stay
+RCA-disabled.
 
 ## Architecture
 
@@ -306,5 +313,6 @@ monitoring and are not backfilled.
 - **Stale:** inspect the data-ingestion Celery worker and Generic Detection
   Runtime logs; the UI keeps the last committed chart.
 
-Automatic CausalRCA, RCA configuration and RCA result rendering remain the
-next explicit tranche. No RCA trigger is present in this implementation.
+The original history contract remains valid. New sessions can additionally opt
+into the recipe-compatible, durable CausalRCA flow documented in
+[`generic-monitoring-rca.md`](generic-monitoring-rca.md).

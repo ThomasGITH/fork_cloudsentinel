@@ -34,6 +34,26 @@ class MonitoringForm(forms.Form):
     model_id = forms.ChoiceField(choices=[], label="Saved model artefact", required=True)
     window_minutes = forms.IntegerField(min_value=1, max_value=1440, initial=10, help_text="Amount of recent Prometheus data retained per detection cycle.")
     poll_interval_seconds = forms.IntegerField(min_value=5, max_value=3600, initial=300, help_text="How often CloudSentinel collects and evaluates a new window.")
+    automatic_rca_enabled = forms.BooleanField(
+        label="Enable automatic CausalRCA",
+        required=False,
+        initial=False,
+        help_text="Optional. Monitoring remains available when this model input is not RCA-compatible.",
+    )
+    rca_threshold_percentage = forms.FloatField(
+        label="RCA anomaly threshold (%)",
+        min_value=0,
+        max_value=100,
+        initial=50,
+        required=False,
+        help_text="A run starts only when the newly evaluated cycle is strictly above this value.",
+    )
+    rca_analysis_window_minutes = forms.IntegerField(
+        label="RCA analysis window (minutes)", min_value=1, max_value=1440, initial=10, required=False
+    )
+    rca_cooldown_minutes = forms.IntegerField(
+        label="RCA cooldown (minutes)", min_value=0, max_value=10080, initial=60, required=False
+    )
 
 
 class UploadCGNNTrainDataForm(forms.Form):

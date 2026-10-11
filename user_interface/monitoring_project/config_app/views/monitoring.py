@@ -18,6 +18,23 @@ def _models():
     return [item for item in payload.get("items", []) if isinstance(item, dict)]
 
 
+def _add_rca_readiness(items):
+    base = settings.API_DATA_INGESTION_URL.rstrip('/')
+    for item in items:
+        if not _ready(item):
+            item["rca_readiness"] = {"status": "incompatible", "reason": "A live-ready input recipe is required."}
+            continue
+        try:
+            response = requests.get(
+                f"{base}/monitoring-rca/readiness/{item['model_id']}", timeout=(5, 15)
+            )
+            payload = response.json()
+            item["rca_readiness"] = payload if response.status_code == 200 and isinstance(payload, dict) else {"status": "unavailable", "reason": "RCA readiness could not be verified."}
+        except (requests.RequestException, ValueError):
+            item["rca_readiness"] = {"status": "unavailable", "reason": "RCA readiness could not be verified."}
+    return items
+
+
 def _ready(item):
     return (
         item.get("inference", {}).get("status") == "ready"
@@ -43,7 +60,7 @@ def monitoring_home(request):
 
 def monitoring(request):
     try:
-        models = _models()
+        models = _add_rca_readiness(_models())
         upstream_error = None
     except LearningClientError:
         models = []
@@ -69,6 +86,12 @@ def monitoring(request):
                         "model_id": selected["model_id"],
                         "window_seconds": form.cleaned_data["window_minutes"] * 60,
                         "poll_interval_seconds": form.cleaned_data["poll_interval_seconds"],
+                        "automatic_rca": {
+                            "enabled": form.cleaned_data["automatic_rca_enabled"],
+                            "threshold_percentage": form.cleaned_data["rca_threshold_percentage"] if form.cleaned_data["rca_threshold_percentage"] is not None else 50,
+                            "analysis_window_seconds": (form.cleaned_data["rca_analysis_window_minutes"] if form.cleaned_data["rca_analysis_window_minutes"] is not None else 10) * 60,
+                            "cooldown_seconds": (form.cleaned_data["rca_cooldown_minutes"] if form.cleaned_data["rca_cooldown_minutes"] is not None else 60) * 60,
+                        },
                     },
                     timeout=(5, 30),
                 )

@@ -75,6 +75,31 @@ except ModuleNotFoundError:
         utc_now,
     )
 
+try:
+    from data_ingestion.monitoring_rca import (
+        MonitoringRcaError,
+        assess_recipe_compatibility,
+        canonical_sha256 as rca_sha256,
+        decide_trigger,
+        initial_rca_state,
+        mark_triggered,
+        select_analysis_input,
+        stable_run_id,
+        validate_rca_configuration,
+    )
+except ModuleNotFoundError:
+    from monitoring_rca import (
+        MonitoringRcaError,
+        assess_recipe_compatibility,
+        canonical_sha256 as rca_sha256,
+        decide_trigger,
+        initial_rca_state,
+        mark_triggered,
+        select_analysis_input,
+        stable_run_id,
+        validate_rca_configuration,
+    )
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -248,6 +273,210 @@ def _public_latest_result(aligned, model_id):
     }
 
 
+def _crca_url():
+    return os.getenv(
+        "API_CRCA_ANOMALY_DETECTION_URL",
+        "http://crca-anomaly-detection-service.cloudsentinel.svc.cluster.local:80",
+    ).rstrip("/")
+
+
+def _crca_capability():
+    try:
+        response = requests.get(f"{_crca_url()}/internal/monitoring-capability", timeout=(5, 15))
+    except requests.RequestException as exc:
+        raise MonitoringRcaError("CausalRCA runtime readiness could not be verified.") from exc
+    if response.status_code != 200:
+        raise MonitoringRcaError("CausalRCA runtime readiness could not be verified.")
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise MonitoringRcaError("CausalRCA runtime returned invalid readiness metadata.") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("config_sha256"), str):
+        raise MonitoringRcaError("CausalRCA runtime returned invalid readiness metadata.")
+    return payload
+
+
+def _dispatch_rca_run(session_id, run_id):
+    """Idempotently submit a durable intent. Failure never fails AD monitoring."""
+    session = monitoring_history.read_session(session_id)
+    if session.get("status") == "stopped":
+        return False
+    run = monitoring_history.read_rca_run(session_id, run_id)
+    if run.get("status") != "queued" or run.get("dispatch_status") == "submitted":
+        return False
+    try:
+        response = requests.post(
+            f"{_crca_url()}/internal/monitoring-runs",
+            json={"session_id": session_id, "run_id": run_id},
+            timeout=(5, 15),
+        )
+        if response.status_code not in {200, 202}:
+            raise MonitoringRcaError(_safe_upstream_error(response, "CausalRCA dispatch failed"))
+        monitoring_history.update_rca_run(
+            session_id,
+            run_id,
+            lambda record: record.update(dispatch_status="submitted", dispatch_error=None),
+        )
+        return True
+    except (requests.RequestException, MonitoringRcaError) as exc:
+        monitoring_history.update_rca_run(
+            session_id,
+            run_id,
+            lambda record: record.update(
+                dispatch_status="pending",
+                dispatch_error={"type": "rca_dispatch_error", "message": "CausalRCA dispatch is temporarily unavailable."},
+            ),
+        )
+        logger.warning("Durable CausalRCA intent %s remains pending", run_id)
+        return False
+
+
+def _reconcile_rca_dispatches(session_id):
+    session = monitoring_history.read_session(session_id)
+    if session.get("status") == "stopped":
+        return
+    for run in monitoring_history.list_rca_runs(session_id, page=1, page_size=100)["items"]:
+        if run.get("status") == "queued" and run.get("dispatch_status") != "submitted":
+            _dispatch_rca_run(session_id, run["run_id"])
+
+
+def _reconcile_rca_history(session_id):
+    for cycle_id in monitoring_history.pending_rca_cycles(session_id, limit=100):
+        _process_cycle_rca(session_id, cycle_id)
+    _reconcile_rca_dispatches(session_id)
+
+
+def _process_cycle_rca(session_id, cycle_id):
+    """Evaluate one committed cycle once and persist its trigger decision."""
+    if monitoring_history.read_rca_event(session_id, cycle_id) is not None:
+        return
+    session = monitoring_history.read_session(session_id)
+    state = session.get("rca")
+    if not isinstance(state, dict):
+        state = initial_rca_state(
+            validate_rca_configuration({}), {"status": "incompatible", "reason": "Automatic RCA was not configured for this session."}, None
+        )
+    cycle = monitoring_history.read_cycle(session_id, cycle_id)
+    updated, event = decide_trigger(state, cycle)
+    if event["status"] != "trigger" or session.get("status") == "stopped":
+        if session.get("status") == "stopped" and event["status"] == "trigger":
+            event = {**event, "status": "suppressed_stopped", "reason": "Monitoring was stopped before RCA dispatch."}
+        monitoring_history.record_rca_event(session_id, cycle_id, event, rca_state=updated)
+        return
+    active_runs = [
+        item
+        for item in monitoring_history.list_rca_runs(session_id, page=1, page_size=100)["items"]
+        if item.get("status") in {"queued", "running"}
+    ]
+    if active_runs:
+        updated["episode_state"] = "running_suppressed"
+        updated["active_run_id"] = active_runs[0]["run_id"]
+        monitoring_history.record_rca_event(
+            session_id,
+            cycle_id,
+            {**event, "status": "suppressed_running", "reason": "Another CausalRCA run is already queued or running."},
+            rca_state=updated,
+        )
+        return
+    recipe = monitoring_history.read_recipe(session_id)
+    readiness = assess_recipe_compatibility(recipe)
+    if readiness.get("status") != "ready":
+        updated["readiness"] = {"status": "incompatible", "reason": readiness.get("reason")}
+        monitoring_history.record_rca_event(
+            session_id,
+            cycle_id,
+            {**event, "status": "incompatible", "reason": readiness.get("reason")},
+            rca_state=updated,
+        )
+        return
+    cycle_input = monitoring_history.read_artifact(cycle["input_reference"])
+    cycle_input["input_reference"] = cycle["input_reference"]
+    cycle_input["input_sha256"] = cycle["input_sha256"]
+    configuration_identity = {
+        "threshold_percentage": updated["threshold_percentage"],
+        "analysis_window_seconds": updated["analysis_window_seconds"],
+        "cooldown_seconds": updated["cooldown_seconds"],
+        "algorithm_id": updated.get("algorithm_id"),
+        "algorithm_config_sha256": updated.get("algorithm_config_sha256"),
+        "preprocessing_contract": updated.get("preprocessing_contract"),
+    }
+    detection_time = (cycle.get("prediction_window") or {}).get("end")
+    base_run = {
+        "status": "queued",
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+        "trigger_percentage": cycle.get("anomaly_percentage"),
+        "threshold_percentage": updated["threshold_percentage"],
+        "trigger_window": cycle.get("prediction_window"),
+        "context_window": cycle.get("inference_window"),
+        "model_identity": {
+            "model_id": session.get("model_id"),
+            "artifact_id": session.get("artifact_id"),
+            "artifact_manifest_sha256": session.get("artifact_manifest_sha256"),
+        },
+        "recipe_identity": {
+            "contract": session.get("recipe_contract"),
+            "recipe_sha256": session.get("recipe_sha256"),
+            "feature_order_sha256": session.get("feature_order_sha256"),
+        },
+        "preprocessing": {
+            "contract": updated.get("preprocessing_contract"),
+            "configuration_sha256": rca_sha256({"feature_range": [0.0, 1.0]}),
+        },
+        "algorithm": {
+            "id": updated.get("algorithm_id"),
+            "configuration_sha256": updated.get("algorithm_config_sha256"),
+        },
+        "dispatch_status": "pending",
+    }
+    try:
+        selected = select_analysis_input(
+            cycle_input,
+            end_timestamp=detection_time,
+            window_seconds=updated["analysis_window_seconds"],
+            feature_metadata=readiness["feature_metadata"],
+            sampling_interval_seconds=recipe["sampling_interval_seconds"],
+            minimum_observations=updated.get("minimum_observations", 2),
+            minimum_features=updated.get("minimum_features", 2),
+        )
+        selected_sha = rca_sha256(selected)
+        run_id = stable_run_id(session_id, cycle_id, selected_sha, configuration_identity)
+        updated = mark_triggered(updated, run_id, cycle.get("completed_at") or cycle["committed_at"])
+        run = {
+            **base_run,
+            "run_id": run_id,
+            "episode_id": run_id,
+            "cooldown_until": updated["cooldown_until"],
+            "analysis_window": selected["analysis_window"],
+            "observation_count": len(selected["matrix"]),
+            "feature_count": len(selected["feature_order"]),
+            "feature_identity": {
+                "feature_order_sha256": selected.get("feature_order_sha256"),
+                "feature_metadata_sha256": selected.get("feature_metadata_sha256"),
+            },
+        }
+        monitoring_history.create_rca_run(
+            session_id,
+            cycle_id,
+            run,
+            input_payload=selected,
+            event={**event, "status": "started", "episode_state": "triggered"},
+            rca_state=updated,
+        )
+        _dispatch_rca_run(session_id, run_id)
+    except MonitoringRcaError as exc:
+        skipped_id = stable_run_id(session_id, cycle_id, cycle["input_sha256"], configuration_identity)
+        updated = mark_triggered(updated, skipped_id, cycle.get("completed_at") or cycle["committed_at"])
+        monitoring_history.create_rca_run(
+            session_id,
+            cycle_id,
+            {**base_run, "run_id": skipped_id, "episode_id": skipped_id, "status": "skipped", "completed_at": utc_now(), "skip_reason": str(exc)[:500]},
+            input_payload=None,
+            event={**event, "status": "skipped", "reason": str(exc)[:500], "episode_state": "triggered"},
+            rca_state=updated,
+        )
+
+
 @celery.task(bind=True)
 def monitoring_task(self, session_id):
     """Run one recipe-pinned collection cycle and schedule the next cycle."""
@@ -382,6 +611,10 @@ def monitoring_task(self, session_id):
                 error=None,
             ),
         )
+        try:
+            _reconcile_rca_history(session_id)
+        except Exception:
+            logger.exception("Automatic RCA processing failed for cycle %s without stopping monitoring", cycle_id)
         public_result = _public_latest_result(aligned, session["model_id"])
         session.update(
             {
@@ -515,6 +748,10 @@ def start_monitoring():
             if not isinstance(display_name, str) or len(display_name.strip()) > 120:
                 return jsonify({"error": "display_name is invalid"}), 400
             display_name = display_name.strip() or None
+        try:
+            rca_configuration = validate_rca_configuration(payload.get("automatic_rca"))
+        except MonitoringRcaError as exc:
+            return jsonify({"error": str(exc)}), 400
         learning_url = os.getenv(
             "API_LEARNING_ADAPTATION_URL",
             "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80",
@@ -530,6 +767,15 @@ def start_monitoring():
         except (ValueError, LiveMonitoringError) as exc:
             return jsonify({"error": str(exc)[:500]}), 409
         recipe = resolved["recipe"]
+        rca_readiness = assess_recipe_compatibility(recipe)
+        rca_capability = None
+        if rca_configuration["enabled"]:
+            if rca_readiness.get("status") != "ready":
+                return jsonify({"error": rca_readiness.get("reason") or "This model input is not compatible with CausalRCA."}), 409
+            try:
+                rca_capability = _crca_capability()
+            except MonitoringRcaError as exc:
+                return jsonify({"error": str(exc)}), 503
         session_id = f"monitor_{uuid.uuid4().hex}"
         now = utc_now()
         session = {
@@ -551,6 +797,7 @@ def start_monitoring():
             "sampling_interval_seconds": recipe["sampling_interval_seconds"],
             "window_seconds": window_seconds,
             "poll_interval_seconds": poll_seconds,
+            "rca": initial_rca_state(rca_configuration, rca_readiness, rca_capability),
             "iteration": 0,
             "buffer": [],
             "buffered_observations": 0,
@@ -601,8 +848,13 @@ def monitoring_session_status(session_id):
     try:
         cycle_page = request.args.get("cycle_page", 1)
         cycle_page_size = request.args.get("cycle_page_size", 50)
+        rca_page = request.args.get("rca_page", 1)
+        rca_page_size = request.args.get("rca_page_size", 20)
         detail = monitoring_history.session_detail(
             session_id, cycle_page=cycle_page, cycle_page_size=cycle_page_size
+        )
+        detail["rca_runs"] = monitoring_history.list_rca_runs(
+            session_id, page=rca_page, page_size=rca_page_size
         )
         live = _read_session(session_id)
         detail["session"] = merge_execution_projection(detail["session"], live)
@@ -611,6 +863,52 @@ def monitoring_session_status(session_id):
         return jsonify({"error": "unknown monitoring session"}), 404
     except MonitoringHistoryError as exc:
         return jsonify({"error": str(exc)}), 400
+
+
+@app.route('/monitoring-sessions/<session_id>/rca-runs/<run_id>', methods=['GET'])
+def monitoring_rca_run_detail(session_id, run_id):
+    try:
+        return jsonify(monitoring_history.rca_run_detail(session_id, run_id)), 200
+    except MonitoringSessionNotFound:
+        return jsonify({"error": "unknown monitoring session"}), 404
+    except MonitoringHistoryError as exc:
+        status = 404 if "unknown" in str(exc) else 400
+        return jsonify({"error": str(exc)}), status
+
+
+@app.route('/monitoring-sessions/<session_id>/rca-reconcile', methods=['POST'])
+def monitoring_rca_reconcile(session_id):
+    try:
+        session = monitoring_history.read_session(session_id)
+        if session.get("status") == "stopped":
+            return jsonify({"error": "monitoring session is stopped"}), 409
+        _reconcile_rca_history(session_id)
+        return jsonify({"status": "reconciled"}), 200
+    except MonitoringSessionNotFound:
+        return jsonify({"error": "unknown monitoring session"}), 404
+    except MonitoringHistoryError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route('/monitoring-rca/readiness/<model_id>', methods=['GET'])
+def monitoring_rca_readiness(model_id):
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", model_id or "") is None:
+        return jsonify({"error": "a valid model_id is required"}), 400
+    learning_url = os.getenv(
+        "API_LEARNING_ADAPTATION_URL",
+        "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80",
+    ).rstrip("/")
+    try:
+        response = requests.get(
+            f"{learning_url}/internal/models/{model_id}/live-input-recipe", timeout=(5, 30)
+        )
+        if response.status_code != 200:
+            return jsonify({"status": "incompatible", "reason": "A validated live input recipe is unavailable."}), 200
+        resolved = validate_resolved_live_model(response.json(), model_id)
+        readiness = assess_recipe_compatibility(resolved["recipe"])
+        return jsonify({key: readiness.get(key) for key in ("status", "reason", "input_contract")}), 200
+    except (requests.RequestException, ValueError, LiveMonitoringError):
+        return jsonify({"status": "unavailable", "reason": "RCA readiness could not be verified."}), 200
 
 
 @app.route('/monitoring-sessions', methods=['GET'])

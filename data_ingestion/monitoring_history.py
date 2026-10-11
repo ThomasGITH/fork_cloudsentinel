@@ -97,7 +97,7 @@ class MonitoringHistoryStore:
         return self.sessions / self._validate_id(session_id, "session_id")
 
     def _publish_blob(self, kind: str, payload: dict[str, Any]) -> tuple[str, str]:
-        if kind not in {"input", "result"}:
+        if kind not in {"input", "result", "rca_input", "rca_result"}:
             raise MonitoringHistoryError("monitoring artifact kind is invalid")
         digest = canonical_sha256(payload)
         directory = self.root / "artifacts" / kind
@@ -114,7 +114,7 @@ class MonitoringHistoryStore:
         except (AttributeError, ValueError) as exc:
             raise MonitoringHistoryError("monitoring artifact reference is invalid") from exc
         if (
-            kind not in {"input", "result"}
+            kind not in {"input", "result", "rca_input", "rca_result"}
             or algorithm != "sha256"
             or len(digest) != 64
             or any(character not in "0123456789abcdef" for character in digest)
@@ -343,6 +343,249 @@ class MonitoringHistoryStore:
         records.sort(key=lambda item: item.get("committed_at", ""), reverse=True)
         return records
 
+    def read_cycle(self, session_id: str, cycle_id: str) -> dict[str, Any]:
+        self._validate_id(cycle_id, "cycle_id")
+        path = self._session_dir(session_id) / "cycles" / cycle_id / "cycle.json"
+        if not path.is_file():
+            raise MonitoringHistoryError("unknown monitoring cycle")
+        return _read_json(path)
+
+    def pending_rca_cycles(self, session_id: str, *, limit: int = 100) -> list[str]:
+        self.read_session(session_id)
+        if limit < 1 or limit > 100:
+            raise MonitoringHistoryError("RCA reconciliation limit is invalid")
+        records = [
+            item for item in reversed(self._cycle_records(session_id))
+            if self.read_rca_event(session_id, item["cycle_id"]) is None
+        ]
+        return [item["cycle_id"] for item in records[:limit]]
+
+    def _rca_dir(self, session_id: str) -> Path:
+        return self._session_dir(session_id) / "rca_runs"
+
+    def _rca_event_path(self, session_id: str, cycle_id: str) -> Path:
+        self._validate_id(cycle_id, "cycle_id")
+        return self._session_dir(session_id) / "rca_events" / f"{cycle_id}.json"
+
+    def read_rca_event(self, session_id: str, cycle_id: str) -> dict[str, Any] | None:
+        path = self._rca_event_path(session_id, cycle_id)
+        return _read_json(path) if path.is_file() else None
+
+    def record_rca_event(
+        self,
+        session_id: str,
+        cycle_id: str,
+        event: dict[str, Any],
+        *,
+        rca_state: dict[str, Any],
+    ) -> dict[str, Any]:
+        with self._locked(session_id):
+            self.read_cycle(session_id, cycle_id)
+            path = self._rca_event_path(session_id, cycle_id)
+            if path.exists():
+                return _read_json(path)
+            stored = {
+                "schema_version": 1,
+                "cycle_id": cycle_id,
+                "session_id": session_id,
+                "recorded_at": utc_now(),
+                **deepcopy(event),
+            }
+            _atomic_json(path, stored)
+            session = self.read_session(session_id)
+            session["rca"] = deepcopy(rca_state)
+            session["updated_at"] = utc_now()
+            _atomic_json(self._session_dir(session_id) / "session.json", session)
+            return stored
+
+    def create_rca_run(
+        self,
+        session_id: str,
+        cycle_id: str,
+        run: dict[str, Any],
+        *,
+        input_payload: dict[str, Any] | None,
+        event: dict[str, Any],
+        rca_state: dict[str, Any],
+    ) -> dict[str, Any]:
+        run_id = self._validate_id(run.get("run_id"), "run_id")
+        directory = self._rca_dir(session_id) / run_id
+        with self._locked(session_id):
+            self.read_cycle(session_id, cycle_id)
+            existing_event = self.read_rca_event(session_id, cycle_id)
+            if existing_event is not None and existing_event.get("run_id") not in {None, run_id}:
+                raise MonitoringHistoryError("monitoring cycle already has an RCA run")
+            if directory.exists():
+                existing = _read_json(directory / "run.json")
+                if existing.get("cycle_id") != cycle_id:
+                    raise MonitoringHistoryError("RCA run identity conflict")
+                event_path = self._rca_event_path(session_id, cycle_id)
+                if not event_path.exists():
+                    _atomic_json(
+                        event_path,
+                        {
+                            "schema_version": 1,
+                            "cycle_id": cycle_id,
+                            "session_id": session_id,
+                            "recorded_at": utc_now(),
+                            "run_id": run_id,
+                            **deepcopy(event),
+                        },
+                    )
+                session = self.read_session(session_id)
+                session["rca"] = deepcopy(rca_state)
+                session["updated_at"] = utc_now()
+                _atomic_json(self._session_dir(session_id) / "session.json", session)
+                return existing
+            stored = deepcopy(run)
+            stored.update(schema_version=1, session_id=session_id, cycle_id=cycle_id)
+            if input_payload is not None:
+                reference, digest = self._publish_blob("rca_input", input_payload)
+                stored["input_reference"] = reference
+                stored["input_sha256"] = digest
+            stage_parent = self._rca_dir(session_id)
+            stage_parent.mkdir(parents=True, exist_ok=True)
+            stage = Path(tempfile.mkdtemp(prefix=f".{run_id}.", dir=stage_parent))
+            try:
+                _atomic_json(stage / "run.json", stored)
+                os.replace(stage, directory)
+            except Exception:
+                shutil.rmtree(stage, ignore_errors=True)
+                raise
+            stored_event = {
+                "schema_version": 1,
+                "cycle_id": cycle_id,
+                "session_id": session_id,
+                "recorded_at": utc_now(),
+                "run_id": run_id,
+                **deepcopy(event),
+            }
+            _atomic_json(self._rca_event_path(session_id, cycle_id), stored_event)
+            session = self.read_session(session_id)
+            session["rca"] = deepcopy(rca_state)
+            session["updated_at"] = utc_now()
+            _atomic_json(self._session_dir(session_id) / "session.json", session)
+            return deepcopy(stored)
+
+    def read_rca_run(self, session_id: str, run_id: str) -> dict[str, Any]:
+        self._validate_id(run_id, "run_id")
+        path = self._rca_dir(session_id) / run_id / "run.json"
+        if not path.is_file():
+            raise MonitoringHistoryError("unknown monitoring RCA run")
+        return _read_json(path)
+
+    def update_rca_run(
+        self, session_id: str, run_id: str, update: Callable[[dict[str, Any]], None]
+    ) -> dict[str, Any]:
+        with self._locked(session_id):
+            record = self.read_rca_run(session_id, run_id)
+            update(record)
+            record["updated_at"] = utc_now()
+            _atomic_json(self._rca_dir(session_id) / run_id / "run.json", record)
+            return deepcopy(record)
+
+    def claim_rca_run(self, session_id: str, run_id: str) -> dict[str, Any] | None:
+        claimed = None
+
+        def claim(record: dict[str, Any]) -> None:
+            nonlocal claimed
+            if record.get("status") != "queued":
+                return
+            record["status"] = "running"
+            record["started_at"] = utc_now()
+            claimed = deepcopy(record)
+
+        self.update_rca_run(session_id, run_id, claim)
+        return claimed
+
+    def complete_rca_run(
+        self, session_id: str, run_id: str, result_payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        reference, digest = self._publish_blob("rca_result", result_payload)
+
+        def complete(record: dict[str, Any]) -> None:
+            if record.get("status") == "completed":
+                if record.get("result_sha256") != digest:
+                    raise MonitoringHistoryError("RCA result identity conflict")
+                return
+            if record.get("status") not in {"running", "queued"}:
+                raise MonitoringHistoryError("RCA run is already terminal")
+            record.update(
+                status="completed",
+                completed_at=utc_now(),
+                result_reference=reference,
+                result_sha256=digest,
+                ranking_count=len(result_payload.get("ranking", [])),
+                graph_count=len(result_payload.get("graphs", [])),
+            )
+            record.pop("failure", None)
+
+        return self.update_rca_run(session_id, run_id, complete)
+
+    def fail_rca_run(self, session_id: str, run_id: str, message: str) -> dict[str, Any]:
+        def fail(record: dict[str, Any]) -> None:
+            if record.get("status") == "completed":
+                return
+            record.update(
+                status="failed",
+                completed_at=utc_now(),
+                failure={"type": "rca_execution_error", "message": str(message)[:500]},
+            )
+
+        return self.update_rca_run(session_id, run_id, fail)
+
+    def list_rca_runs(
+        self, session_id: str, *, page: int = 1, page_size: int = 20
+    ) -> dict[str, Any]:
+        self.read_session(session_id)
+        page, page_size = self._page(page, page_size)
+        records = []
+        directory = self._rca_dir(session_id)
+        if directory.is_dir():
+            for path in directory.iterdir():
+                if not path.is_dir() or path.name.startswith("."):
+                    continue
+                try:
+                    records.append(_read_json(path / "run.json"))
+                except MonitoringHistoryError:
+                    continue
+        records.sort(key=lambda item: item.get("created_at", ""), reverse=True)
+        start = (page - 1) * page_size
+        return {
+            "items": [self.public_rca_run(item) for item in records[start : start + page_size]],
+            "page": page,
+            "page_size": page_size,
+            "total": len(records),
+            "pages": math.ceil(len(records) / page_size) if records else 0,
+            "truncated": start + page_size < len(records),
+        }
+
+    def rca_run_detail(self, session_id: str, run_id: str) -> dict[str, Any]:
+        record = self.read_rca_run(session_id, run_id)
+        result = None
+        if record.get("status") == "completed" and record.get("result_reference"):
+            stored = self.read_artifact(record["result_reference"])
+            result = {
+                "ranking": deepcopy(stored.get("ranking", [])[:100]),
+                "graphs": deepcopy(stored.get("graphs", [])[:3]),
+                "truncated": len(stored.get("ranking", [])) > 100,
+            }
+        return {"run": self.public_rca_run(record), "result": result}
+
+    @staticmethod
+    def public_rca_run(record: dict[str, Any]) -> dict[str, Any]:
+        allowed = (
+            "run_id", "session_id", "cycle_id", "status", "created_at",
+            "started_at", "updated_at", "completed_at", "trigger_percentage",
+            "threshold_percentage", "episode_id", "cooldown_until", "trigger_window",
+            "context_window", "analysis_window", "observation_count", "feature_count",
+            "feature_identity", "input_sha256", "preprocessing", "algorithm",
+            "model_identity", "recipe_identity",
+            "result_sha256", "ranking_count", "graph_count", "failure", "skip_reason",
+            "dispatch_status", "dispatch_error",
+        )
+        return {key: deepcopy(record[key]) for key in allowed if key in record}
+
     def list_cycles(
         self, session_id: str, *, page: int = 1, page_size: int = 50
     ) -> dict[str, Any]:
@@ -397,11 +640,21 @@ class MonitoringHistoryStore:
         self, session_id: str, *, cycle_page: int = 1, cycle_page_size: int = 50
     ) -> dict[str, Any]:
         record = self.read_session(session_id)
+        cycles = self.list_cycles(
+            session_id, page=cycle_page, page_size=cycle_page_size
+        )
+        for cycle in cycles["items"]:
+            event = self.read_rca_event(session_id, cycle["cycle_id"])
+            if event is not None:
+                cycle["rca_trigger"] = {
+                    key: deepcopy(event[key])
+                    for key in ("status", "reason", "threshold_percentage", "episode_state", "run_id")
+                    if key in event
+                }
         return {
             "session": self.public_session(record),
-            "cycles": self.list_cycles(
-                session_id, page=cycle_page, page_size=cycle_page_size
-            ),
+            "cycles": cycles,
+            "rca_runs": self.list_rca_runs(session_id, page=1, page_size=20),
             "provenance": {
                 "artifact_id": record.get("artifact_id"),
                 "artifact_manifest_sha256": record.get("artifact_manifest_sha256"),
@@ -452,6 +705,7 @@ class MonitoringHistoryStore:
             "latest_cycle",
             "warnings",
             "error",
+            "rca",
         )
         return {key: deepcopy(record[key]) for key in allowed if key in record}
 

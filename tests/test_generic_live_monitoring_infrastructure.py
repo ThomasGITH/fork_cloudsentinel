@@ -29,7 +29,7 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
         api = container("k8s/data_ingestion-deployment.yml")
         worker = container("k8s/data_ingestion_celery-deployment.yml")
         self.assertEqual(api["image"], worker["image"])
-        self.assertEqual(api["image"], "jojojochem/data_ingestion:generic-monitoring-history-1")
+        self.assertEqual(api["image"], "jojojochem/data_ingestion:generic-monitoring-rca-1")
         self.assertEqual(environment("k8s/data_ingestion-deployment.yml")["MONITORING_HISTORY_STORAGE_ROOT"], "/app/storage/monitoring_history")
         self.assertEqual(environment("k8s/data_ingestion_celery-deployment.yml")["MONITORING_HISTORY_STORAGE_ROOT"], "/app/storage/monitoring_history")
         self.assertEqual(mounts("k8s/data_ingestion-deployment.yml")["catalogue-storage"]["mountPath"], "/app/storage")
@@ -53,7 +53,7 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
         ui = container("k8s/monitoring_project-deployment.yml")
         self.assertEqual(learning_api["image"], learning_worker["image"])
         self.assertTrue(learning_api["image"].endswith(":generic-monitoring-history-1"))
-        self.assertTrue(ui["image"].endswith(":generic-monitoring-history-1"))
+        self.assertTrue(ui["image"].endswith(":generic-monitoring-rca-1"))
         self.assertEqual(ui["imagePullPolicy"], "IfNotPresent")
 
         admin = yaml.safe_load((ROOT / "k8s/plugin-admin-pod.yml").read_text())
@@ -75,11 +75,12 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
             "jojojochem/anomaly_detection_generic:generic-live-monitoring-1.1",
         )
 
-    def test_monitoring_uses_one_generic_evaluation_and_keeps_rca_disconnected(self):
+    def test_monitoring_uses_one_generic_evaluation_and_recipe_consistent_rca(self):
         source = (ROOT / "data_ingestion/app.py").read_text()
         task = source[source.index("def monitoring_task"):source.index("@app.route('/start_monitoring'")]
         self.assertIn("_generic_detect(session, bounded)", task)
-        self.assertNotIn("anomaly_rca", task)
+        self.assertIn("_reconcile_rca_history(session_id)", task)
+        self.assertNotIn("collect_crca_data", task)
         generic_call = source[source.index("def _generic_detect"):source.index("def _cycle_id")]
         self.assertIn("/internal/evaluate", generic_call)
         self.assertNotIn('f"{base_url}/detect"', generic_call)

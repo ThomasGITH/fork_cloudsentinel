@@ -55,7 +55,8 @@ def run_crca(crca_data, crca_info, task_id, parallel=False):
         iterations_arg = get_config()['arg_iterations']
 
         # Perform CRCA sequentially
-        results = crca_sequential(crca_data, iterations_arg)
+        feature_names = crca_info.get('data', {}).get('feature_names')
+        results = crca_sequential(crca_data, iterations_arg, feature_names=feature_names)
 
         # Concatenate results and calculate average
         df_concat = pd.concat([result[0] for result in results])
@@ -89,8 +90,8 @@ def return_json_object(df, image_base64, crca_info, task_id):
     # Prepare response data
     csv_payload = df.to_csv(index=False)
     response_data = {
-        'containers': crca_info['data']['crca_pods'],
-        'metrics': crca_info['data']['metrics'],
+        'containers': crca_info['data'].get('crca_pods', []),
+        'metrics': crca_info['data'].get('metrics', []),
         'ranking': csv_payload,
         'graph_image': image_base64
     }
@@ -112,9 +113,22 @@ def match_names(df_concat, crca_info):
         logger.info("Matching column names")
         # Add index column and match container and metric names
         df_concat['index'] = df_concat['column_nr'].astype(int)
-        selected_containers = crca_info['data']['crca_pods']
-        selected_metrics = crca_info['data']['metrics']
-        column_names = [f"{container}_{metric}" for container in selected_containers for metric in selected_metrics]
+        explicit_names = crca_info.get('data', {}).get('feature_names')
+        if explicit_names is not None:
+            if (
+                not isinstance(explicit_names, list)
+                or len(explicit_names) != len(df_concat)
+                or any(not isinstance(value, str) or not value for value in explicit_names)
+                or len(set(explicit_names)) != len(explicit_names)
+            ):
+                raise ValueError('feature_names must uniquely identify every matrix column')
+            column_names = explicit_names
+        else:
+            selected_containers = crca_info['data']['crca_pods']
+            selected_metrics = crca_info['data']['metrics']
+            column_names = [f"{container}_{metric}" for container in selected_containers for metric in selected_metrics]
+        if len(column_names) != len(df_concat):
+            raise ValueError('feature names do not match the matrix column count')
         name_matched_df = df_concat.copy()
         name_matched_df['metric'] = name_matched_df['column_nr'].apply(lambda x: column_names[x])
         name_matched_df = name_matched_df[['metric', 'index', 'score']]
@@ -125,7 +139,7 @@ def match_names(df_concat, crca_info):
         raise e
 
 
-def crca_sequential(data_arg, iterations_arg):
+def crca_sequential(data_arg, iterations_arg, feature_names=None):
     """
     Perform CRCA algorithm sequentially for multiple iterations.
 
@@ -140,7 +154,7 @@ def crca_sequential(data_arg, iterations_arg):
         results = []
         for i in range(iterations_arg):
             logger.info("Running iteration %d of %d", i + 1, iterations_arg)
-            result = crca(data_arg)
+            result = crca(data_arg, feature_names=feature_names)
             results.append(result)
         return results
     except Exception as e:
@@ -167,7 +181,7 @@ def calculate_average(df):
         raise e
 
 
-def crca(data_arg):
+def crca(data_arg, feature_names=None):
     """
     CRCA algorithm implementation.
 
@@ -432,7 +446,12 @@ def crca(data_arg):
         org_G = nx.from_numpy_matrix(adj, parallel_edges=True, create_using=nx.DiGraph)
         pos = nx.circular_layout(org_G)
         plt.figure(figsize=(8, 6))
-        nx.draw(org_G, pos=pos, with_labels=True, node_color='skyblue', edge_color='k')
+        labels = None
+        if feature_names is not None:
+            if len(feature_names) != data_variable_size:
+                raise ValueError('feature names do not match the matrix column count')
+            labels = {index: feature_names[index] for index in range(data_variable_size)}
+        nx.draw(org_G, pos=pos, labels=labels, with_labels=True, node_color='skyblue', edge_color='k')
 
         img_data = BytesIO()
         plt.savefig(img_data, format='png')

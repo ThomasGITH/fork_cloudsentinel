@@ -205,7 +205,7 @@ def monitoring_session_detail(request, session_id):
     try:
         response = requests.get(
             f'{settings.API_DATA_INGESTION_URL}/monitoring-sessions/{session_id}',
-            params=_bounded_query(request, ("cycle_page", "cycle_page_size")),
+            params=_bounded_query(request, ("cycle_page", "cycle_page_size", "rca_page", "rca_page_size")),
             timeout=(5, 15),
         )
         response.raise_for_status()
@@ -228,6 +228,25 @@ def monitoring_session_detail(request, session_id):
             {"status": "error", "message": "Monitoring History is temporarily unavailable."},
             status=502,
         )
+
+
+@require_GET
+def monitoring_rca_run_detail(request, session_id, run_id):
+    try:
+        response = requests.get(
+            f'{settings.API_DATA_INGESTION_URL}/monitoring-sessions/{session_id}/rca-runs/{run_id}',
+            timeout=(5, 15),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict) or not isinstance(payload.get("run"), dict):
+            raise ValueError("invalid monitoring RCA response")
+        return JsonResponse(payload)
+    except requests.HTTPError as exc:
+        status = 404 if exc.response is not None and exc.response.status_code == 404 else 502
+        return JsonResponse({"status": "error", "message": "RCA run was not found." if status == 404 else "RCA history is temporarily unavailable."}, status=status)
+    except (requests.RequestException, ValueError):
+        return JsonResponse({"status": "error", "message": "RCA history is temporarily unavailable."}, status=502)
 
 
 @require_POST

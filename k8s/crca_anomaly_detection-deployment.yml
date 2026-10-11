@@ -13,10 +13,18 @@ spec:
       labels:
         app: crca-anomaly-detection
     spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: crca-anomaly-detection
-        image: jojojochem/anomaly_detection_crca:latest
-        imagePullPolicy: Always
+        image: jojojochem/anomaly_detection_crca:generic-monitoring-rca-1
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
         ports:
         - containerPort: 5023
         env:
@@ -24,6 +32,20 @@ spec:
           value: "redis://redis:6379/1"
         - name: CELERY_RESULT_BACKEND
           value: "redis://redis:6379/1"
+        - name: MONITORING_HISTORY_STORAGE_ROOT
+          value: "/app/storage/monitoring_history"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5023
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5023
+          initialDelaySeconds: 10
+          periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service

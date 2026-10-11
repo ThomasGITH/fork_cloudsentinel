@@ -19,7 +19,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: data-ingestion
-        image: jojojochem/data_ingestion:generic-monitoring-history-1
+        image: jojojochem/data_ingestion:generic-monitoring-rca-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -42,6 +42,8 @@ spec:
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
         - name: API_LEARNING_ADAPTATION_URL
           value: "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80"
+        - name: API_CRCA_ANOMALY_DETECTION_URL
+          value: "http://crca-anomaly-detection-service.cloudsentinel.svc.cluster.local:80"
         volumeMounts:
         - name: catalogue-storage
           mountPath: /app/storage

@@ -37,6 +37,15 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         )
         self.patch.start()
         self.addCleanup(self.patch.stop)
+        self.readiness_patch = patch("config_app.views.monitoring.requests.get")
+        self.readiness_get = self.readiness_patch.start()
+        self.readiness_get.return_value.status_code = 200
+        self.readiness_get.return_value.json.return_value = {
+            "status": "ready",
+            "reason": None,
+            "input_contract": "cloudsentinel.crca-input/v1",
+        }
+        self.addCleanup(self.readiness_patch.stop)
 
     def test_existing_monitoring_page_uses_saved_models_and_prefill(self):
         response = self.client.get(reverse("monitoring"), {"model_id": "model-ready"})
@@ -69,6 +78,26 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertEqual(payload["window_seconds"], 600)
         self.assertNotIn("detector_id", payload)
         self.assertNotIn("prometheus_url", payload)
+        self.assertFalse(payload["automatic_rca"]["enabled"])
+
+    @patch("config_app.views.monitoring.requests.post")
+    def test_start_sends_explicit_rca_configuration(self, post):
+        post.return_value.status_code = 202
+        post.return_value.json.return_value = {"status": "monitoring_started", "session": {"session_id": "monitor-one"}}
+        response = self.client.post(
+            reverse("monitoring"),
+            {
+                "model_id": "model-ready", "window_minutes": 10,
+                "poll_interval_seconds": 30, "automatic_rca_enabled": "on",
+                "rca_threshold_percentage": 75, "rca_analysis_window_minutes": 20,
+                "rca_cooldown_minutes": 90,
+            },
+        )
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(
+            post.call_args.kwargs["json"]["automatic_rca"],
+            {"enabled": True, "threshold_percentage": 75.0, "analysis_window_seconds": 1200, "cooldown_seconds": 5400},
+        )
 
     @patch("config_app.views.monitoring.requests.post")
     def test_offline_only_model_cannot_start(self, post):
@@ -117,6 +146,17 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         response = self.client.get(reverse("monitoring_session_detail", args=["monitor-one"]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["cycles"]["items"][0]["anomaly_percentage"], 5.0)
+
+    @patch("config_app.views.task_results.requests.get")
+    def test_rca_detail_proxy_returns_stored_safe_result(self, get):
+        get.return_value.raise_for_status.return_value = None
+        get.return_value.json.return_value = {
+            "run": {"run_id": "rca-one", "status": "completed"},
+            "result": {"ranking": [{"feature_name": "cpu", "score": 0.8}], "graphs": []},
+        }
+        response = self.client.get(reverse("monitoring_rca_run_detail", args=["monitor-one", "rca-one"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["run"]["status"], "completed")
 
     @patch("config_app.views.task_results.requests.delete")
     def test_stop_route_requires_csrf(self, delete):

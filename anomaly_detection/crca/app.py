@@ -4,12 +4,17 @@ import json
 import os
 import traceback
 import shutil
+import hashlib
+import re
 import pandas as pd
 from flask_cors import CORS
 from celery import Celery
-from tasks import run_crca_task  # Import the task here
-
-from config import set_config, get_config, set_initial_config
+try:
+    from .tasks import run_crca_task, run_monitoring_rca_task
+    from .config import set_config, get_config, set_initial_config
+except ImportError:  # Flat module layout inside the service image.
+    from tasks import run_crca_task, run_monitoring_rca_task
+    from config import set_config, get_config, set_initial_config
 
 # Set multiprocessing start method to 'spawn' for Celery compatibility
 import multiprocessing
@@ -23,8 +28,8 @@ CORS(app, resources={r"/*": {"origins": "*"}})  # Enable CORS for all routes
 os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
 
 # Configure and initialize Celery instance
-app.config['broker_url'] = 'redis://redis:6379/1'
-app.config['result_backend'] = 'redis://redis:6379/1'
+app.config['broker_url'] = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/1')
+app.config['result_backend'] = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/1')
 
 # testing purposes
 # app.config['broker_url'] = 'redis://localhost:6379/1'
@@ -43,6 +48,54 @@ celery.conf.update(
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def _canonical_sha256(value):
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
+
+
+@app.route('/healthz', methods=['GET'])
+def healthz():
+    return jsonify({"status": "healthy"}), 200
+
+
+@app.route('/internal/monitoring-capability', methods=['GET'])
+def monitoring_capability():
+    return jsonify(
+        {
+            "contract": "cloudsentinel.monitoring-rca/v1",
+            "input_contract": "cloudsentinel.crca-input/v1",
+            "algorithm_id": "cloudsentinel.causal-rca/legacy-v1",
+            "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
+            "minimum_observations": 2,
+            "minimum_features": 2,
+            "config_sha256": _canonical_sha256(get_config()),
+        }
+    ), 200
+
+
+@app.route('/internal/monitoring-runs', methods=['POST'])
+def submit_monitoring_run():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "a JSON request is required"}), 400
+    session_id = payload.get("session_id")
+    run_id = payload.get("run_id")
+    safe = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    if not isinstance(session_id, str) or not safe.fullmatch(session_id):
+        return jsonify({"error": "session_id is invalid"}), 400
+    if not isinstance(run_id, str) or not safe.fullmatch(run_id):
+        return jsonify({"error": "run_id is invalid"}), 400
+    try:
+        task = run_monitoring_rca_task.apply_async(
+            args=[session_id, run_id], task_id=f"monitoring-rca-{run_id}"
+        )
+    except Exception:
+        logger.error("Monitoring RCA dispatch failed")
+        return jsonify({"error": "CausalRCA dispatch failed"}), 503
+    return jsonify({"status": "submitted", "run_id": run_id}), 202
 
 # Command to run the Celery worker:
 # celery -A app.celery worker --loglevel=info -P gevent

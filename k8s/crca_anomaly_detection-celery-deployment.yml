@@ -13,13 +13,30 @@ spec:
       labels:
         app: crca-anomaly-detection-celery
     spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: crca-anomaly-detection-celery
-        image: jojojochem/anomaly_detection_crca:latest
-        imagePullPolicy: Always
-        command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "-P", "gevent"]
+        image: jojojochem/anomaly_detection_crca:generic-monitoring-rca-1
+        imagePullPolicy: IfNotPresent
+        command: ["celery", "-A", "tasks.celery", "worker", "--loglevel=info", "--concurrency=1"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
         env:
         - name: CELERY_BROKER_URL
           value: "redis://redis:6379/1"
         - name: CELERY_RESULT_BACKEND
           value: "redis://redis:6379/1"
+        - name: MONITORING_HISTORY_STORAGE_ROOT
+          value: "/app/storage/monitoring_history"
+        volumeMounts:
+        - name: catalogue-storage
+          mountPath: /app/storage
+      volumes:
+      - name: catalogue-storage
+        persistentVolumeClaim:
+          claimName: data-catalogue-pvc

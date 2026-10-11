@@ -8,6 +8,7 @@ from .views.monitoring import monitoring, monitoring_home, monitoring_overview, 
 from .views.api import get_settings
 from .views.task_results import (get_results, training_result, fetch_cgnn_results, fetch_crca_task_details,
                                  fetch_active_tasks, monitoring_sessions, monitoring_session_detail,
+                                 monitoring_rca_run_detail,
                                  stop_task, fetch_results, delete_result, check_status)
 from .views.data_catalogue import (
     data_catalogue_derive_labels,
@@ -99,6 +100,7 @@ urlpatterns = [
     path('fetch_active_tasks/', fetch_active_tasks, name='fetch_active_tasks'),
     path('monitoring-sessions/', monitoring_sessions, name='monitoring_sessions'),
     path('monitoring-sessions/<str:session_id>/', monitoring_session_detail, name='monitoring_session_detail'),
+    path('monitoring-sessions/<str:session_id>/rca-runs/<str:run_id>/', monitoring_rca_run_detail, name='monitoring_rca_run_detail'),
     path('stop-task/<taskId>/', stop_task, name='stop_task'),
     path('fetch_results/', fetch_results, name='fetch_results'),
     path('delete-result/<taskId>/', delete_result, name='delete_result'),
