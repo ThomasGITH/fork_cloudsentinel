@@ -11,7 +11,7 @@
 <script>
 document.getElementById('monitoring-form').addEventListener('submit', async function (event) {
   event.preventDefault(); const button=this.querySelector('button[type="submit"]'); const message=document.getElementById('start-message'); button.disabled=true; message.textContent='Starting monitoring…';
-  try { const response=await fetch(window.location.href,{method:'POST',body:new FormData(this),headers:{'X-CSRFToken':this.querySelector('[name="csrfmiddlewaretoken"]').value}}); const payload=await response.json(); if(!response.ok) throw new Error(payload.message||'Monitoring could not be started.'); message.textContent='Monitoring started. Opening status…'; window.location.assign('{% url "monitoring_overview" %}'); }
+  try { const response=await fetch(window.location.href,{method:'POST',body:new FormData(this),headers:{'X-CSRFToken':this.querySelector('[name="csrfmiddlewaretoken"]').value}}); const payload=await response.json(); if(!response.ok) throw new Error(payload.message||'Monitoring could not be started.'); message.textContent='Monitoring started. Opening status…'; const target=new URL('{% url "monitoring_overview" %}',window.location.origin); if(payload.session&&payload.session.session_id)target.searchParams.set('session',payload.session.session_id); window.location.assign(target); }
   catch(error) { message.textContent=error.message; button.disabled=false; }
 });
 </script>

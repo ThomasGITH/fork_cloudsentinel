@@ -25,6 +25,12 @@ class FileUploadForm(forms.Form):
 
 
 class MonitoringForm(forms.Form):
+    display_name = forms.CharField(
+        label="Session name",
+        max_length=120,
+        required=False,
+        help_text="Optional recognizable name for Monitoring History.",
+    )
     model_id = forms.ChoiceField(choices=[], label="Saved model artefact", required=True)
     window_minutes = forms.IntegerField(min_value=1, max_value=1440, initial=10, help_text="Amount of recent Prometheus data retained per detection cycle.")
     poll_interval_seconds = forms.IntegerField(min_value=5, max_value=3600, initial=300, help_text="How often CloudSentinel collects and evaluates a new window.")

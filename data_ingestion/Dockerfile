@@ -20,7 +20,7 @@ COPY --chown=10001:10001 . .
 
 RUN groupadd --system --gid 10001 cloudsentinel \
     && useradd --system --uid 10001 --gid cloudsentinel --home-dir /app cloudsentinel \
-    && mkdir -p /app/storage/catalogue \
+    && mkdir -p /app/storage/catalogue /app/storage/monitoring_history \
     && chown -R 10001:10001 /app
 
 USER 10001:10001

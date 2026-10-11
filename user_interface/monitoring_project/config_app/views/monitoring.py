@@ -65,6 +65,7 @@ def monitoring(request):
                 response = requests.post(
                     f"{settings.API_DATA_INGESTION_URL.rstrip('/')}/start_monitoring",
                     json={
+                        "display_name": form.cleaned_data["display_name"],
                         "model_id": selected["model_id"],
                         "window_seconds": form.cleaned_data["window_minutes"] * 60,
                         "poll_interval_seconds": form.cleaned_data["poll_interval_seconds"],

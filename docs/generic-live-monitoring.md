@@ -41,6 +41,9 @@ Public session responses omit PromQL, matrices, task IDs, service URLs and
 internal storage details. They show collection state, buffered observations,
 warm-up, warnings, missing-value failures and the latest compact generic result.
 
+Durable history, watermark semantics and deployment instructions are documented
+in `docs/generic-monitoring-history.md`.
+
 Routes:
 
 - `GET /get_active_tasks` lists safe current/recent session projections.

@@ -8,6 +8,7 @@ from requests.exceptions import RequestException
 from io import StringIO
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 import logging
 import traceback
 
@@ -141,7 +142,7 @@ def check_status(request, task_id, task_type):
         return JsonResponse({'state': 'FAILURE', 'status': str(e)}, status=500)
 
 
-@csrf_exempt
+@require_GET
 def fetch_active_tasks(request):
     try:
         response = requests.get(
@@ -171,14 +172,81 @@ def fetch_active_tasks(request):
     return JsonResponse(sessions, safe=False)
 
 
-@csrf_exempt
+def _bounded_query(request, names):
+    return {
+        name: request.GET[name]
+        for name in names
+        if request.GET.get(name) not in (None, "")
+    }
+
+
+@require_GET
+def monitoring_sessions(request):
+    try:
+        response = requests.get(
+            f'{settings.API_DATA_INGESTION_URL}/monitoring-sessions',
+            params=_bounded_query(request, ("page", "page_size", "status", "search")),
+            timeout=(5, 15),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict) or not isinstance(payload.get("items"), list):
+            raise ValueError("invalid monitoring history response")
+        return JsonResponse(payload)
+    except (requests.RequestException, ValueError):
+        return JsonResponse(
+            {"status": "error", "message": "Monitoring History is temporarily unavailable."},
+            status=502,
+        )
+
+
+@require_GET
+def monitoring_session_detail(request, session_id):
+    try:
+        response = requests.get(
+            f'{settings.API_DATA_INGESTION_URL}/monitoring-sessions/{session_id}',
+            params=_bounded_query(request, ("cycle_page", "cycle_page_size")),
+            timeout=(5, 15),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if (
+            not isinstance(payload, dict)
+            or not isinstance(payload.get("session"), dict)
+            or not isinstance(payload.get("cycles"), dict)
+        ):
+            raise ValueError("invalid monitoring session response")
+        return JsonResponse(payload)
+    except requests.HTTPError as exc:
+        status = 404 if exc.response is not None and exc.response.status_code == 404 else 502
+        return JsonResponse(
+            {"status": "error", "message": "Monitoring session was not found." if status == 404 else "Monitoring History is temporarily unavailable."},
+            status=status,
+        )
+    except (requests.RequestException, ValueError):
+        return JsonResponse(
+            {"status": "error", "message": "Monitoring History is temporarily unavailable."},
+            status=502,
+        )
+
+
+@require_POST
 def stop_task(request, taskId):
     try:
-        response = requests.delete(f'{settings.API_DATA_INGESTION_URL}/stop_monitoring/{taskId}')
+        response = requests.delete(
+            f'{settings.API_DATA_INGESTION_URL}/stop_monitoring/{taskId}',
+            timeout=(5, 15),
+        )
         response.raise_for_status()
         return JsonResponse(response.json())
-    except requests.RequestException as e:
-        return JsonResponse({'state': 'FAILURE', 'status': str(e)}, status=500)
+    except (requests.RequestException, ValueError):
+        return JsonResponse(
+            {
+                'state': 'FAILURE',
+                'status': 'Monitoring could not be stopped safely.',
+            },
+            status=502,
+        )
 
 
 @csrf_exempt

@@ -1,0 +1,8 @@
+.monitoring-history .session-button { text-align: left; border-left: 0; border-right: 0; }
+.monitoring-history .session-button.active { background: #e9f2ff; color: #102a43; border-color: #9ec5fe; }
+.monitoring-history .chart-wrap { position: relative; min-height: 320px; }
+.monitoring-history .provenance-value { overflow-wrap: anywhere; }
+@media (max-width: 991.98px) {
+  .monitoring-history aside .card { max-height: 24rem; }
+  .monitoring-history #monitoring-sessions { overflow-y: auto; }
+}

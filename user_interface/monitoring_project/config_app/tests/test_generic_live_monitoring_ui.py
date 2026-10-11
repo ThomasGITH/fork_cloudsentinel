@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
+from django.test import Client
 from django.urls import reverse
 
 
@@ -55,6 +56,7 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         response = self.client.post(
             reverse("monitoring"),
             {
+                "display_name": "Production checkout",
                 "model_id": "model-ready",
                 "window_minutes": 10,
                 "poll_interval_seconds": 30,
@@ -63,6 +65,7 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertEqual(response.status_code, 202)
         payload = post.call_args.kwargs["json"]
         self.assertEqual(payload["model_id"], "model-ready")
+        self.assertEqual(payload["display_name"], "Production checkout")
         self.assertEqual(payload["window_seconds"], 600)
         self.assertNotIn("detector_id", payload)
         self.assertNotIn("prometheus_url", payload)
@@ -84,9 +87,43 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         response = self.client.get(reverse("monitoring_overview"))
         self.assertContains(response, "Warm-up observations")
         self.assertContains(response, "Buffered observations")
-        self.assertContains(response, "Monitoring sessions could not be loaded")
-        self.assertContains(response, "response.text()")
+        self.assertContains(response, "Monitoring History")
+        self.assertContains(response, "monitoring_history.js")
         self.assertNotContains(response, "API_CGNN_ANOMALY_DETECTION_URL")
+
+        setup = self.client.get(reverse("monitoring"))
+        self.assertContains(setup, "payload.session.session_id")
+
+    @patch("config_app.views.task_results.requests.get")
+    def test_paginated_history_proxy(self, get):
+        get.return_value.raise_for_status.return_value = None
+        get.return_value.json.return_value = {
+            "items": [{"session_id": "monitor-one", "status": "stopped"}],
+            "page": 2, "page_size": 20, "total": 21, "pages": 2,
+        }
+        response = self.client.get(reverse("monitoring_sessions"), {"page": 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["page"], 2)
+        self.assertEqual(get.call_args.kwargs["params"], {"page": "2"})
+
+    @patch("config_app.views.task_results.requests.get")
+    def test_session_detail_proxy_exposes_safe_chart_payload(self, get):
+        get.return_value.raise_for_status.return_value = None
+        get.return_value.json.return_value = {
+            "session": {"session_id": "monitor-one", "status": "active"},
+            "cycles": {"items": [{"cycle_id": "cycle-one", "anomaly_percentage": 5.0}], "page": 1, "pages": 1},
+            "provenance": {"recipe_sha256": "r" * 64},
+        }
+        response = self.client.get(reverse("monitoring_session_detail", args=["monitor-one"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["cycles"]["items"][0]["anomaly_percentage"], 5.0)
+
+    @patch("config_app.views.task_results.requests.delete")
+    def test_stop_route_requires_csrf(self, delete):
+        client = Client(enforce_csrf_checks=True)
+        response = client.post(reverse("stop_task", args=["monitor-one"]))
+        self.assertEqual(response.status_code, 403)
+        delete.assert_not_called()
 
     @patch("config_app.views.task_results.requests.get")
     def test_active_session_proxy_accepts_json_array(self, get):

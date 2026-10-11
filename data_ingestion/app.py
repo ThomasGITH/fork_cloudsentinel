@@ -14,6 +14,7 @@ from celery import Celery
 from kubernetes import client, config
 from flask_cors import CORS
 import redis
+import hashlib
 
 from data_collector import collect_crca_data
 from config import set_initial_metric_config, get_config, set_config
@@ -36,7 +37,9 @@ try:
         collect_recipe_window,
         decode_session,
         encode_session,
-        merge_bounded_buffer,
+        align_new_predictions,
+        merge_buffer_with_watermark,
+        merge_execution_projection,
         safe_session_projection,
         stopped_session,
         validate_resolved_live_model,
@@ -47,10 +50,29 @@ except ModuleNotFoundError:
         collect_recipe_window,
         decode_session,
         encode_session,
-        merge_bounded_buffer,
+        align_new_predictions,
+        merge_buffer_with_watermark,
+        merge_execution_projection,
         safe_session_projection,
         stopped_session,
         validate_resolved_live_model,
+    )
+
+try:
+    from data_ingestion.monitoring_history import (
+        MonitoringHistoryError,
+        MonitoringHistoryStore,
+        MonitoringSessionNotFound,
+        MonitoringSessionStopped,
+        utc_now,
+    )
+except ModuleNotFoundError:
+    from monitoring_history import (
+        MonitoringHistoryError,
+        MonitoringHistoryStore,
+        MonitoringSessionNotFound,
+        MonitoringSessionStopped,
+        utc_now,
     )
 
 # Initialize Flask app
@@ -130,6 +152,13 @@ def health_check():
 SESSION_PREFIX = "live_monitoring_session:"
 
 
+monitoring_history = MonitoringHistoryStore(
+    os.getenv("MONITORING_HISTORY_STORAGE_ROOT", "/app/storage/monitoring_history"),
+    max_observations=int(os.getenv("LIVE_MONITORING_MAX_BUFFER_OBSERVATIONS", "5000")),
+    max_features=int(os.getenv("CATALOGUE_MAX_FEATURES", "1000")),
+)
+
+
 def _session_key(session_id):
     return f"{SESSION_PREFIX}{session_id}"
 
@@ -139,7 +168,10 @@ def _stop_key(session_id):
 
 
 def _read_session(session_id):
-    return decode_session(redis_client.get(_session_key(session_id)))
+    try:
+        return decode_session(redis_client.get(_session_key(session_id)))
+    except redis.RedisError:
+        return None
 
 
 def _write_session(session, *, force=False):
@@ -185,7 +217,7 @@ def _generic_detect(session, collected):
         },
     }
     response = requests.post(
-        f"{base_url}/detect",
+        f"{base_url}/internal/evaluate",
         files={"matrix": ("matrix.csv", stream.getvalue(), "text/csv")},
         data={"metadata": json.dumps(metadata)},
         timeout=(5, 120),
@@ -193,19 +225,26 @@ def _generic_detect(session, collected):
     if response.status_code != 200:
         raise LiveMonitoringError(_safe_upstream_error(response, "generic detection failed"))
     payload = response.json()
+    if payload.get("model_id") != session["model_id"] or payload.get(
+        "artifact_manifest_sha256"
+    ) != session["artifact_manifest_sha256"]:
+        raise LiveMonitoringError("generic detection returned mismatched model provenance")
+    return payload
+
+
+def _cycle_id(session_id, query_start, query_end):
+    identity = f"{session_id}|{query_start}|{query_end}".encode("utf-8")
+    return f"cycle_{hashlib.sha256(identity).hexdigest()[:32]}"
+
+
+def _public_latest_result(aligned, model_id):
     return {
-        key: payload.get(key)
-        for key in (
-            "status",
-            "model_id",
-            "input_observation_count",
-            "warmup_observations",
-            "prediction_count",
-            "anomaly_count",
-            "anomaly_percentage",
-            "result_reference",
-        )
-        if key in payload
+        "status": "success",
+        "model_id": model_id,
+        "warmup_observations": aligned["warmup_observations"],
+        "prediction_count": aligned["prediction_count"],
+        "anomaly_count": aligned["anomaly_count"],
+        "anomaly_percentage": aligned["anomaly_percentage"],
     }
 
 
@@ -215,41 +254,151 @@ def monitoring_task(self, session_id):
     session = _read_session(session_id)
     if not session or session.get("status") == "stopped":
         return
+    request_id = str(self.request.id or "unassigned")
+    plan = session.get("inflight_cycle")
+    if not isinstance(plan, dict) or plan.get("task_id") != request_id:
+        end_time = int(time.time())
+        start_time = end_time - int(session["window_seconds"])
+        plan = {
+            "task_id": request_id,
+            "cycle_id": _cycle_id(session_id, start_time, end_time),
+            "start_time": start_time,
+            "end_time": end_time,
+            "started_at": utc_now(),
+        }
+        session["inflight_cycle"] = plan
+    cycle_started_at = plan["started_at"]
+    start_time = int(plan["start_time"])
+    end_time = int(plan["end_time"])
+    cycle_id = plan["cycle_id"]
+    collected = None
+    bounded = None
+    cycle_committed = False
+    next_task = None
     try:
         session["status"] = "collecting"
         session["current_task_id"] = self.request.id
         if not _write_session(session):
             return
-        end_time = int(time.time())
-        start_time = end_time - int(session["window_seconds"])
         collected = collect_recipe_window(
             session["recipe"], start_time, end_time, dict(app.config)
         )
         maximum = int(os.getenv("LIVE_MONITORING_MAX_BUFFER_OBSERVATIONS", "5000"))
-        session["buffer"] = merge_bounded_buffer(
+        session["buffer"], late_count = merge_buffer_with_watermark(
             session.get("buffer", []),
             collected["timestamps"],
             collected["rows"],
             maximum,
+            session.get("prediction_watermark"),
         )
         bounded = {
             **collected,
             "timestamps": [item["timestamp"] for item in session["buffer"]],
             "rows": [item["values"] for item in session["buffer"]],
         }
-        result = _generic_detect(session, bounded)
+        runtime_result = _generic_detect(session, bounded)
+        aligned = align_new_predictions(
+            bounded["timestamps"], runtime_result, session.get("prediction_watermark")
+        )
+        warnings = list(collected["warnings"][:20])
+        if late_count:
+            warnings.append(
+                f"Ignored {late_count} late or revised sample(s) at or before the committed prediction watermark."
+            )
+        prediction_count = aligned["prediction_count"]
+        cycle_status = (
+            "warmup"
+            if not runtime_result.get("prediction_count")
+            else "completed" if prediction_count else "no_new_data"
+        )
+        completed_at = utc_now()
+        cycle = {
+            "status": cycle_status,
+            "artifact_identity": {
+                "artifact_id": session["artifact_id"],
+                "artifact_manifest_sha256": session["artifact_manifest_sha256"],
+            },
+            "query_window": {
+                "start": datetime.fromtimestamp(start_time, timezone.utc).isoformat().replace("+00:00", "Z"),
+                "end": datetime.fromtimestamp(end_time, timezone.utc).isoformat().replace("+00:00", "Z"),
+            },
+            "inference_window": {
+                "start": bounded["timestamps"][0] if bounded["timestamps"] else None,
+                "end": bounded["timestamps"][-1] if bounded["timestamps"] else None,
+                "observation_count": len(bounded["timestamps"]),
+            },
+            "prediction_window": {
+                "start": aligned["prediction_timestamps"][0] if prediction_count else None,
+                "end": aligned["prediction_timestamps"][-1] if prediction_count else None,
+            },
+            "started_at": cycle_started_at,
+            "completed_at": completed_at,
+            "prediction_count": prediction_count,
+            "anomaly_count": aligned["anomaly_count"],
+            "anomaly_percentage": aligned["anomaly_percentage"],
+            "warmup_observations": aligned["warmup_observations"],
+            "warnings": warnings,
+        }
+        input_payload = {
+            "schema_version": 1,
+            "model_id": session["model_id"],
+            "artifact_id": session["artifact_id"],
+            "artifact_manifest_sha256": session["artifact_manifest_sha256"],
+            "recipe_sha256": session["recipe_sha256"],
+            "feature_order": bounded["feature_order"],
+            "feature_order_sha256": bounded["feature_order_sha256"],
+            "timestamps": bounded["timestamps"],
+            "matrix": bounded["rows"],
+        }
+        result_payload = {
+            "schema_version": 1,
+            "model_id": session["model_id"],
+            "artifact_id": session["artifact_id"],
+            "artifact_manifest_sha256": session["artifact_manifest_sha256"],
+            "warmup_observations": aligned["warmup_observations"],
+            "prediction_timestamps": aligned["all_prediction_timestamps"],
+            "binary_predictions": aligned["all_binary_predictions"],
+            "anomaly_scores": aligned["all_anomaly_scores"],
+            "new_prediction_timestamps": aligned["prediction_timestamps"],
+            "new_binary_predictions": aligned["binary_predictions"],
+            "new_anomaly_scores": aligned["anomaly_scores"],
+        }
+        persistent = monitoring_history.commit_cycle(
+            session_id,
+            cycle_id,
+            input_payload=input_payload,
+            result_payload=result_payload,
+            cycle=cycle,
+            next_watermark=aligned["next_watermark"],
+            session_status="warmup" if cycle_status == "warmup" else "active",
+        )
+        cycle_committed = True
+        monitoring_history.update_session(
+            session_id,
+            lambda record: record.update(
+                buffered_observations=len(session["buffer"]),
+                warmup_observations=aligned["warmup_observations"],
+                warnings=warnings,
+                error=None,
+            ),
+        )
+        public_result = _public_latest_result(aligned, session["model_id"])
         session.update(
             {
-                "status": "warmup" if not result.get("prediction_count") else "active",
+                "status": "warmup" if cycle_status == "warmup" else "active",
                 "iteration": int(session.get("iteration", 0)) + 1,
                 "buffered_observations": len(session["buffer"]),
                 "missing_values": collected["missing_values"],
-                "warnings": collected["warnings"][:20],
-                "warmup_observations": result.get("warmup_observations", 0),
-                "latest_result": result,
+                "warnings": warnings,
+                "warmup_observations": aligned["warmup_observations"],
+                "prediction_watermark": aligned["next_watermark"],
+                "latest_result": public_result,
+                "latest_cycle": monitoring_history.public_cycle(persistent),
+                "last_successful_update": persistent["committed_at"],
                 "error": None,
             }
         )
+        session.pop("inflight_cycle", None)
         if not _write_session(session):
             return
         next_task = monitoring_task.apply_async(
@@ -258,10 +407,84 @@ def monitoring_task(self, session_id):
         session["next_task_id"] = next_task.id
         if not _write_session(session):
             celery.control.revoke(next_task.id, terminate=True)
+    except MonitoringSessionStopped:
+        return
     except Exception as exc:
+        if next_task is not None:
+            try:
+                celery.control.revoke(next_task.id, terminate=True)
+            except Exception:
+                logger.warning("Could not revoke follow-up task for %s", session_id)
         session["status"] = "error"
         session["error"] = str(exc)[:500] if isinstance(exc, LiveMonitoringError) else "live monitoring failed"
-        _write_session(session)
+        if bounded is not None and not cycle_committed:
+            try:
+                completed_at = utc_now()
+                monitoring_history.commit_cycle(
+                    session_id,
+                    cycle_id,
+                    input_payload={
+                        "schema_version": 1,
+                        "model_id": session["model_id"],
+                        "artifact_id": session["artifact_id"],
+                        "artifact_manifest_sha256": session["artifact_manifest_sha256"],
+                        "recipe_sha256": session["recipe_sha256"],
+                        "feature_order": bounded["feature_order"],
+                        "feature_order_sha256": bounded["feature_order_sha256"],
+                        "timestamps": bounded["timestamps"],
+                        "matrix": bounded["rows"],
+                    },
+                    result_payload={
+                        "schema_version": 1,
+                        "model_id": session["model_id"],
+                        "artifact_id": session["artifact_id"],
+                        "artifact_manifest_sha256": session["artifact_manifest_sha256"],
+                        "status": "failed",
+                        "safe_error": {
+                            "type": "monitoring_error",
+                            "message": session["error"],
+                        },
+                    },
+                    cycle={
+                        "status": "failed",
+                        "artifact_identity": {
+                            "artifact_id": session["artifact_id"],
+                            "artifact_manifest_sha256": session["artifact_manifest_sha256"],
+                        },
+                        "query_window": {
+                            "start": datetime.fromtimestamp(start_time, timezone.utc).isoformat().replace("+00:00", "Z"),
+                            "end": datetime.fromtimestamp(end_time, timezone.utc).isoformat().replace("+00:00", "Z"),
+                        },
+                        "inference_window": {
+                            "start": bounded["timestamps"][0] if bounded["timestamps"] else None,
+                            "end": bounded["timestamps"][-1] if bounded["timestamps"] else None,
+                            "observation_count": len(bounded["timestamps"]),
+                        },
+                        "started_at": cycle_started_at,
+                        "completed_at": completed_at,
+                        "prediction_count": 0,
+                        "anomaly_count": 0,
+                        "anomaly_percentage": None,
+                        "warmup_observations": 0,
+                        "warnings": list(collected.get("warnings", []))[:20] if collected else [],
+                        "safe_error": {
+                            "type": "monitoring_error",
+                            "message": session["error"],
+                        },
+                    },
+                    next_watermark=session.get("prediction_watermark"),
+                    session_status="failed",
+                )
+            except (MonitoringHistoryError, MonitoringSessionStopped):
+                logger.error("Failed monitoring cycle could not be committed for %s", session_id)
+        try:
+            _write_session(session)
+        except redis.RedisError:
+            logger.warning("Redis execution state unavailable while failing %s", session_id)
+        try:
+            monitoring_history.fail_session(session_id, session["error"])
+        except MonitoringHistoryError:
+            logger.error("Durable monitoring failure state could not be written for %s", session_id)
         logger.error("Live monitoring session %s failed", session_id)
 
 
@@ -287,6 +510,11 @@ def start_monitoring():
         poll_seconds = int(payload.get("poll_interval_seconds", 300))
         if not 10 <= window_seconds <= 86400 or not 5 <= poll_seconds <= 3600:
             return jsonify({"error": "monitoring timing is outside safe limits"}), 400
+        display_name = payload.get("display_name")
+        if display_name is not None:
+            if not isinstance(display_name, str) or len(display_name.strip()) > 120:
+                return jsonify({"error": "display_name is invalid"}), 400
+            display_name = display_name.strip() or None
         learning_url = os.getenv(
             "API_LEARNING_ADAPTATION_URL",
             "http://learning-adaptation-service.cloudsentinel.svc.cluster.local:80",
@@ -303,14 +531,21 @@ def start_monitoring():
             return jsonify({"error": str(exc)[:500]}), 409
         recipe = resolved["recipe"]
         session_id = f"monitor_{uuid.uuid4().hex}"
-        now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now = utc_now()
         session = {
             "session_id": session_id,
+            "display_name": display_name or f"{resolved.get('detector_id', 'Model')} monitoring",
             "model_id": model_id,
+            "detector_id": resolved.get("detector_id"),
+            "detector_version": resolved.get("detector_version"),
             "status": "queued",
             "created_at": now,
             "started_at": now,
             "artifact_manifest_sha256": resolved["artifact_manifest_sha256"],
+            "artifact_id": resolved["artifact_id"],
+            "inference_contract": resolved["inference_contract"],
+            "artifact_format": resolved["artifact_format"],
+            "recipe_contract": recipe["contract"],
             "recipe_sha256": recipe["recipe_sha256"],
             "feature_order_sha256": recipe["feature_order_sha256"],
             "sampling_interval_seconds": recipe["sampling_interval_seconds"],
@@ -321,8 +556,18 @@ def start_monitoring():
             "buffered_observations": 0,
             "recipe": recipe,
         }
+        monitoring_history.create_session(
+            {key: value for key, value in session.items() if key not in {"recipe", "buffer"}},
+            recipe,
+        )
         _write_session(session)
-        task = monitoring_task.apply_async(args=[session_id])
+        try:
+            task = monitoring_task.apply_async(args=[session_id])
+        except Exception:
+            monitoring_history.fail_session(
+                session_id, "monitoring task could not be dispatched", status="dispatch_failed"
+            )
+            raise
         session["current_task_id"] = task.id
         _write_session(session)
         return jsonify({"status": "monitoring_started", "session": safe_session_projection(session)}), 202
@@ -340,24 +585,49 @@ def get_tasks():
         Response: JSON response containing the scheduled tasks with their IDs.
     """
     try:
+        history = monitoring_history.list_sessions(page=1, page_size=100)
         sessions = []
-        for key in redis_client.scan_iter(f"{SESSION_PREFIX}*"):
-            value = decode_session(redis_client.get(key))
-            if value:
-                sessions.append(safe_session_projection(value))
-        sessions.sort(key=lambda item: item.get("created_at", ""), reverse=True)
-        return jsonify(sessions[:100]), 200
+        for stored in history["items"]:
+            live = _read_session(stored["session_id"])
+            sessions.append(merge_execution_projection(stored, live))
+        return jsonify(sessions), 200
     except Exception as e:
         logger.error(f"Error retrieving scheduled tasks: {traceback.format_exc()}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({'status': 'error', 'message': 'Monitoring History is temporarily unavailable.'}), 500
 
 
 @app.route('/monitoring-sessions/<session_id>', methods=['GET'])
 def monitoring_session_status(session_id):
-    session = _read_session(session_id)
-    if not session:
+    try:
+        cycle_page = request.args.get("cycle_page", 1)
+        cycle_page_size = request.args.get("cycle_page_size", 50)
+        detail = monitoring_history.session_detail(
+            session_id, cycle_page=cycle_page, cycle_page_size=cycle_page_size
+        )
+        live = _read_session(session_id)
+        detail["session"] = merge_execution_projection(detail["session"], live)
+        return jsonify(detail), 200
+    except MonitoringSessionNotFound:
         return jsonify({"error": "unknown monitoring session"}), 404
-    return jsonify(safe_session_projection(session)), 200
+    except MonitoringHistoryError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route('/monitoring-sessions', methods=['GET'])
+def monitoring_sessions():
+    try:
+        result = monitoring_history.list_sessions(
+            page=request.args.get("page", 1),
+            page_size=request.args.get("page_size", 20),
+            status=request.args.get("status") or None,
+            search=request.args.get("search") or None,
+        )
+        for item in result["items"]:
+            live = _read_session(item["session_id"])
+            item.update(merge_execution_projection(item, live))
+        return jsonify(result), 200
+    except MonitoringHistoryError as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route('/stop_monitoring/<session_id>', methods=['DELETE'])
@@ -373,19 +643,31 @@ def stop_monitoring(session_id):
     """
     try:
         session = _read_session(session_id)
-        if not session:
+        try:
+            persistent = monitoring_history.read_session(session_id)
+        except MonitoringSessionNotFound:
             return jsonify({"error": "unknown monitoring session"}), 404
-        redis_client.setex(
-            _stop_key(session_id),
-            int(os.getenv("LIVE_MONITORING_SESSION_TTL_SECONDS", str(30 * 24 * 3600))),
-            "1",
-        )
+        if not session:
+            session = persistent
+        stopped_at = utc_now()
+        monitoring_history.stop_session(session_id, stopped_at)
+        try:
+            redis_client.setex(
+                _stop_key(session_id),
+                int(os.getenv("LIVE_MONITORING_SESSION_TTL_SECONDS", str(30 * 24 * 3600))),
+                "1",
+            )
+        except redis.RedisError:
+            logger.warning("Redis stop marker unavailable for %s; durable stop remains authoritative", session_id)
         session = stopped_session(
             session,
             lambda task_id: celery.control.revoke(task_id, terminate=True),
-            stopped_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            stopped_at=stopped_at,
         )
-        _write_session(session, force=True)
+        try:
+            _write_session(session, force=True)
+        except redis.RedisError:
+            pass
         return jsonify({"status": "monitoring_stopped", "session": safe_session_projection(session)}), 200
     except Exception as e:
         logger.error(f"Error stopping session {session_id}: {traceback.format_exc()}")

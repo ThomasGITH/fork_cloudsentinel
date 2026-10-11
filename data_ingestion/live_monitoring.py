@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from copy import deepcopy
 import json
+import math
 from typing import Any, Callable
 
 import requests
@@ -37,9 +38,16 @@ def validate_resolved_live_model(value: Any, requested_model_id: str) -> dict[st
     if not isinstance(value, dict) or value.get("model_id") != requested_model_id:
         raise LiveMonitoringError("Learning returned mismatched model provenance")
     artifact_hash = value.get("artifact_manifest_sha256")
+    artifact_id = value.get("artifact_id")
     identity = value.get("feature_identity")
     if (
-        not isinstance(artifact_hash, str)
+        not isinstance(artifact_id, str)
+        or not artifact_id
+        or len(artifact_id) > 128
+        or value.get("inference_contract") != "cloudsentinel.inference/v1"
+        or not isinstance(value.get("artifact_format"), str)
+        or not value.get("artifact_format")
+        or not isinstance(artifact_hash, str)
         or len(artifact_hash) != 64
         or any(character not in "0123456789abcdef" for character in artifact_hash)
         or not isinstance(identity, dict)
@@ -148,9 +156,37 @@ def safe_session_projection(session: dict[str, Any]) -> dict[str, Any]:
         "warnings",
         "warmup_observations",
         "latest_result",
+        "latest_cycle",
+        "cycle_count",
+        "last_successful_update",
+        "display_name",
+        "detector_id",
+        "detector_version",
+        "artifact_id",
+        "inference_contract",
+        "artifact_format",
         "error",
     )
     return {key: session.get(key) for key in allowed if key in session}
+
+
+def merge_execution_projection(
+    stored: dict[str, Any], live: dict[str, Any] | None
+) -> dict[str, Any]:
+    """Overlay temporary state while preserving durable terminal decisions."""
+
+    merged = dict(stored)
+    if stored.get("status") in {"stopped", "failed", "dispatch_failed"}:
+        merged["execution_state"] = "unavailable"
+        return merged
+    if live:
+        merged.update(safe_session_projection(live))
+        merged["execution_state"] = "available"
+        return merged
+    if stored.get("status") in {"queued", "collecting", "warmup", "active"}:
+        merged["status"] = "interrupted"
+        merged["execution_state"] = "unavailable"
+    return merged
 
 
 def merge_bounded_buffer(
@@ -173,6 +209,109 @@ def merge_bounded_buffer(
         {"timestamp": timestamp, "values": row}
         for timestamp, row in sorted(values.items())[-maximum:]
     ]
+
+
+def merge_buffer_with_watermark(
+    existing_items: list[dict[str, Any]],
+    timestamps: list[str],
+    rows: list[list[float]],
+    maximum: int,
+    prediction_watermark: str | None,
+) -> tuple[list[dict[str, Any]], int]:
+    """Merge new samples without mutating input at/before a committed watermark.
+
+    Prometheus may revise or return late samples. Once a prediction timestamp is
+    committed, its historical input remains immutable. New samples at or before
+    the watermark are ignored; overlapping uncommitted timestamps may still be
+    refreshed.
+    """
+
+    if len(timestamps) != len(rows):
+        raise LiveMonitoringError("live timestamps and rows are misaligned")
+    current = {
+        item["timestamp"]: item["values"]
+        for item in existing_items
+        if isinstance(item, dict)
+        and isinstance(item.get("timestamp"), str)
+        and isinstance(item.get("values"), list)
+    }
+    late = 0
+    for timestamp, row in zip(timestamps, rows):
+        if prediction_watermark is not None and timestamp <= prediction_watermark:
+            if timestamp not in current or current[timestamp] != row:
+                late += 1
+            continue
+        current[timestamp] = row
+    merged = [
+        {"timestamp": timestamp, "values": row}
+        for timestamp, row in sorted(current.items())[-maximum:]
+    ]
+    return merged, late
+
+
+def align_new_predictions(
+    input_timestamps: list[str],
+    runtime_payload: dict[str, Any],
+    prediction_watermark: str | None,
+) -> dict[str, Any]:
+    """Validate generic output and select timestamps not previously committed."""
+
+    if not isinstance(input_timestamps, list) or any(
+        not isinstance(value, str) or not value for value in input_timestamps
+    ):
+        raise LiveMonitoringError("inference timestamps are invalid")
+    if input_timestamps != sorted(input_timestamps) or len(input_timestamps) != len(
+        set(input_timestamps)
+    ):
+        raise LiveMonitoringError("inference timestamps must be unique and ordered")
+    predictions = runtime_payload.get("binary_predictions")
+    scores = runtime_payload.get("anomaly_scores")
+    warmup = runtime_payload.get("warmup_observations")
+    input_count = runtime_payload.get("input_observation_count")
+    if (
+        not isinstance(predictions, list)
+        or not isinstance(scores, list)
+        or len(predictions) != len(scores)
+        or not isinstance(warmup, int)
+        or isinstance(warmup, bool)
+        or warmup < 0
+        or input_count != len(input_timestamps)
+        or warmup + len(predictions) != len(input_timestamps)
+    ):
+        raise LiveMonitoringError("generic inference output cannot be aligned")
+    if any(type(value) is not int or value not in {0, 1} for value in predictions):
+        raise LiveMonitoringError("generic inference predictions are invalid")
+    if any(
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        for value in scores
+    ):
+        raise LiveMonitoringError("generic inference scores are invalid")
+    prediction_timestamps = input_timestamps[warmup:]
+    eligible_indexes = [
+        index
+        for index, timestamp in enumerate(prediction_timestamps)
+        if prediction_watermark is None or timestamp > prediction_watermark
+    ]
+    eligible_timestamps = [prediction_timestamps[index] for index in eligible_indexes]
+    eligible_predictions = [predictions[index] for index in eligible_indexes]
+    eligible_scores = [float(scores[index]) for index in eligible_indexes]
+    anomaly_count = sum(eligible_predictions)
+    count = len(eligible_predictions)
+    return {
+        "warmup_observations": warmup,
+        "all_prediction_timestamps": prediction_timestamps,
+        "all_binary_predictions": predictions,
+        "all_anomaly_scores": [float(value) for value in scores],
+        "prediction_timestamps": eligible_timestamps,
+        "binary_predictions": eligible_predictions,
+        "anomaly_scores": eligible_scores,
+        "prediction_count": count,
+        "anomaly_count": anomaly_count,
+        "anomaly_percentage": (anomaly_count / count * 100.0) if count else None,
+        "next_watermark": eligible_timestamps[-1] if eligible_timestamps else prediction_watermark,
+    }
 
 
 def stopped_session(

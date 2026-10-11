@@ -19,7 +19,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: data-ingestion
-        image: jojojochem/data_ingestion:generic-live-monitoring-1
+        image: jojojochem/data_ingestion:generic-monitoring-history-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -32,6 +32,8 @@ spec:
         env:
         - name: CATALOGUE_STORAGE_ROOT
           value: "/app/storage/catalogue"
+        - name: MONITORING_HISTORY_STORAGE_ROOT
+          value: "/app/storage/monitoring_history"
         - name: CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL
           value: "http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090"
         - name: CELERY_BROKER_URL

@@ -128,7 +128,10 @@ class GenericLiveMonitoringTests(unittest.TestCase):
         recipe, _offline = self.recipe()
         resolved = {
             "model_id": "run_one-detector",
+            "artifact_id": "artifact_run_one",
             "artifact_manifest_sha256": "a" * 64,
+            "inference_contract": "cloudsentinel.inference/v1",
+            "artifact_format": "sklearn-pipeline-joblib-v1",
             "feature_identity": {
                 "feature_order": recipe["feature_order"],
                 "feature_order_sha256": recipe["feature_order_sha256"],

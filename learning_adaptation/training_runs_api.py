@@ -620,9 +620,12 @@ def create_training_runs_blueprint(
                 "model_id": record["model_id"],
                 "detector_id": record["detector_id"],
                 "detector_version": record["detector_version"],
+                "artifact_id": inference.get("artifact_id"),
                 "artifact_manifest_sha256": inference.get(
                     "artifact_manifest_sha256"
                 ),
+                "inference_contract": inference.get("contract"),
+                "artifact_format": inference.get("artifact_format"),
                 "feature_identity": deepcopy(record["feature_identity"]),
                 "recipe": deepcopy(recipe),
             }
