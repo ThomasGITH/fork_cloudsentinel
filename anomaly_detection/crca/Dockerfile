@@ -5,6 +5,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 ARG PYTORCH_VERSION=2.2.2
+ARG SCIKIT_NETWORK_VERSION=0.33.0
 
 # Set the working directory
 WORKDIR /app
@@ -18,6 +19,9 @@ RUN python -m pip install --no-cache-dir --upgrade \
         pip==24.0 setuptools==69.2.0 wheel==0.43.0 \
     && python -m pip install --no-cache-dir \
         -r /tmp/requirements.txt \
+    && python -m pip install --no-cache-dir \
+        --only-binary=:all: \
+        "scikit-network==${SCIKIT_NETWORK_VERSION}" \
     && python -m pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cpu \
         "torch==${PYTORCH_VERSION}+cpu" \

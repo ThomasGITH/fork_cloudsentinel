@@ -72,6 +72,14 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         self.assertNotRegex(requirements, r"(?m)^torch(?:==|>=|<=|~=)")
         self.assertNotRegex(requirements, r"(?mi)^nvidia-")
 
+    def test_crca_image_uses_python_312_scikit_network_wheel(self):
+        dockerfile = (ROOT / "anomaly_detection/crca/Dockerfile").read_text()
+        requirements = (ROOT / "anomaly_detection/crca/requirements.txt").read_text()
+        self.assertIn("ARG SCIKIT_NETWORK_VERSION=0.33.0", dockerfile)
+        self.assertIn("--only-binary=:all:", dockerfile)
+        self.assertIn('"scikit-network==${SCIKIT_NETWORK_VERSION}"', dockerfile)
+        self.assertNotIn("scikit-network==0.31.0", requirements)
+
 
 if __name__ == "__main__":
     unittest.main()

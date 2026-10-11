@@ -174,7 +174,9 @@ history module. It installs `torch==2.2.2+cpu` from the official PyTorch CPU
 wheel index. The normal CRCA requirements deliberately do not contain `torch`,
 so pip cannot resolve the CUDA/NVIDIA dependency set. Its pandas, NumPy, SciPy,
 scikit-learn and matplotlib pins match the Python 3.12 runtime used by the
-other learning components.
+other learning components. `scikit-network==0.33.0` is installed separately as
+a binary-only CPython 3.12 wheel. This avoids the legacy `0.31.0` source package,
+whose setup script tries to import NumPy before pip has installed it.
 
 ```bash
 docker build \
@@ -188,6 +190,7 @@ docker build \
 docker build \
   -f anomaly_detection/crca/Dockerfile \
   --build-arg PYTORCH_VERSION=2.2.2 \
+  --build-arg SCIKIT_NETWORK_VERSION=0.33.0 \
   -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-1 \
   .
 ```
