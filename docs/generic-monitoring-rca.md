@@ -170,7 +170,11 @@ diagnostic evidence and never as a proven root cause.
 
 Run from the repository root on the EC2 host. The CRCA Dockerfile now requires
 the repository root as its build context because it copies the shared durable
-history module.
+history module. It installs `torch==2.2.2+cpu` from the official PyTorch CPU
+wheel index. The normal CRCA requirements deliberately do not contain `torch`,
+so pip cannot resolve the CUDA/NVIDIA dependency set. Its pandas, NumPy, SciPy,
+scikit-learn and matplotlib pins match the Python 3.12 runtime used by the
+other learning components.
 
 ```bash
 docker build \
@@ -183,9 +187,16 @@ docker build \
 
 docker build \
   -f anomaly_detection/crca/Dockerfile \
+  --build-arg PYTORCH_VERSION=2.2.2 \
   -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-1 \
   .
 ```
+
+If an earlier failed CRCA build left a large build cache, inspect it first with
+`docker builder du`. Reclaim only unused build cache with `docker builder
+prune`; this does not remove tagged application images. Cache cleanup is not
+required for correctness, but may be needed when the Minikube/EC2 disk was
+filled by the earlier CUDA dependency download.
 
 Load the three changed images into Minikube:
 

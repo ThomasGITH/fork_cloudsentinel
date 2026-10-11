@@ -55,6 +55,23 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         self.assertIn("COPY data_ingestion/monitoring_history.py", dockerfile)
         self.assertNotIn("pip install -e", dockerfile)
 
+    def test_crca_image_uses_python_312_compatible_runtime_dependencies(self):
+        requirements = (ROOT / "anomaly_detection/crca/requirements.txt").read_text()
+        self.assertIn("pandas==2.2.2", requirements)
+        self.assertIn("matplotlib==3.9.0", requirements)
+        self.assertIn("scikit-learn==1.5.0", requirements)
+        self.assertNotIn("pandas==1.3.5", requirements)
+        self.assertNotIn("matplotlib==3.5.1", requirements)
+
+    def test_crca_image_installs_torch_from_cpu_only_index(self):
+        dockerfile = (ROOT / "anomaly_detection/crca/Dockerfile").read_text()
+        requirements = (ROOT / "anomaly_detection/crca/requirements.txt").read_text()
+        self.assertIn("https://download.pytorch.org/whl/cpu", dockerfile)
+        self.assertIn('"torch==${PYTORCH_VERSION}+cpu"', dockerfile)
+        self.assertIn("ARG PYTORCH_VERSION=2.2.2", dockerfile)
+        self.assertNotRegex(requirements, r"(?m)^torch(?:==|>=|<=|~=)")
+        self.assertNotRegex(requirements, r"(?mi)^nvidia-")
+
 
 if __name__ == "__main__":
     unittest.main()

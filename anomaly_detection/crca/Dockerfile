@@ -1,19 +1,27 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.12
+# Keep the CRCA runtime aligned with the other Python 3.12 services.
+FROM python:3.12-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+ARG PYTORCH_VERSION=2.2.2
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the requirements file into the container
-COPY anomaly_detection/crca/requirements.txt .
+# Copy the runtime requirements separately to retain Docker layer caching.
+COPY anomaly_detection/crca/requirements.txt /tmp/requirements.txt
 
-# Install the required packages
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-RUN python -m pip install --no-cache-dir scikit_network==0.31.0
+# Torch is installed explicitly from the CPU wheel index. Keeping it out of the
+# generic requirements file prevents pip from resolving CUDA/NVIDIA packages.
+RUN python -m pip install --no-cache-dir --upgrade \
+        pip==24.0 setuptools==69.2.0 wheel==0.43.0 \
+    && python -m pip install --no-cache-dir \
+        -r /tmp/requirements.txt \
+    && python -m pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cpu \
+        "torch==${PYTORCH_VERSION}+cpu" \
+    && rm -f /tmp/requirements.txt
 
 # Copy the rest of the application code into the container
 COPY anomaly_detection/crca/ .
