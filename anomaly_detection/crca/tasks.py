@@ -1,5 +1,6 @@
 # tasks.py
 from celery import Celery
+import math
 import os
 import pandas as pd
 import logging
@@ -9,11 +10,11 @@ from sklearn.preprocessing import MinMaxScaler
 try:
     from .crca import run_crca
     from .config import get_config
-    from .monitoring_result import safe_monitoring_result
+    from .monitoring_result import normalize_feature_metadata, safe_monitoring_result
 except ImportError:  # Flat module layout inside the service image.
     from crca import run_crca
     from config import get_config
-    from monitoring_result import safe_monitoring_result
+    from monitoring_result import normalize_feature_metadata, safe_monitoring_result
 
 try:
     from monitoring_history import MonitoringHistoryStore, MonitoringHistoryError, canonical_sha256
@@ -83,16 +84,33 @@ def run_monitoring_rca_task(self, session_id, run_id):
         metadata = input_payload.get("feature_metadata")
         if not isinstance(matrix, list) or not isinstance(metadata, list):
             raise ValueError("CausalRCA input is invalid")
+        metadata = normalize_feature_metadata(
+            metadata, len(matrix[0]) if matrix and isinstance(matrix[0], list) else None
+        )
         frame = pd.DataFrame(matrix, columns=[item["feature_name"] for item in metadata])
         if frame.shape[0] < 2 or frame.shape[1] < 2:
             raise ValueError("CausalRCA input has insufficient dimensions")
-        scaled = MinMaxScaler().fit_transform(frame)
+        if any(isinstance(value, bool) for row in matrix for value in row):
+            raise ValueError("CausalRCA input must contain finite numeric values")
+        try:
+            numeric_frame = frame.astype(float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("CausalRCA input must contain finite numeric values") from exc
+        if not numeric_frame.map(math.isfinite).values.all():
+            raise ValueError("CausalRCA input must contain finite numeric values")
+        scaled = MinMaxScaler().fit_transform(numeric_frame)
         scaled_frame = pd.DataFrame(scaled, columns=frame.columns)
         info = {
             "data": {
                 "feature_names": list(frame.columns),
                 "feature_metadata": metadata,
-                "crca_pods": sorted({item["entity_id"] for item in metadata}),
+                "crca_pods": sorted(
+                    {
+                        item["entity_id"]
+                        for item in metadata
+                        if item.get("entity_type") == "pod" and item.get("entity_id")
+                    }
+                ),
                 "metrics": sorted({item["metric_name"] for item in metadata}),
             }
         }

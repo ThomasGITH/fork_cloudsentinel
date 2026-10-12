@@ -581,7 +581,8 @@ class MonitoringHistoryStore:
             "context_window", "analysis_window", "observation_count", "feature_count",
             "feature_identity", "input_sha256", "preprocessing", "algorithm",
             "model_identity", "recipe_identity",
-            "result_sha256", "ranking_count", "graph_count", "failure", "skip_reason",
+            "result_sha256", "ranking_count", "graph_count", "failure",
+            "skip_reason_code", "skip_reason",
             "dispatch_status", "dispatch_error",
         )
         return {key: deepcopy(record[key]) for key in allowed if key in record}
@@ -648,7 +649,14 @@ class MonitoringHistoryStore:
             if event is not None:
                 cycle["rca_trigger"] = {
                     key: deepcopy(event[key])
-                    for key in ("status", "reason", "threshold_percentage", "episode_state", "run_id")
+                    for key in (
+                        "status",
+                        "reason_code",
+                        "reason",
+                        "threshold_percentage",
+                        "episode_state",
+                        "run_id",
+                    )
                     if key in event
                 }
         return {

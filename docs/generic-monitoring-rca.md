@@ -45,22 +45,53 @@ it cannot resume monitoring.
 AD monitoring and RCA readiness are separate. A live-ready model can always be
 monitored with RCA disabled.
 
+The readiness fix removes an incorrect dependency on `identity_labels=["pod"]`.
+Catalogue collection already freezes the actual Prometheus series labels in
+`series_mapping.metric_labels`; `identity_labels` is an optional query-shaping
+field and is not proof that every resulting feature must have pod semantics.
+No deployed user model was available in this checkout for inspection. The bug
+and fix are verified against the catalogue builder and representative stored
+recipe fixtures with the same contract.
+
 The RCA gate accepts only recipes where:
 
 - at least two feature IDs exist and are unique;
 - every feature has exactly one `series_mapping` entry;
-- the referenced query execution explicitly declares `pod` in
-  `identity_labels`;
-- `metric_labels.pod` and the query's `feature_name` are present;
-- each `(pod, metric)` pair is unique;
+- each mapping references one known, unique query execution;
+- every query execution has an explicit `feature_name` used as `metric_name`;
 - stored column order and feature metadata match exactly;
 - the selected matrix has at least two observations and two features and all
   values are finite.
 
-No pod or metric is parsed from an arbitrary feature string. The CRCA boundary
-now accepts explicit `feature_names`; old callers can still use the legacy
-pods-times-metrics naming convention. Ranking rows and graph labels correspond
-exactly to matrix columns.
+The immutable feature ID is both the unique matrix-column name and the primary
+ranking/graph label. Optional entity metadata is derived only from an explicit
+`series_mapping.metric_labels.pod`, or from a `resolved_target.pod` when that
+query is explicitly `execution_mode=per_target` and `target_type=pod`. If both
+exist they must agree. Entity metadata may be unavailable; that does not make a
+uniquely mapped feature incompatible and the UI then displays `Unavailable`.
+No pod, service or metric is parsed from a feature string or PromQL.
+
+New RCA inputs identify this derived mapping as
+`cloudsentinel.crca-feature-metadata/v1`. Each column records
+`column_index`, exact `feature_id`, identical `feature_name`, explicit query
+`metric_name`, and optional `{type, id, source}` entity metadata. That contract
+and its checksum are included in new run provenance. The CRCA boundary accepts
+these explicit feature names; already queued inputs with the previous explicit
+flat `entity_type`/`entity_id` fields remain readable. Historical records are
+not rewritten.
+
+Safe readiness reason codes include `missing_recipe`,
+`unsupported_recipe_contract`, `invalid_sampling`, `invalid_alignment`,
+`invalid_missing_data_policy`, `insufficient_features`, `invalid_feature_id`,
+`duplicate_feature_id`, `missing_series_mapping`, `invalid_series_mapping`,
+`invalid_query_execution`, `unknown_execution_id`,
+`missing_query_feature_name`, `conflicting_entity_metadata`, and
+`invalid_recipe_integrity`. Insufficient rows or incomplete window coverage is
+a runtime `skipped` condition rather than static recipe incompatibility. New
+skipped runs store a safe `skip_reason_code`, including
+`insufficient_runtime_context`, `incomplete_analysis_window`,
+`invalid_matrix_shape`, `feature_metadata_mismatch`, or
+`non_finite_runtime_input`.
 
 ## Windows and immutable input
 
@@ -180,18 +211,18 @@ whose setup script tries to import NumPy before pip has installed it.
 
 ```bash
 docker build \
-  -t jojojochem/data_ingestion:generic-monitoring-rca-1 \
+  -t jojojochem/data_ingestion:generic-monitoring-rca-readiness-fix-1 \
   ./data_ingestion
 
 docker build \
-  -t jojojochem/monitoring_project:generic-monitoring-rca-1 \
+  -t jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1 \
   ./user_interface/monitoring_project
 
 docker build \
   -f anomaly_detection/crca/Dockerfile \
   --build-arg PYTORCH_VERSION=2.2.2 \
   --build-arg SCIKIT_NETWORK_VERSION=0.33.0 \
-  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-1 \
+  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1 \
   .
 ```
 
@@ -204,9 +235,9 @@ filled by the earlier CUDA dependency download.
 Load the three changed images into Minikube:
 
 ```bash
-minikube image load jojojochem/data_ingestion:generic-monitoring-rca-1
-minikube image load jojojochem/monitoring_project:generic-monitoring-rca-1
-minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-1
+minikube image load jojojochem/data_ingestion:generic-monitoring-rca-readiness-fix-1
+minikube image load jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1
+minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1
 ```
 
 The manifests use `imagePullPolicy: IfNotPresent`, which is required for these
@@ -249,6 +280,10 @@ Then, in separate terminals:
 curl --show-error --fail http://127.0.0.1:5001/healthz | jq
 curl --show-error --fail http://127.0.0.1:5023/healthz | jq
 curl --show-error --fail http://127.0.0.1:5023/internal/monitoring-capability | jq
+
+export MODEL_ID='replace-with-an-existing-live-ready-model-id'
+curl --show-error --fail \
+  "http://127.0.0.1:5001/monitoring-rca/readiness/${MODEL_ID}" | jq
 ```
 
 The Learning API/worker, Generic Detection Runtime, data-processing service and
@@ -273,23 +308,29 @@ because their inference and recipe contracts are unchanged.
 1. Open **Live Monitoring**, select an existing live-ready model and leave
    automatic RCA disabled. Start it and verify committed graph cycles continue
    normally and no RCA run appears.
-2. Start a second session with automatic RCA enabled for a model shown as
+2. Before fetching or training anything new, reload Monitoring Setup and verify
+   an existing model with a complete recipe is reassessed as RCA-compatible.
+   Optionally inspect the safe readiness response through the Data Ingestion
+   API and verify `feature_metadata_contract` is
+   `cloudsentinel.crca-feature-metadata/v1`.
+3. Start a second session with automatic RCA enabled for a model shown as
    RCA-compatible. Choose a test threshold, analysis window and cooldown.
-3. Verify session detail shows the exact configuration and red threshold line.
-4. When a committed cycle is strictly above the threshold, verify exactly one
+4. Verify session detail shows the exact configuration and red threshold line.
+5. When a committed cycle is strictly above the threshold, verify exactly one
    marker and RCA run appear. Inspect both workers' logs without expecting a
    Celery task ID in the browser.
-5. If subsequent cycles remain high, verify they are marked suppressed and no
+6. If subsequent cycles remain high, verify they are marked suppressed and no
    additional run is created, including repeated 100% cycles.
-6. Wait for the run to become completed or failed. For completion, inspect the
-   stored ranking/graph and provenance. Treat it as diagnostic output, not as a
-   proven root cause.
-7. Produce a valid cycle at or below threshold. Verify recovery. Test the
+7. Wait for the run to become completed or failed. For completion, verify each
+   ranking label is the exact unique feature ID. Explicit pod metadata appears
+   as `pod: <id>`; features without it show `Unavailable`. Treat the stored
+   ranking/graph as diagnostic output, not as a proven root cause.
+8. Produce a valid cycle at or below threshold. Verify recovery. Test the
    documented cooldown behavior before expecting a later episode to trigger.
-8. Stop monitoring while an RCA run is already submitted. Verify no later cycle
+9. Stop monitoring while an RCA run is already submitted. Verify no later cycle
    creates a trigger; allow the submitted run to finish and verify it stays in
    historical detail.
-9. Restart Redis or let Celery results expire without deleting the PVC. Verify
+10. Restart Redis or let Celery results expire without deleting the PVC. Verify
    the stopped session, cycles, RCA status and completed result still load.
 
 These steps are operator acceptance checks. This implementation has not been
@@ -297,8 +338,10 @@ validated with a real live monitoring or RCA run by the code change itself.
 
 ## Troubleshooting and limits
 
-- **RCA incompatible:** inspect the safe setup reason. The recipe must provide
-  explicit unique pod/metric metadata. Continue AD monitoring with RCA off.
+- **RCA incompatible:** inspect the safe reason code. The recipe must have
+  unique feature IDs, a one-to-one series mapping, known execution references,
+  explicit query feature names and valid recipe integrity. Pod/entity metadata
+  is optional. Continue AD monitoring with RCA off.
 - **RCA runtime readiness unavailable:** verify the CRCA API and `/healthz`, then
   its internal capability endpoint. No monitoring input is sent by that check.
 - **Queued/pending:** inspect API/worker connectivity and use the reconcile

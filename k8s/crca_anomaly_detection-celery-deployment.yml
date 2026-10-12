@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: crca-anomaly-detection-celery
-        image: jojojochem/anomaly_detection_crca:generic-monitoring-rca-1
+        image: jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "tasks.celery", "worker", "--loglevel=info", "--concurrency=1"]
         securityContext:

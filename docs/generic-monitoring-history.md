@@ -12,6 +12,11 @@ additively by `GENERIC-MONITORING-RCA-1`; see
 [`generic-monitoring-rca.md`](generic-monitoring-rca.md). Existing sessions stay
 RCA-disabled.
 
+RCA compatibility now uses immutable feature IDs and exact series mappings.
+Optional Prometheus pod metadata enriches result labels but is not a universal
+requirement. Existing complete recipes are reassessed when setup is loaded or a
+new session is created and need no backfill, refetch or retraining.
+
 ## Architecture
 
 The Data Ingestion API creates a durable session before dispatching the first

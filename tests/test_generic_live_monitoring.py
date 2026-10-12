@@ -20,6 +20,7 @@ from learning_adaptation.catalogue_training import (
     CatalogueBundleError,
     _verify_live_input_recipe,
 )
+from data_ingestion.monitoring_rca import assess_recipe_compatibility
 
 
 def limits():
@@ -104,6 +105,27 @@ class GenericLiveMonitoringTests(unittest.TestCase):
         self.assertEqual(live["feature_order"], offline["features"])
         self.assertEqual(live["rows"], offline["rows"])
         self.assertEqual(live["timestamps"], offline["timestamps"])
+
+    def test_catalogue_recipe_with_actual_pod_label_needs_no_identity_declaration_for_rca(self):
+        version = {"source": {"prometheus_source_id": "cluster-default", "start_time": "1970-01-01T00:01:40Z", "end_time": "1970-01-01T00:02:40Z", "sampling_interval_seconds": 60}}
+        cpu = execution()
+        cpu["identity_labels"] = []
+        memory = copy.deepcopy(cpu)
+        memory.update(execution_id="q0001-t0000", query_id="memory", feature_name="memory")
+        assembled = assemble_time_series(
+            version,
+            [
+                {"execution": cpu, "response": response()},
+                {"execution": memory, "response": response(values=[[100, "3"], [160, "4"]])},
+            ],
+            limits(),
+        )
+        recipe = build_live_input_recipe(version, [cpu, memory], assembled)
+        validated = validate_live_input_recipe(recipe)
+        readiness = assess_recipe_compatibility(validated)
+        self.assertEqual(readiness["status"], "ready")
+        self.assertEqual(readiness["feature_metadata"][0]["entity"]["id"], "checkout")
+        self.assertEqual(readiness["feature_metadata"][0]["feature_name"], assembled["features"][0])
 
     def test_recipe_and_series_identity_mismatches_are_rejected(self):
         recipe, _offline = self.recipe()

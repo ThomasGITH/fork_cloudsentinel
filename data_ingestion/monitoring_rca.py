@@ -12,6 +12,7 @@ from typing import Any
 
 RCA_TRIGGER_CONTRACT = "cloudsentinel.monitoring-rca/v1"
 RCA_INPUT_CONTRACT = "cloudsentinel.crca-input/v1"
+RCA_FEATURE_METADATA_CONTRACT = "cloudsentinel.crca-feature-metadata/v1"
 RCA_PREPROCESSING_CONTRACT = "cloudsentinel.crca-minmax/v1"
 RCA_ALGORITHM_ID = "cloudsentinel.causal-rca/legacy-v1"
 DEFAULT_RCA_CONFIGURATION = {
@@ -24,6 +25,10 @@ DEFAULT_RCA_CONFIGURATION = {
 
 class MonitoringRcaError(RuntimeError):
     """Safe monitoring RCA validation error."""
+
+    def __init__(self, message: str, reason_code: str = "invalid_rca_input"):
+        super().__init__(message)
+        self.reason_code = reason_code
 
 
 def canonical_sha256(value: Any) -> str:
@@ -85,92 +90,167 @@ def validate_rca_configuration(value: Any) -> dict[str, Any]:
 def assess_recipe_compatibility(recipe: Any) -> dict[str, Any]:
     """Return a safe readiness result and exact column metadata without imports."""
     if not isinstance(recipe, dict):
-        return _incompatible("The live input recipe is unavailable.")
+        return _incompatible("missing_recipe", "The live input recipe is unavailable.")
     if recipe.get("contract") != "cloudsentinel.live-input/v1":
-        return _incompatible("The live input recipe contract is unsupported.")
+        return _incompatible(
+            "unsupported_recipe_contract", "The live input recipe contract is unsupported."
+        )
     sampling = recipe.get("sampling_interval_seconds")
     if not isinstance(sampling, int) or isinstance(sampling, bool) or sampling < 1:
-        return _incompatible("The live input sampling interval is invalid.")
+        return _incompatible(
+            "invalid_sampling", "The live input sampling interval is invalid."
+        )
     if recipe.get("alignment") != {
         "grid": "inclusive_utc_range",
         "timestamp_match": "exact_microsecond",
         "off_grid_samples": "drop_with_warning",
     }:
-        return _incompatible("The live input alignment policy is unsupported for CausalRCA.")
+        return _incompatible(
+            "invalid_alignment",
+            "The live input alignment policy is unsupported for CausalRCA.",
+        )
     if recipe.get("missing_data") != {
         "offline_representation": "empty",
         "live_policy": "reject_window",
         "imputation": "none",
     }:
-        return _incompatible("CausalRCA requires a recipe that rejects missing live values without imputation.")
+        return _incompatible(
+            "invalid_missing_data_policy",
+            "CausalRCA requires a recipe that rejects missing live values without imputation.",
+        )
     feature_order = recipe.get("feature_order")
     mappings = recipe.get("series_mapping")
     executions = recipe.get("query_executions")
     if not isinstance(feature_order, list) or len(feature_order) < 2:
-        return _incompatible("CausalRCA requires at least two explicitly identified features.")
+        return _incompatible(
+            "insufficient_features",
+            "CausalRCA requires at least two explicitly identified features.",
+        )
+    if any(not isinstance(item, str) or not item.strip() for item in feature_order):
+        return _incompatible(
+            "invalid_feature_id",
+            "Every CausalRCA feature must have an explicit feature identity.",
+        )
     if len(set(feature_order)) != len(feature_order):
-        return _incompatible("Feature identities are not unique.")
+        return _incompatible("duplicate_feature_id", "Feature identities are not unique.")
     if not isinstance(mappings, list) or not isinstance(executions, list):
-        return _incompatible("The recipe lacks explicit series mapping metadata.")
+        return _incompatible("missing_series_mapping", "The recipe lacks explicit series mapping metadata.")
     by_feature: dict[str, list[dict[str, Any]]] = {}
     for mapping in mappings:
         if isinstance(mapping, dict) and isinstance(mapping.get("feature_id"), str):
             by_feature.setdefault(mapping["feature_id"], []).append(mapping)
-    by_execution = {
-        item.get("execution_id"): item
-        for item in executions
-        if isinstance(item, dict) and isinstance(item.get("execution_id"), str)
-    }
+    by_execution: dict[str, dict[str, Any]] = {}
+    for execution in executions:
+        if not isinstance(execution, dict):
+            return _incompatible(
+                "invalid_query_execution",
+                "The recipe contains invalid query execution metadata.",
+            )
+        execution_id = execution.get("execution_id")
+        if not isinstance(execution_id, str) or not execution_id.strip() or execution_id in by_execution:
+            return _incompatible(
+                "invalid_query_execution",
+                "Query execution identities must be explicit and unique.",
+            )
+        metric_name = execution.get("feature_name")
+        if not isinstance(metric_name, str) or not metric_name.strip():
+            return _incompatible(
+                "missing_query_feature_name",
+                "Every query execution must declare an explicit feature name.",
+            )
+        by_execution[execution_id] = execution
+    if len(mappings) != len(feature_order) or set(by_feature) != set(feature_order):
+        return _incompatible(
+            "invalid_series_mapping",
+            "Every feature must have exactly one explicit series mapping.",
+        )
     metadata = []
-    seen_pairs = set()
     for index, feature_id in enumerate(feature_order):
         candidates = by_feature.get(feature_id, [])
         if len(candidates) != 1:
-            return _incompatible("Every feature must have exactly one explicit series mapping.")
+            return _incompatible(
+                "invalid_series_mapping",
+                "Every feature must have exactly one explicit series mapping.",
+            )
         mapping = candidates[0]
         execution = by_execution.get(mapping.get("execution_id"))
         labels = mapping.get("metric_labels")
-        if not isinstance(execution, dict) or not isinstance(labels, dict):
-            return _incompatible("A feature mapping refers to incomplete query metadata.")
-        identity_labels = execution.get("identity_labels")
-        metric_name = execution.get("feature_name")
-        entity_id = labels.get("pod")
-        if (
-            not isinstance(identity_labels, list)
-            or "pod" not in identity_labels
-            or not isinstance(entity_id, str)
-            or not entity_id.strip()
-            or not isinstance(metric_name, str)
-            or not metric_name.strip()
+        if not isinstance(execution, dict):
+            return _incompatible(
+                "unknown_execution_id",
+                "A feature mapping refers to an unknown query execution.",
+            )
+        if not isinstance(labels, dict) or any(
+            not isinstance(key, str) or not isinstance(value, str)
+            for key, value in labels.items()
         ):
             return _incompatible(
-                "CausalRCA currently requires an explicit pod identity and metric name for every feature."
+                "invalid_series_mapping",
+                "A feature mapping contains invalid series metadata.",
             )
-        pair = (entity_id, metric_name)
-        if pair in seen_pairs:
-            return _incompatible("CausalRCA feature entity and metric identities are not unique.")
-        seen_pairs.add(pair)
+        metric_name = execution.get("feature_name")
+        entity, conflict = _explicit_entity(execution, labels)
+        if conflict:
+            return _incompatible("conflicting_entity_metadata", conflict)
         metadata.append(
             {
                 "column_index": index,
                 "feature_id": feature_id,
                 "feature_name": feature_id,
-                "entity_type": "pod",
-                "entity_id": entity_id,
+                "entity": entity,
+                # Flat fields retain the established result/worker boundary.
+                "entity_type": entity.get("type") if entity else None,
+                "entity_id": entity.get("id") if entity else None,
                 "metric_name": metric_name,
             }
         )
     return {
         "status": "ready",
+        "reason_code": None,
         "reason": None,
         "input_contract": RCA_INPUT_CONTRACT,
+        "feature_metadata_contract": RCA_FEATURE_METADATA_CONTRACT,
         "feature_metadata": metadata,
         "feature_metadata_sha256": canonical_sha256(metadata),
     }
 
 
-def _incompatible(reason: str) -> dict[str, Any]:
-    return {"status": "incompatible", "reason": reason[:500]}
+def _explicit_entity(
+    execution: dict[str, Any], labels: dict[str, str]
+) -> tuple[dict[str, str] | None, str | None]:
+    """Resolve only explicit, verifiable pod identity; never parse names or PromQL."""
+    series_pod = labels.get("pod")
+    if isinstance(series_pod, str):
+        series_pod = series_pod.strip() or None
+    else:
+        series_pod = None
+
+    target_pod = None
+    resolved_target = execution.get("resolved_target")
+    if (
+        execution.get("execution_mode") == "per_target"
+        and execution.get("target_type") == "pod"
+        and isinstance(resolved_target, dict)
+        and isinstance(resolved_target.get("pod"), str)
+    ):
+        target_pod = resolved_target["pod"].strip() or None
+    if series_pod and target_pod and series_pod != target_pod:
+        return (
+            None,
+            "The series pod label conflicts with the explicitly resolved pod target.",
+        )
+    pod = series_pod or target_pod
+    if pod:
+        return {
+            "type": "pod",
+            "id": pod,
+            "source": "prometheus_series_label" if series_pod else "resolved_query_target",
+        }, None
+    return None, None
+
+
+def _incompatible(reason_code: str, reason: str) -> dict[str, Any]:
+    return {"status": "incompatible", "reason_code": reason_code, "reason": reason[:500]}
 
 
 def initial_rca_state(
@@ -180,8 +260,13 @@ def initial_rca_state(
     return {
         **deepcopy(configuration),
         "contract": RCA_TRIGGER_CONTRACT,
-        "readiness": {"status": readiness.get("status"), "reason": readiness.get("reason")},
+        "readiness": {
+            "status": readiness.get("status"),
+            "reason_code": readiness.get("reason_code"),
+            "reason": readiness.get("reason"),
+        },
         "input_contract": readiness.get("input_contract"),
+        "feature_metadata_contract": readiness.get("feature_metadata_contract"),
         "feature_metadata_sha256": readiness.get("feature_metadata_sha256"),
         "algorithm_id": safe_capability.get("algorithm_id", RCA_ALGORITHM_ID),
         "algorithm_config_sha256": safe_capability.get("config_sha256"),
@@ -273,11 +358,19 @@ def select_analysis_input(
     matrix = cycle_input.get("matrix")
     feature_order = cycle_input.get("feature_order")
     if not isinstance(timestamps, list) or not isinstance(matrix, list) or len(timestamps) != len(matrix):
-        raise MonitoringRcaError("The committed cycle input is invalid.")
+        raise MonitoringRcaError(
+            "The committed cycle input is invalid.", "invalid_cycle_input"
+        )
     if not isinstance(feature_order, list) or len(feature_order) < minimum_features:
-        raise MonitoringRcaError("The committed cycle has too few features for CausalRCA.")
+        raise MonitoringRcaError(
+            "The committed cycle has too few features for CausalRCA.",
+            "insufficient_runtime_features",
+        )
     if [item.get("feature_id") for item in feature_metadata] != feature_order:
-        raise MonitoringRcaError("CausalRCA feature metadata does not match the committed column order.")
+        raise MonitoringRcaError(
+            "CausalRCA feature metadata does not match the committed column order.",
+            "feature_metadata_mismatch",
+        )
     end = parse_utc(end_timestamp)
     start = end - timedelta(seconds=int(window_seconds))
     selected_timestamps = []
@@ -286,29 +379,50 @@ def select_analysis_input(
     for timestamp, row in zip(timestamps, matrix):
         current = parse_utc(timestamp)
         if last is not None and current <= last:
-            raise MonitoringRcaError("Committed input timestamps are not strictly ordered.")
+            raise MonitoringRcaError(
+                "Committed input timestamps are not strictly ordered.",
+                "invalid_timestamp_order",
+            )
         last = current
         if current < start or current > end:
             continue
         if not isinstance(row, list) or len(row) != len(feature_order):
-            raise MonitoringRcaError("Committed RCA input dimensions are inconsistent.")
+            raise MonitoringRcaError(
+                "Committed RCA input dimensions are inconsistent.",
+                "invalid_matrix_shape",
+            )
         converted = []
         for value in row:
             if isinstance(value, bool):
-                raise MonitoringRcaError("Committed RCA input must be numeric and finite.")
+                raise MonitoringRcaError(
+                    "Committed RCA input must be numeric and finite.",
+                    "non_finite_runtime_input",
+                )
             try:
                 number = float(value)
             except (TypeError, ValueError) as exc:
-                raise MonitoringRcaError("Committed RCA input must be numeric and finite.") from exc
+                raise MonitoringRcaError(
+                    "Committed RCA input must be numeric and finite.",
+                    "non_finite_runtime_input",
+                ) from exc
             if not math.isfinite(number):
-                raise MonitoringRcaError("Committed RCA input must be numeric and finite.")
+                raise MonitoringRcaError(
+                    "Committed RCA input must be numeric and finite.",
+                    "non_finite_runtime_input",
+                )
             converted.append(number)
         selected_timestamps.append(timestamp)
         selected_matrix.append(converted)
     if len(selected_matrix) < minimum_observations:
-        raise MonitoringRcaError("The committed cycle does not contain enough RCA analysis context.")
+        raise MonitoringRcaError(
+            "The committed cycle does not contain enough RCA analysis context.",
+            "insufficient_runtime_context",
+        )
     if parse_utc(selected_timestamps[0]) > start + timedelta(seconds=int(sampling_interval_seconds)):
-        raise MonitoringRcaError("The committed cycle does not cover the requested RCA analysis window.")
+        raise MonitoringRcaError(
+            "The committed cycle does not cover the requested RCA analysis window.",
+            "incomplete_analysis_window",
+        )
     return {
         "schema_version": 1,
         "contract": RCA_INPUT_CONTRACT,
@@ -322,6 +436,7 @@ def select_analysis_input(
         "feature_order": deepcopy(feature_order),
         "feature_order_sha256": cycle_input.get("feature_order_sha256"),
         "feature_metadata": deepcopy(feature_metadata),
+        "feature_metadata_contract": RCA_FEATURE_METADATA_CONTRACT,
         "feature_metadata_sha256": canonical_sha256(feature_metadata),
         "timestamps": selected_timestamps,
         "matrix": selected_matrix,

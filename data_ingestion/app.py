@@ -354,7 +354,13 @@ def _process_cycle_rca(session_id, cycle_id):
     state = session.get("rca")
     if not isinstance(state, dict):
         state = initial_rca_state(
-            validate_rca_configuration({}), {"status": "incompatible", "reason": "Automatic RCA was not configured for this session."}, None
+            validate_rca_configuration({}),
+            {
+                "status": "incompatible",
+                "reason_code": "not_configured",
+                "reason": "Automatic RCA was not configured for this session.",
+            },
+            None,
         )
     cycle = monitoring_history.read_cycle(session_id, cycle_id)
     updated, event = decide_trigger(state, cycle)
@@ -381,7 +387,11 @@ def _process_cycle_rca(session_id, cycle_id):
     recipe = monitoring_history.read_recipe(session_id)
     readiness = assess_recipe_compatibility(recipe)
     if readiness.get("status") != "ready":
-        updated["readiness"] = {"status": "incompatible", "reason": readiness.get("reason")}
+        updated["readiness"] = {
+            "status": "incompatible",
+            "reason_code": readiness.get("reason_code"),
+            "reason": readiness.get("reason"),
+        }
         monitoring_history.record_rca_event(
             session_id,
             cycle_id,
@@ -399,6 +409,7 @@ def _process_cycle_rca(session_id, cycle_id):
         "algorithm_id": updated.get("algorithm_id"),
         "algorithm_config_sha256": updated.get("algorithm_config_sha256"),
         "preprocessing_contract": updated.get("preprocessing_contract"),
+        "feature_metadata_contract": readiness.get("feature_metadata_contract"),
     }
     detection_time = (cycle.get("prediction_window") or {}).get("end")
     base_run = {
@@ -452,6 +463,7 @@ def _process_cycle_rca(session_id, cycle_id):
             "feature_count": len(selected["feature_order"]),
             "feature_identity": {
                 "feature_order_sha256": selected.get("feature_order_sha256"),
+                "feature_metadata_contract": selected.get("feature_metadata_contract"),
                 "feature_metadata_sha256": selected.get("feature_metadata_sha256"),
             },
         }
@@ -470,9 +482,23 @@ def _process_cycle_rca(session_id, cycle_id):
         monitoring_history.create_rca_run(
             session_id,
             cycle_id,
-            {**base_run, "run_id": skipped_id, "episode_id": skipped_id, "status": "skipped", "completed_at": utc_now(), "skip_reason": str(exc)[:500]},
+            {
+                **base_run,
+                "run_id": skipped_id,
+                "episode_id": skipped_id,
+                "status": "skipped",
+                "completed_at": utc_now(),
+                "skip_reason_code": exc.reason_code,
+                "skip_reason": str(exc)[:500],
+            },
             input_payload=None,
-            event={**event, "status": "skipped", "reason": str(exc)[:500], "episode_state": "triggered"},
+            event={
+                **event,
+                "status": "skipped",
+                "reason_code": exc.reason_code,
+                "reason": str(exc)[:500],
+                "episode_state": "triggered",
+            },
             rca_state=updated,
         )
 
@@ -903,12 +929,35 @@ def monitoring_rca_readiness(model_id):
             f"{learning_url}/internal/models/{model_id}/live-input-recipe", timeout=(5, 30)
         )
         if response.status_code != 200:
-            return jsonify({"status": "incompatible", "reason": "A validated live input recipe is unavailable."}), 200
+            return jsonify({
+                "status": "incompatible",
+                "reason_code": "missing_recipe",
+                "reason": "A validated live input recipe is unavailable.",
+            }), 200
         resolved = validate_resolved_live_model(response.json(), model_id)
         readiness = assess_recipe_compatibility(resolved["recipe"])
-        return jsonify({key: readiness.get(key) for key in ("status", "reason", "input_contract")}), 200
-    except (requests.RequestException, ValueError, LiveMonitoringError):
-        return jsonify({"status": "unavailable", "reason": "RCA readiness could not be verified."}), 200
+        return jsonify({
+            key: readiness.get(key)
+            for key in (
+                "status",
+                "reason_code",
+                "reason",
+                "input_contract",
+                "feature_metadata_contract",
+            )
+        }), 200
+    except (ValueError, LiveMonitoringError):
+        return jsonify({
+            "status": "incompatible",
+            "reason_code": "invalid_recipe_integrity",
+            "reason": "The pinned live input recipe failed integrity validation.",
+        }), 200
+    except requests.RequestException:
+        return jsonify({
+            "status": "unavailable",
+            "reason_code": "readiness_unavailable",
+            "reason": "RCA readiness could not be verified.",
+        }), 200
 
 
 @app.route('/monitoring-sessions', methods=['GET'])

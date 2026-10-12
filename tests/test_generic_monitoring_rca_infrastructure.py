@@ -22,11 +22,12 @@ def environment(path):
 
 class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
     def test_changed_images_use_one_immutable_tag(self):
-        self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], "jojojochem/data_ingestion:generic-monitoring-rca-1")
-        self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], "jojojochem/data_ingestion:generic-monitoring-rca-1")
-        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], "jojojochem/monitoring_project:generic-monitoring-rca-1")
-        self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], "jojojochem/anomaly_detection_crca:generic-monitoring-rca-1")
-        self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], "jojojochem/anomaly_detection_crca:generic-monitoring-rca-1")
+        tag = "generic-monitoring-rca-readiness-fix-1"
+        self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
+        self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
+        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], f"jojojochem/monitoring_project:{tag}")
+        self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{tag}")
+        self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{tag}")
 
     def test_crca_worker_has_shared_write_storage_and_api_has_health_probe(self):
         worker = container("k8s/crca_anomaly_detection-celery-deployment.yml")

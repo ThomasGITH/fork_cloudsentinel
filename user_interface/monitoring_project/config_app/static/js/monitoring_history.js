@@ -143,8 +143,8 @@
       const result = payload.result;
       if (result && Array.isArray(result.ranking) && result.ranking.length) {
         const table = node("table", null, "table table-sm table-responsive align-middle");
-        const head = node("thead"); const row = node("tr"); ["Rank","Feature","Pod","Metric","Score"].forEach((label)=>row.append(node("th",label))); head.append(row); table.append(head);
-        const body = node("tbody"); result.ranking.forEach((item)=>{ const tr=node("tr"); [item.rank,item.feature_name,item.entity_id,item.metric_name,Number(item.score).toFixed(6)].forEach((value)=>tr.append(node("td",value))); body.append(tr); }); table.append(body); target.append(table);
+        const head = node("thead"); const row = node("tr"); ["Rank","Feature","Entity","Metric","Score"].forEach((label)=>row.append(node("th",label))); head.append(row); table.append(head);
+        const body = node("tbody"); result.ranking.forEach((item)=>{ const tr=node("tr"); const entity=item.entity&&item.entity.id ? `${item.entity.type}: ${item.entity.id}` : (item.entity_id ? `${item.entity_type||"entity"}: ${item.entity_id}` : "Unavailable"); [item.rank,item.feature_id||item.feature_name,entity,item.metric_name||"Unavailable",Number(item.score).toFixed(6)].forEach((value)=>tr.append(node("td",value))); body.append(tr); }); table.append(body); target.append(table);
         if (result.truncated) target.append(node("p", "The ranking is truncated to the first 100 rows.", "small text-muted"));
       } else if (run.status === "completed") target.append(node("p", "No bounded ranking rows are available.", "text-muted"));
       if (result && Array.isArray(result.graphs)) result.graphs.forEach((graph)=>{ if(graph && graph.media_type==="image/png" && /^[A-Za-z0-9+/=]+$/.test(graph.base64||"")){ const img=node("img"); img.className="img-fluid border rounded mt-3"; img.alt="Stored CausalRCA dependency graph"; img.src="data:image/png;base64,"+graph.base64; target.append(img); } });
