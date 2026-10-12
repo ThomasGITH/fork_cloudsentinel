@@ -213,6 +213,9 @@ pin called Matplotlib's removed callable `_AxesStack` API and caused an
 otherwise completed RCA calculation to fail while drawing its graph. Graph
 construction now uses `from_numpy_array`, the supported NetworkX 3 API, and
 selects the headless Agg backend before importing pyplot.
+The pinned `scikit-network==0.33.0` PageRank API is `fit_predict`; the removed
+legacy `fit_transform` call caused a second post-training failure after graph
+rendering had been corrected.
 
 ```bash
 docker build \
@@ -227,7 +230,7 @@ docker build \
   -f anomaly_detection/crca/Dockerfile \
   --build-arg PYTORCH_VERSION=2.2.2 \
   --build-arg SCIKIT_NETWORK_VERSION=0.33.0 \
-  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.1 \
+  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.2 \
   .
 ```
 
@@ -242,12 +245,13 @@ Load the three changed images into Minikube:
 ```bash
 minikube image load jojojochem/data_ingestion:generic-monitoring-rca-readiness-fix-1
 minikube image load jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1
-minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.1
+minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.2
 ```
 
 When the readiness-fix API, worker and UI images are already deployed, only the
-CRCA image changed for the graph-rendering compatibility correction. In that
-case build/load the `anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.1`
+CRCA image changed for the graph-rendering and PageRank API compatibility
+corrections. In that case build/load the
+`anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.2`
 image and apply only the CRCA API and worker manifests.
 
 The manifests use `imagePullPolicy: IfNotPresent`, which is required for these

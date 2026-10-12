@@ -26,7 +26,7 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], f"jojojochem/monitoring_project:{tag}")
-        crca_tag = "generic-monitoring-rca-readiness-fix-1.1"
+        crca_tag = "generic-monitoring-rca-readiness-fix-1.2"
         self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
         self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
 
@@ -89,6 +89,11 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         self.assertIn("nx.from_numpy_array", source)
         self.assertNotIn("nx.from_numpy_matrix", source)
         self.assertLess(source.index('matplotlib.use("Agg")'), source.index("import matplotlib.pyplot"))
+
+    def test_pagerank_uses_scikit_network_033_api(self):
+        source = (ROOT / "anomaly_detection/crca/crca.py").read_text()
+        self.assertIn("pagerank.fit_predict", source)
+        self.assertNotIn("pagerank.fit_transform", source)
 
 
 if __name__ == "__main__":

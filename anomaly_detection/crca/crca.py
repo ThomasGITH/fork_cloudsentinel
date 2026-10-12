@@ -461,7 +461,7 @@ def crca(data_arg, feature_names=None):
         image_base64 = base64.b64encode(img_data.getvalue()).decode('utf-8')
 
         pagerank = PageRank()
-        scores = pagerank.fit_transform(np.abs(adj.T))
+        scores = pagerank.fit_predict(np.abs(adj.T))
 
         score_dict = {i: s for i, s in enumerate(scores)}
         sorted_dict = sorted(score_dict.items(), key=lambda item: item[1], reverse=True)
