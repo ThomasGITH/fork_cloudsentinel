@@ -208,6 +208,11 @@ scikit-learn and matplotlib pins match the Python 3.12 runtime used by the
 other learning components. `scikit-network==0.33.0` is installed separately as
 a binary-only CPython 3.12 wheel. This avoids the legacy `0.31.0` source package,
 whose setup script tries to import NumPy before pip has installed it.
+`networkx==3.2.1` is paired with `matplotlib==3.9.0`; the former NetworkX 2.6.3
+pin called Matplotlib's removed callable `_AxesStack` API and caused an
+otherwise completed RCA calculation to fail while drawing its graph. Graph
+construction now uses `from_numpy_array`, the supported NetworkX 3 API, and
+selects the headless Agg backend before importing pyplot.
 
 ```bash
 docker build \
@@ -222,7 +227,7 @@ docker build \
   -f anomaly_detection/crca/Dockerfile \
   --build-arg PYTORCH_VERSION=2.2.2 \
   --build-arg SCIKIT_NETWORK_VERSION=0.33.0 \
-  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1 \
+  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.1 \
   .
 ```
 
@@ -237,8 +242,13 @@ Load the three changed images into Minikube:
 ```bash
 minikube image load jojojochem/data_ingestion:generic-monitoring-rca-readiness-fix-1
 minikube image load jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1
-minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1
+minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.1
 ```
+
+When the readiness-fix API, worker and UI images are already deployed, only the
+CRCA image changed for the graph-rendering compatibility correction. In that
+case build/load the `anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.1`
+image and apply only the CRCA API and worker manifests.
 
 The manifests use `imagePullPolicy: IfNotPresent`, which is required for these
 locally loaded tags. Apply the existing storage-backed services first, then API,

@@ -4,7 +4,7 @@ celery==5.4.0
 redis==5.0.5
 gevent==24.2.1
 matplotlib==3.9.0
-networkx==2.6.3
+networkx==3.2.1
 numpy==1.26.4
 pandas==2.2.2
 requests==2.32.3

@@ -8,6 +8,10 @@ import json
 import matplotlib
 import logging
 import traceback
+
+# Select the headless backend before importing pyplot.
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,9 +28,6 @@ from utils import (matrix_poly, get_triu_offdiag_indices, get_tril_offdiag_indic
                    nll_gaussian, kl_gaussian_sem, A_connect_loss, A_positive_loss)
 from modules import MLPEncoder, MLPDecoder, SEMEncoder, SEMDecoder
 from config import get_config
-
-# Set matplotlib backend to 'Agg' for non-interactive plotting
-matplotlib.use("Agg")
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -443,7 +444,7 @@ def crca(data_arg, feature_names=None):
         logger.info("Time spent: %f seconds", end_time - start_time)
 
         adj = graph
-        org_G = nx.from_numpy_matrix(adj, parallel_edges=True, create_using=nx.DiGraph)
+        org_G = nx.from_numpy_array(adj, parallel_edges=True, create_using=nx.DiGraph)
         pos = nx.circular_layout(org_G)
         plt.figure(figsize=(8, 6))
         labels = None

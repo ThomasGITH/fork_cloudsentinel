@@ -26,8 +26,9 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], f"jojojochem/monitoring_project:{tag}")
-        self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{tag}")
-        self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{tag}")
+        crca_tag = "generic-monitoring-rca-readiness-fix-1.1"
+        self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
+        self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
 
     def test_crca_worker_has_shared_write_storage_and_api_has_health_probe(self):
         worker = container("k8s/crca_anomaly_detection-celery-deployment.yml")
@@ -60,6 +61,8 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         requirements = (ROOT / "anomaly_detection/crca/requirements.txt").read_text()
         self.assertIn("pandas==2.2.2", requirements)
         self.assertIn("matplotlib==3.9.0", requirements)
+        self.assertIn("networkx==3.2.1", requirements)
+        self.assertNotIn("networkx==2.6.3", requirements)
         self.assertIn("scikit-learn==1.5.0", requirements)
         self.assertNotIn("pandas==1.3.5", requirements)
         self.assertNotIn("matplotlib==3.5.1", requirements)
@@ -80,6 +83,12 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         self.assertIn("--only-binary=:all:", dockerfile)
         self.assertIn('"scikit-network==${SCIKIT_NETWORK_VERSION}"', dockerfile)
         self.assertNotIn("scikit-network==0.31.0", requirements)
+
+    def test_graph_rendering_uses_networkx_api_compatible_with_matplotlib_39(self):
+        source = (ROOT / "anomaly_detection/crca/crca.py").read_text()
+        self.assertIn("nx.from_numpy_array", source)
+        self.assertNotIn("nx.from_numpy_matrix", source)
+        self.assertLess(source.index('matplotlib.use("Agg")'), source.index("import matplotlib.pyplot"))
 
 
 if __name__ == "__main__":
