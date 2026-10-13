@@ -42,7 +42,7 @@ def readable_model_name(model: dict[str, Any]) -> str:
     version = model.get("detector_version")
     base = f"{detector} v{version}" if version else detector
     created = _created_label(model.get("model_created_at") or model.get("created_at"))
-    return f"{base} · trained {created}" if created else f"{base} Saved Model"
+    return f"{base} · {created}" if created else f"{base} Saved Model"
 
 
 def humanize_model_items(items: list[dict[str, Any]]) -> dict[str, tuple[str, str]]:

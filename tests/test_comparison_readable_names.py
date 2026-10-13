@@ -25,7 +25,7 @@ class ComparisonReadableModelNameTests(unittest.TestCase):
                 "model_created_at": "2026-10-10T20:24:00Z",
             }
         )
-        self.assertEqual(value, "CGNN v1.0.0 · trained 10 Oct 2026, 20:24 UTC")
+        self.assertEqual(value, "CGNN v1.0.0 · 10 Oct 2026, 20:24 UTC")
 
     def test_explicit_user_facing_name_is_preserved(self):
         value = labels.readable_model_name(
@@ -56,7 +56,7 @@ class ComparisonReadableModelNameTests(unittest.TestCase):
 
         labels.humanize_comparison(payload)
 
-        readable = "CGNN v1.0.0 · trained 10 Oct 2026, 20:24 UTC"
+        readable = "CGNN v1.0.0 · 10 Oct 2026, 20:24 UTC"
         self.assertEqual(payload["selected_models"][0]["model_id"], model_id)
         self.assertEqual(payload["selected_models"][0]["display_name"], readable)
         self.assertEqual(payload["results"][0]["display_name"], readable)

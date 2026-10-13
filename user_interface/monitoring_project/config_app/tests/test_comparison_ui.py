@@ -175,7 +175,7 @@ class ComparisonUiTests(SimpleTestCase):
         response = self._step(2)
         self.assertContains(
             response,
-            "CGNN v1.0.0 · trained 10 Oct 2026, 20:24 UTC",
+            "CGNN v1.0.0 · 10 Oct 2026, 20:24 UTC",
         )
         self.assertContains(response, technical_id)
 

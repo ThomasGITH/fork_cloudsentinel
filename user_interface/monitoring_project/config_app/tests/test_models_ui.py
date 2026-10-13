@@ -121,7 +121,7 @@ class ModelsUiTests(SimpleTestCase):
     def test_saved_models_and_history_filters_pagination(self):
         saved = self.client.get(reverse("models_overview"), {"tab": "saved", "detector_id": "isolation-forest", "page": 2, "sort": "oldest"})
         self.assertContains(saved, "model_demo")
-        self.assertContains(saved, "Isolation Forest v1.0.0 · trained 29 Sep 2026, 10:00 UTC")
+        self.assertContains(saved, "Isolation Forest v1.0.0 · 29 Sep 2026, 10:00 UTC")
         self.assertContains(saved, "29 Sep 2026, 10:00 UTC")
         self.assertContains(saved, "Checkout metrics v3")
         self.assertContains(saved, "F1 0.900")
@@ -135,7 +135,7 @@ class ModelsUiTests(SimpleTestCase):
 
     def test_model_and_run_details_hide_runtime_internals(self):
         model = self.client.get(reverse("models_saved_detail", args=["model_demo"]))
-        self.assertContains(model, "Isolation Forest v1.0.0 · trained 29 Sep 2026, 10:00 UTC")
+        self.assertContains(model, "Isolation Forest v1.0.0 · 29 Sep 2026, 10:00 UTC")
         self.assertContains(model, "partition-sha")
         self.assertContains(model, "Stored post-training evaluation")
         self.assertContains(model, "They are not a ranking")
