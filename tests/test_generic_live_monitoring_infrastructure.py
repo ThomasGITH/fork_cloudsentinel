@@ -53,7 +53,7 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
         ui = container("k8s/monitoring_project-deployment.yml")
         self.assertEqual(learning_api["image"], learning_worker["image"])
         self.assertTrue(learning_api["image"].endswith(":generic-monitoring-history-1"))
-        self.assertTrue(ui["image"].endswith(":generic-monitoring-rca-reanalysis-1"))
+        self.assertTrue(ui["image"].endswith(":fix-polling-issue-1"))
         self.assertEqual(ui["imagePullPolicy"], "IfNotPresent")
 
         admin = yaml.safe_load((ROOT / "k8s/plugin-admin-pod.yml").read_text())

@@ -260,38 +260,40 @@ ranking, stored graph and safe checksum provenance. It distinguishes started,
 suppressed, skipped and incompatible states. Rankings are described as
 diagnostic evidence and never as a proven root cause.
 
+### Polling and rendering
+
+The dashboard still polls while a monitoring session or RCA run is active, but
+polling no longer implies a full visual refresh. `FIX-POLLING-ISSUE-1` compares
+the safe list and detail payloads with the last rendered payload. Unchanged
+responses leave the session list, selected detail, chart and RCA ranking in
+place. A newly committed cycle updates the existing Chart.js instance with
+animation disabled, so existing points do not replay their entrance animation.
+Terminal RCA detail responses are cached in the browser by run identity and
+result identity; the cache is bounded to 50 entries. The browser pauses its
+poll timer while the page is hidden and immediately refreshes after it becomes
+visible again. A temporary polling error shows the safe error message without
+erasing the last successfully rendered dashboard.
+
 ## Build, load and apply (do not run from this document automatically)
 
-Run these commands from the repository root on the EC2 host. This tranche
-changes only the Data Ingestion image used by its API and Celery worker, and the
-Django monitoring UI image. The CRCA API/worker, Generic Detection Runtime,
-Learning API/worker, data-processing and legacy CGNN images remain unchanged.
+When `GENERIC-MONITORING-RCA-REANALYSIS-1` is already deployed, this polling
+fix changes only the Django monitoring UI image. Run these commands from the
+repository root on the EC2 host:
 
 ```bash
 docker build \
-  -t jojojochem/data_ingestion:generic-monitoring-rca-reanalysis-1 \
-  ./data_ingestion
-
-docker build \
-  -t jojojochem/monitoring_project:generic-monitoring-rca-reanalysis-1 \
+  -t jojojochem/monitoring_project:fix-polling-issue-1 \
   ./user_interface/monitoring_project
-```
-
-Load the two new immutable tags into the current Minikube node:
-
-```bash
-minikube image load jojojochem/data_ingestion:generic-monitoring-rca-reanalysis-1
-minikube image load jojojochem/monitoring_project:generic-monitoring-rca-reanalysis-1
-```
-
-The manifests use `imagePullPolicy: IfNotPresent`, which is required for locally
-loaded images. Preserve the existing PVC and apply only the changed manifests:
-
-```bash
-kubectl apply -f k8s/data_ingestion-deployment.yml
-kubectl apply -f k8s/data_ingestion_celery-deployment.yml
+minikube image load jojojochem/monitoring_project:fix-polling-issue-1
 kubectl apply -f k8s/monitoring_project-deployment.yml
+kubectl rollout status deployment/monitoring-project-deployment -n cloudsentinel
 ```
+
+The manifest uses `imagePullPolicy: IfNotPresent`, which is required for the
+locally loaded image. Data Ingestion API/worker, CRCA API/worker, Generic
+Detection Runtime, Learning API/worker, data-processing and legacy CGNN images
+remain unchanged by this fix. A clean environment must also receive the images
+and manifests from the preceding RCA reanalysis tranche.
 
 Check the exact deployment names and the unchanged CRCA worker:
 

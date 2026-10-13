@@ -18,6 +18,10 @@
     chart: null,
     timer: null,
     selectedRca: new URL(window.location.href).searchParams.get("rca"),
+    sessionsRenderKey: null,
+    detailRenderKey: null,
+    rcaResultCache: new Map(),
+    shouldPoll: false,
   };
 
   function node(tag, text, className) {
@@ -59,6 +63,10 @@
   }
 
   function select(sessionId) {
+    if (state.selected !== sessionId) {
+      state.sessionsRenderKey = null;
+      state.detailRenderKey = null;
+    }
     state.selected = sessionId;
     const url = new URL(window.location.href);
     if (sessionId) url.searchParams.set("session", sessionId); else url.searchParams.delete("session");
@@ -75,6 +83,10 @@
   function showError(message) { errorNode.textContent = message; errorNode.classList.remove("d-none"); }
   function clearError() { errorNode.textContent = ""; errorNode.classList.add("d-none"); }
 
+  function renderKey(value) {
+    return JSON.stringify(value);
+  }
+
   async function json(url, options) {
     const response = await fetch(url, Object.assign({cache:"no-store", headers:{Accept:"application/json"}}, options || {}));
     const body = await response.text();
@@ -86,13 +98,16 @@
 
   function renderSessions(payload) {
     const items = payload.items || [];
+    if (!state.selected && items.length) select(items[0].session_id);
+    const key = renderKey({selected:state.selected, payload});
+    if (state.sessionsRenderKey === key) return false;
+    state.sessionsRenderKey = key;
     listNode.replaceChildren();
     if (!items.length) {
       listNode.append(node("div", "No monitoring sessions found.", "p-3 text-muted"));
       detailNode.replaceChildren(node("div", "Start a monitoring session to create durable history.", "alert alert-secondary"));
       select(null);
     }
-    if (!state.selected && items.length) select(items[0].session_id);
     items.forEach((session) => {
       const button = node("button", null, "list-group-item list-group-item-action session-button");
       button.type = "button";
@@ -109,6 +124,7 @@
     pageNode.textContent = state.pages ? `Page ${payload.page} of ${state.pages}` : "";
     newer.disabled = state.page <= 1;
     older.disabled = !state.pages || state.page >= state.pages;
+    return true;
   }
 
   function metric(label, value) {
@@ -120,10 +136,7 @@
     return wrapper;
   }
 
-  function renderChart(cycles, rca) {
-    if (state.chart) { state.chart.destroy(); state.chart = null; }
-    const canvas = document.getElementById("monitoring-cycle-chart");
-    if (!canvas || typeof Chart === "undefined") return;
+  function chartData(cycles, rca) {
     const ordered = cycles.slice().reverse();
     const threshold = rca && rca.enabled ? Number(rca.threshold_percentage) : null;
     const datasets = [{
@@ -144,39 +157,85 @@
       label: "Automatic RCA threshold (%)", data: ordered.map(() => threshold),
       borderColor: "#dc3545", borderDash: [7, 5], pointRadius: 0, tension: 0,
     });
+    return {
+      labels: ordered.map((cycle) => time((cycle.prediction_window || {}).end || (cycle.query_window || {}).end)),
+      datasets,
+    };
+  }
+
+  function renderChart(cycles, rca) {
+    const canvas = document.getElementById("monitoring-cycle-chart");
+    if (!canvas || typeof Chart === "undefined") return;
+    const data = chartData(cycles, rca);
+    if (state.chart && state.chart.canvas === canvas) {
+      state.chart.data.labels = data.labels;
+      state.chart.data.datasets = data.datasets;
+      state.chart.update("none");
+      return;
+    }
+    if (state.chart) state.chart.destroy();
     state.chart = new Chart(canvas.getContext("2d"), {
       type: "line",
-      data: {
-        labels: ordered.map((cycle) => time((cycle.prediction_window || {}).end || (cycle.query_window || {}).end)),
-        datasets,
-      },
+      data,
       options: {responsive:true, maintainAspectRatio:false, scales:{y:{min:0,max:100,title:{display:true,text:"Anomaly percentage (%)"}},x:{title:{display:true,text:"Latest newly evaluated prediction time"}}}},
     });
   }
 
-  async function loadRcaDetail(sessionId, runId, target) {
+  function renderRcaDetail(payload, target) {
+    const run = payload.run || {};
+    target.replaceChildren();
+    const heading = node("div", null, "d-flex justify-content-between align-items-center mb-2");
+    heading.append(node("strong", run.run_id || "CausalRCA run")); heading.append(badge(run.status)); target.append(heading);
+    if (run.failure) target.append(node("p", run.failure.message || "CausalRCA failed.", "alert alert-danger"));
+    if (run.skip_reason) target.append(node("p", run.skip_reason, "alert alert-warning"));
+    const result = payload.result;
+    if (result && Array.isArray(result.ranking) && result.ranking.length) {
+      const table = node("table", null, "table table-sm table-responsive align-middle");
+      const head = node("thead"); const row = node("tr"); ["Rank","Feature","Entity","Metric","Score"].forEach((label)=>row.append(node("th",label))); head.append(row); table.append(head);
+      const body = node("tbody"); result.ranking.forEach((item)=>{ const tr=node("tr"); const entity=item.entity&&item.entity.id ? `${item.entity.type}: ${item.entity.id}` : (item.entity_id ? `${item.entity_type||"entity"}: ${item.entity_id}` : "Unavailable"); [item.rank,item.feature_id||item.feature_name,entity,item.metric_name||"Unavailable",Number(item.score).toFixed(6)].forEach((value)=>tr.append(node("td",value))); body.append(tr); }); table.append(body); target.append(table);
+      if (result.truncated) target.append(node("p", "The ranking is truncated to the first 100 rows.", "small text-muted"));
+    } else if (run.status === "completed") target.append(node("p", "No bounded ranking rows are available.", "text-muted"));
+    if (result && Array.isArray(result.graphs)) result.graphs.forEach((graph)=>{ if(graph && graph.media_type==="image/png" && /^[A-Za-z0-9+/=]+$/.test(graph.base64||"")){ const img=node("img"); img.className="img-fluid border rounded mt-3"; img.alt="Stored CausalRCA dependency graph"; img.src="data:image/png;base64,"+graph.base64; target.append(img); } });
+    const details=node("details",null,"mt-3"); details.append(node("summary","RCA provenance")); const pre=node("pre",JSON.stringify({cycle_id:run.cycle_id,analysis_kind:run.analysis_kind,execution_attempt_number:run.execution_attempt_number,episode_attempt_budget:run.episode_attempt_budget,previous_run_id:run.previous_run_id,trigger_percentage:run.trigger_percentage,threshold_percentage:run.threshold_percentage,analysis_window:run.analysis_window,new_observation_count:run.new_observation_count,input_sha256:run.input_sha256,analysis_input_sha256:run.analysis_input_sha256,result_sha256:run.result_sha256,policy_version:run.policy_version,preprocessing:run.preprocessing,algorithm:run.algorithm},null,2),"small mt-2 provenance-value"); details.append(pre); target.append(details);
+    target.append(node("p", "This ranking is diagnostic evidence from the stored analysis window; it is not proof of the actual root cause.", "small text-muted mt-3"));
+  }
+
+  function rcaCacheKey(sessionId, run) {
+    return `${sessionId}:${run.run_id}:${run.result_sha256 || run.updated_at || run.status || "unknown"}`;
+  }
+
+  function cacheRcaResult(key, payload) {
+    state.rcaResultCache.set(key, payload);
+    while (state.rcaResultCache.size > 50) {
+      state.rcaResultCache.delete(state.rcaResultCache.keys().next().value);
+    }
+  }
+
+  async function loadRcaDetail(sessionId, run, target) {
+    const runId = run.run_id;
     selectRca(runId);
+    const cacheKey = rcaCacheKey(sessionId, run);
+    const cached = state.rcaResultCache.get(cacheKey);
+    if (cached) {
+      renderRcaDetail(cached, target);
+      return;
+    }
     target.replaceChildren(node("p", "Loading stored CausalRCA result…", "text-muted"));
     try {
       const url = root.dataset.rcaUrlTemplate.replace("SESSION_ID", encodeURIComponent(sessionId)).replace("RUN_ID", encodeURIComponent(runId));
       const payload = await json(url);
-      const run = payload.run || {};
-      target.replaceChildren();
-      const heading = node("div", null, "d-flex justify-content-between align-items-center mb-2");
-      heading.append(node("strong", run.run_id || "CausalRCA run")); heading.append(badge(run.status)); target.append(heading);
-      if (run.failure) target.append(node("p", run.failure.message || "CausalRCA failed.", "alert alert-danger"));
-      if (run.skip_reason) target.append(node("p", run.skip_reason, "alert alert-warning"));
-      const result = payload.result;
-      if (result && Array.isArray(result.ranking) && result.ranking.length) {
-        const table = node("table", null, "table table-sm table-responsive align-middle");
-        const head = node("thead"); const row = node("tr"); ["Rank","Feature","Entity","Metric","Score"].forEach((label)=>row.append(node("th",label))); head.append(row); table.append(head);
-        const body = node("tbody"); result.ranking.forEach((item)=>{ const tr=node("tr"); const entity=item.entity&&item.entity.id ? `${item.entity.type}: ${item.entity.id}` : (item.entity_id ? `${item.entity_type||"entity"}: ${item.entity_id}` : "Unavailable"); [item.rank,item.feature_id||item.feature_name,entity,item.metric_name||"Unavailable",Number(item.score).toFixed(6)].forEach((value)=>tr.append(node("td",value))); body.append(tr); }); table.append(body); target.append(table);
-        if (result.truncated) target.append(node("p", "The ranking is truncated to the first 100 rows.", "small text-muted"));
-      } else if (run.status === "completed") target.append(node("p", "No bounded ranking rows are available.", "text-muted"));
-      if (result && Array.isArray(result.graphs)) result.graphs.forEach((graph)=>{ if(graph && graph.media_type==="image/png" && /^[A-Za-z0-9+/=]+$/.test(graph.base64||"")){ const img=node("img"); img.className="img-fluid border rounded mt-3"; img.alt="Stored CausalRCA dependency graph"; img.src="data:image/png;base64,"+graph.base64; target.append(img); } });
-      const details=node("details",null,"mt-3"); details.append(node("summary","RCA provenance")); const pre=node("pre",JSON.stringify({cycle_id:run.cycle_id,analysis_kind:run.analysis_kind,execution_attempt_number:run.execution_attempt_number,episode_attempt_budget:run.episode_attempt_budget,previous_run_id:run.previous_run_id,trigger_percentage:run.trigger_percentage,threshold_percentage:run.threshold_percentage,analysis_window:run.analysis_window,new_observation_count:run.new_observation_count,input_sha256:run.input_sha256,analysis_input_sha256:run.analysis_input_sha256,result_sha256:run.result_sha256,policy_version:run.policy_version,preprocessing:run.preprocessing,algorithm:run.algorithm},null,2),"small mt-2 provenance-value"); details.append(pre); target.append(details);
-      target.append(node("p", "This ranking is diagnostic evidence from the stored analysis window; it is not proof of the actual root cause.", "small text-muted mt-3"));
-    } catch(error) { target.replaceChildren(node("p", error.message, "alert alert-danger")); }
+      const loadedRun = payload.run || {};
+      if (["completed","failed","skipped"].includes(loadedRun.status)) {
+        cacheRcaResult(cacheKey, payload);
+        cacheRcaResult(rcaCacheKey(sessionId, loadedRun), payload);
+      }
+      if (!target.isConnected || state.selected !== sessionId || state.selectedRca !== runId) return;
+      renderRcaDetail(payload, target);
+    } catch(error) {
+      if (target.isConnected && state.selected === sessionId && state.selectedRca === runId) {
+        target.replaceChildren(node("p", error.message, "alert alert-danger"));
+      }
+    }
   }
 
   function renderRca(session, payload, body) {
@@ -210,8 +269,8 @@
     if (!runs.length) section.append(node("p", "No automatic CausalRCA run has been stored for this session.", "alert alert-secondary"));
     else {
       const list=node("div",null,"list-group mb-3"); const detail=node("div",null,"border rounded p-3");
-      runs.forEach((run)=>{ const button=node("button",null,"list-group-item list-group-item-action"); button.type="button"; const top=node("div",null,"d-flex justify-content-between gap-2"); const kind=run.analysis_kind==="reanalysis" ? `Reanalysis ${run.execution_attempt_number||""}` : run.analysis_kind==="preflight_skip" ? "Preflight skip" : "First analysis"; top.append(node("span",`${kind} · ${time((run.analysis_window||{}).start)} – ${time((run.analysis_window||{}).end)}`)); top.append(badge(run.status)); button.append(top); button.append(node("small",`Triggered at ${run.trigger_percentage}% (threshold ${run.threshold_percentage}%)${run.new_observation_count!==undefined ? ` · ${run.new_observation_count} new observations` : ""}`,"text-muted")); button.addEventListener("click",()=>loadRcaDetail(session.session_id,run.run_id,detail)); list.append(button); });
-      section.append(list); section.append(detail); if(!state.selectedRca) loadRcaDetail(session.session_id,runs[0].run_id,detail); else { const selected=runs.find((run)=>run.run_id===state.selectedRca)||runs[0]; loadRcaDetail(session.session_id,selected.run_id,detail); }
+      runs.forEach((run)=>{ const button=node("button",null,"list-group-item list-group-item-action"); button.type="button"; const top=node("div",null,"d-flex justify-content-between gap-2"); const kind=run.analysis_kind==="reanalysis" ? `Reanalysis ${run.execution_attempt_number||""}` : run.analysis_kind==="preflight_skip" ? "Preflight skip" : "First analysis"; top.append(node("span",`${kind} · ${time((run.analysis_window||{}).start)} – ${time((run.analysis_window||{}).end)}`)); top.append(badge(run.status)); button.append(top); button.append(node("small",`Triggered at ${run.trigger_percentage}% (threshold ${run.threshold_percentage}%)${run.new_observation_count!==undefined ? ` · ${run.new_observation_count} new observations` : ""}`,"text-muted")); button.addEventListener("click",()=>loadRcaDetail(session.session_id,run,detail)); list.append(button); });
+      section.append(list); section.append(detail); if(!state.selectedRca) loadRcaDetail(session.session_id,runs[0],detail); else { const selected=runs.find((run)=>run.run_id===state.selectedRca)||runs[0]; loadRcaDetail(session.session_id,selected,detail); }
       if ((payload.rca_runs.pages || 0) > 1) {
         const navigation=node("div",null,"d-flex justify-content-between align-items-center mt-3");
         const recent=node("button","More recent RCA runs","btn btn-sm btn-outline-secondary"); recent.type="button"; recent.disabled=state.rcaPage<=1;
@@ -223,9 +282,51 @@
     body.append(section);
   }
 
+  function chartCard(payload, cycles, existingCard) {
+    let card = existingCard;
+    if (!card) {
+      card = node("section", null, "border rounded p-3 mb-4");
+      card.id = "monitoring-cycle-chart-card";
+      card.append(node("h3", "Anomaly percentage by committed cycle", "h5"));
+      const wrap = node("div", null, "chart-wrap");
+      wrap.id = "monitoring-cycle-chart-wrap";
+      const canvas = node("canvas");
+      canvas.id = "monitoring-cycle-chart";
+      wrap.append(canvas);
+      card.append(wrap);
+      const empty = node("p", "No cycle with newly evaluated predictions is available yet.", "text-muted");
+      empty.id = "monitoring-cycle-chart-empty";
+      card.append(empty);
+      const note = node("p", "The chart shows the current history page. Older cycles remain available on older history pages.", "small text-muted");
+      note.id = "monitoring-cycle-chart-note";
+      card.append(note);
+      const navigation = node("div", null, "d-flex justify-content-between align-items-center mt-3");
+      navigation.id = "monitoring-cycle-chart-navigation";
+      card.append(navigation);
+    }
+    const hasData = cycles.some((cycle) => cycle.anomaly_percentage !== null && cycle.anomaly_percentage !== undefined);
+    card.querySelector("#monitoring-cycle-chart-wrap").classList.toggle("d-none", !hasData);
+    card.querySelector("#monitoring-cycle-chart-empty").classList.toggle("d-none", hasData);
+    card.querySelector("#monitoring-cycle-chart-note").classList.toggle("d-none", !payload.cycles.truncated);
+    const navigation = card.querySelector("#monitoring-cycle-chart-navigation");
+    navigation.replaceChildren();
+    navigation.classList.toggle("d-none", (payload.cycles.pages || 0) <= 1);
+    if ((payload.cycles.pages || 0) > 1) {
+      const recent = node("button", "More recent cycles", "btn btn-sm btn-outline-secondary"); recent.type="button"; recent.disabled=state.cyclePage<=1;
+      const old = node("button", "Older cycles", "btn btn-sm btn-outline-secondary"); old.type="button"; old.disabled=state.cyclePage>=payload.cycles.pages;
+      recent.addEventListener("click",()=>{state.cyclePage-=1;state.detailRenderKey=null;loadAll(false);}); old.addEventListener("click",()=>{state.cyclePage+=1;state.detailRenderKey=null;loadAll(false);});
+      navigation.append(recent); navigation.append(node("span",`Cycle page ${payload.cycles.page} of ${payload.cycles.pages}`,"small text-muted")); navigation.append(old);
+    }
+    return card;
+  }
+
   function renderDetail(payload) {
     const session = payload.session;
     const cycles = (payload.cycles && payload.cycles.items) || [];
+    const key = renderKey({selected:state.selected, cyclePage:state.cyclePage, rcaPage:state.rcaPage, payload});
+    if (state.detailRenderKey === key) return false;
+    state.detailRenderKey = key;
+    const preservedChartCard = document.getElementById("monitoring-cycle-chart-card");
     detailNode.replaceChildren();
     const card = node("article", null, "card");
     const body = node("div", null, "card-body");
@@ -256,20 +357,7 @@
     }
     if (session.error) body.append(node("p", session.error.message || session.error, "alert alert-danger"));
     (session.warnings || []).forEach((warning) => body.append(node("p", warning, "alert alert-warning py-2")));
-    const chartCard = node("section", null, "border rounded p-3 mb-4");
-    chartCard.append(node("h3", "Anomaly percentage by committed cycle", "h5"));
-    if (cycles.some((cycle) => cycle.anomaly_percentage !== null && cycle.anomaly_percentage !== undefined)) {
-      const wrap = node("div", null, "chart-wrap"); const canvas = node("canvas"); canvas.id = "monitoring-cycle-chart"; wrap.append(canvas); chartCard.append(wrap);
-    } else chartCard.append(node("p", "No cycle with newly evaluated predictions is available yet.", "text-muted"));
-    if (payload.cycles.truncated) chartCard.append(node("p", "The chart shows the current history page. Older cycles remain available on older history pages.", "small text-muted"));
-    if ((payload.cycles.pages || 0) > 1) {
-      const navigation = node("div", null, "d-flex justify-content-between align-items-center mt-3");
-      const recent = node("button", "More recent cycles", "btn btn-sm btn-outline-secondary"); recent.type="button"; recent.disabled=state.cyclePage<=1;
-      const old = node("button", "Older cycles", "btn btn-sm btn-outline-secondary"); old.type="button"; old.disabled=state.cyclePage>=payload.cycles.pages;
-      recent.addEventListener("click",()=>{state.cyclePage-=1;loadAll(false);}); old.addEventListener("click",()=>{state.cyclePage+=1;loadAll(false);});
-      navigation.append(recent); navigation.append(node("span",`Cycle page ${payload.cycles.page} of ${payload.cycles.pages}`,"small text-muted")); navigation.append(old); chartCard.append(navigation);
-    }
-    body.append(chartCard);
+    body.append(chartCard(payload, cycles, preservedChartCard));
     renderRca(session, payload, body);
     const details = node("details", null, "mb-3"); details.append(node("summary", "Provenance details"));
     const list = node("dl", null, "row mt-3");
@@ -287,6 +375,12 @@
       body.append(stop);
     }
     card.append(body); detailNode.append(card); renderChart(cycles, session.rca);
+    return true;
+  }
+
+  function schedulePoll() {
+    clearTimeout(state.timer);
+    if (state.shouldPoll && !document.hidden) state.timer=setTimeout(() => loadAll(true), 4000);
   }
 
   async function loadAll(_schedule) {
@@ -304,11 +398,16 @@
       }
       clearError();
     } catch (error) { showError(error.message); shouldPoll = true; }
-    if (shouldPoll) state.timer=setTimeout(() => loadAll(true), 4000);
+    state.shouldPoll = shouldPoll;
+    schedulePoll();
   }
 
   newer.addEventListener("click", () => { if (state.page > 1) { state.page -= 1; select(null); loadAll(false); } });
   older.addEventListener("click", () => { if (state.page < state.pages) { state.page += 1; select(null); loadAll(false); } });
   window.addEventListener("pagehide", () => clearTimeout(state.timer));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearTimeout(state.timer);
+    else if (state.shouldPoll) loadAll(true);
+  });
   loadAll(true);
 })();

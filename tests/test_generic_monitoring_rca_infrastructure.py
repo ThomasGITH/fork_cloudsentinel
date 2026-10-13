@@ -21,11 +21,11 @@ def environment(path):
 
 
 class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
-    def test_changed_images_use_one_immutable_tag(self):
+    def test_changed_images_use_immutable_tags(self):
         tag = "generic-monitoring-rca-reanalysis-1"
         self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
-        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], f"jojojochem/monitoring_project:{tag}")
+        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], "jojojochem/monitoring_project:fix-polling-issue-1")
         crca_tag = "generic-monitoring-rca-readiness-fix-1.2"
         self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
         self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
