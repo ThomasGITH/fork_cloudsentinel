@@ -79,6 +79,10 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertNotIn("detector_id", payload)
         self.assertNotIn("prometheus_url", payload)
         self.assertFalse(payload["automatic_rca"]["enabled"])
+        self.assertFalse(payload["automatic_rca"]["reanalyze_within_episode"])
+        self.assertEqual(payload["automatic_rca"]["reanalysis_min_interval_seconds"], 900)
+        self.assertEqual(payload["automatic_rca"]["reanalysis_min_new_observations"], 20)
+        self.assertEqual(payload["automatic_rca"]["max_attempts_per_episode"], 3)
 
     @patch("config_app.views.monitoring.requests.post")
     def test_start_sends_explicit_rca_configuration(self, post):
@@ -90,14 +94,31 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
                 "model_id": "model-ready", "window_minutes": 10,
                 "poll_interval_seconds": 30, "automatic_rca_enabled": "on",
                 "rca_threshold_percentage": 75, "rca_analysis_window_minutes": 20,
-                "rca_cooldown_minutes": 90,
+                "rca_cooldown_minutes": 90, "rca_reanalysis_enabled": "on",
+                "rca_reanalysis_min_interval_seconds": 1800,
+                "rca_reanalysis_min_new_observations": 40,
+                "rca_max_attempts_per_episode": 4,
             },
         )
         self.assertEqual(response.status_code, 202)
         self.assertEqual(
             post.call_args.kwargs["json"]["automatic_rca"],
-            {"enabled": True, "threshold_percentage": 75.0, "analysis_window_seconds": 1200, "cooldown_seconds": 5400},
+            {
+                "enabled": True,
+                "threshold_percentage": 75.0,
+                "analysis_window_seconds": 1200,
+                "cooldown_seconds": 5400,
+                "reanalyze_within_episode": True,
+                "reanalysis_min_interval_seconds": 1800,
+                "reanalysis_min_new_observations": 40,
+                "max_attempts_per_episode": 4,
+            },
         )
+
+    def test_setup_explains_reanalysis_is_bounded_and_disabled_by_default(self):
+        response = self.client.get(reverse("monitoring"))
+        self.assertContains(response, "Allow bounded RCA reanalysis within the same episode")
+        self.assertContains(response, "Technical default: 900 seconds")
 
     @patch("config_app.views.monitoring.requests.post")
     def test_offline_only_model_cannot_start(self, post):

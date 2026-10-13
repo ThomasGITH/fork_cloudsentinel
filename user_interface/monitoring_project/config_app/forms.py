@@ -54,6 +54,35 @@ class MonitoringForm(forms.Form):
     rca_cooldown_minutes = forms.IntegerField(
         label="RCA cooldown (minutes)", min_value=0, max_value=10080, initial=60, required=False
     )
+    rca_reanalysis_enabled = forms.BooleanField(
+        label="Allow bounded RCA reanalysis within the same episode",
+        required=False,
+        initial=False,
+        help_text="Off by default. When enabled, later high cycles may be analysed after all interval, new-data and budget gates pass.",
+    )
+    rca_reanalysis_min_interval_seconds = forms.IntegerField(
+        label="Minimum RCA reanalysis interval (seconds)",
+        min_value=60,
+        max_value=604800,
+        initial=900,
+        required=False,
+        help_text="Technical default: 900 seconds. This is separate from cooldown between episodes.",
+    )
+    rca_reanalysis_min_new_observations = forms.IntegerField(
+        label="Minimum new observations for RCA reanalysis",
+        min_value=1,
+        max_value=100000,
+        initial=20,
+        required=False,
+    )
+    rca_max_attempts_per_episode = forms.IntegerField(
+        label="Maximum RCA execution attempts per episode",
+        min_value=1,
+        max_value=20,
+        initial=3,
+        required=False,
+        help_text="Includes the first accepted execution. Preflight skips do not consume this budget.",
+    )
 
 
 class UploadCGNNTrainDataForm(forms.Form):

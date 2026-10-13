@@ -16,6 +16,17 @@ A new session can explicitly configure:
 - threshold: `0..100%`, default `50%`;
 - analysis window: `60..86400` seconds, default 600 seconds;
 - cooldown: `0..604800` seconds, default 3600 seconds.
+- same-episode reanalysis: disabled by default;
+- minimum reanalysis interval: `60..604800` seconds, technical default 900;
+- minimum new observations: `1..100000`, technical default 20;
+- accepted execution attempts per episode: `1..20`, technical default 3,
+  including the first run.
+
+The reanalysis defaults are operational guardrails, not validated analytical
+settings. They must suit the recipe sampling interval, RCA analysis window and
+actual CausalRCA runtime. Episode cooldown controls when a recovered episode
+may re-arm. Reanalysis interval limits additional analyses while one episode
+remains continuously high; these are separate settings.
 
 The trigger is strictly:
 
@@ -27,14 +38,53 @@ It uses only newly eligible predictions in that committed cycle. An equal
 percentage does not trigger. A warm-up or no-new-data cycle has no percentage,
 does not trigger and does not recover an episode.
 
-The first crossing while armed creates one durable run intent. Continued high
-cycles are recorded as suppressed for the same episode. A valid cycle at or
+The first crossing while armed creates one durable run intent. With reanalysis
+disabled, continued high cycles are recorded as `suppressed_episode` and link
+to the earlier analysis. This remains the default and the behavior of old
+sessions without the additive policy fields. A valid cycle at or
 below the threshold records recovery. If cooldown has already expired, this
 re-arms immediately. Recovery during cooldown enters `recovered_cooldown`. A
 new high episode during that period is suppressed and enters
 `cooldown_episode`; persistent high values never cause a delayed run. A later
 valid cycle at or below the threshold after cooldown re-arms the session. This
 conservative policy prevents trigger storms.
+
+## Optional bounded same-episode reanalysis
+
+For a new session, an operator may explicitly enable bounded same-episode
+reanalysis. A later committed high cycle is eligible only when all gates pass:
+
+1. its percentage is strictly above threshold and it has new predictions;
+2. no RCA run for the session is queued or running;
+3. the interval since the last durable execution intent has elapsed;
+4. the current analysis window contains enough unique timestamps after the
+   previous RCA analysis end;
+5. the selected analysis content differs from the previous analysis;
+6. accepted attempts remain in the episode budget;
+7. recipe readiness and existing runtime input/window validation pass.
+
+The interval starts at the durable server timestamp of the accepted execution
+intent. It does not use browser polling, dispatch, worker start or completion
+time. Dispatch retries keep the same run ID, intent time and attempt number. A
+failed accepted run consumes one attempt and remains rate-limited.
+Each accepted reanalysis also moves `cooldown_until` from that intent's cycle
+time, so recovery shortly after the latest attempt still respects the separate
+between-episode cooldown.
+
+New observations are timestamp-based: only unique selected timestamps strictly
+after the previous analysis end count. Buffer length, overlapping collection,
+warm-up, repeated collection and late samples at or before that end cannot
+inflate the count. Analysis windows may overlap. A content checksum excluding
+the cycle-artifact reference prevents identical matrices and timestamps from
+being reanalysed through another reference.
+
+An input-selection failure is a **preflight skip**. It creates one idempotent
+per-cycle history record but no execution intent, consumes no budget, starts no
+interval and does not mark an armed episode analysed. A later high cycle is
+evaluated again even under the default one-run policy. Accepted intent
+reservation and episode-state publication share the session file lock, so two
+concurrent eligible cycles cannot consume the same attempt. At most one
+queued/running run is allowed per session.
 
 Stopping monitoring prevents newly evaluated trigger intents and new dispatch
 attempts. A task submitted before the stop may finish and persist its result;
@@ -108,7 +158,8 @@ The three windows have different meanings:
 The implementation reads the private, checksummed cycle input artifact. It
 does not query Prometheus again, use the legacy collector, impute values, drop
 features or infer a mapping. Insufficient context produces a durable `skipped`
-run and requires recovery before another episode can trigger.
+preflight record. It does not require recovery before a later high cycle can
+try again and does not consume the execution budget.
 
 CausalRCA applies a separately pinned per-column MinMax transformation
 (`cloudsentinel.crca-minmax/v1`). This does not touch the anomaly detector's
@@ -138,6 +189,13 @@ monitoring_history/
 The stable RCA run ID covers session, cycle, selected input checksum and pinned
 RCA configuration identity. Creation and state changes use the existing file
 lock and atomic JSON replacement. A cycle retry finds the same event/run.
+
+New sessions use policy `cloudsentinel.monitoring-rca-reanalysis/v1`. Each
+accepted run records first analysis versus reanalysis, episode and attempt
+number, budget, previous run, durable intent timestamp, previous/current
+analysis end, timestamp-based new-observation count, content identity and its
+own stored input/result checksums. Existing JSON records are read without
+migration and are never rewritten merely by deploying this version.
 
 The sequence is:
 
@@ -192,95 +250,68 @@ CRCA provides internal-only:
 
 Responses omit raw matrices, PromQL, internal paths and URLs, Celery IDs,
 tracebacks and private task details. The dashboard shows RCA enabled/readiness,
-threshold and windows, a threshold line, trigger markers, run status, stored
+threshold and windows, selected reanalysis policy, attempts used versus budget
+and conditional earliest eligibility time. It distinguishes first analysis,
+reanalysis, preflight skip, same-episode, interval, new-data, active-run and
+budget decisions. Suppressed decisions link to earlier analyses where present.
+The run list labels each attempt and its own analysis window. The dashboard also
+shows a threshold line, trigger markers, run status, stored
 ranking, stored graph and safe checksum provenance. It distinguishes started,
 suppressed, skipped and incompatible states. Rankings are described as
 diagnostic evidence and never as a proven root cause.
 
 ## Build, load and apply (do not run from this document automatically)
 
-Run from the repository root on the EC2 host. The CRCA Dockerfile now requires
-the repository root as its build context because it copies the shared durable
-history module. It installs `torch==2.2.2+cpu` from the official PyTorch CPU
-wheel index. The normal CRCA requirements deliberately do not contain `torch`,
-so pip cannot resolve the CUDA/NVIDIA dependency set. Its pandas, NumPy, SciPy,
-scikit-learn and matplotlib pins match the Python 3.12 runtime used by the
-other learning components. `scikit-network==0.33.0` is installed separately as
-a binary-only CPython 3.12 wheel. This avoids the legacy `0.31.0` source package,
-whose setup script tries to import NumPy before pip has installed it.
-`networkx==3.2.1` is paired with `matplotlib==3.9.0`; the former NetworkX 2.6.3
-pin called Matplotlib's removed callable `_AxesStack` API and caused an
-otherwise completed RCA calculation to fail while drawing its graph. Graph
-construction now uses `from_numpy_array`, the supported NetworkX 3 API, and
-selects the headless Agg backend before importing pyplot.
-The pinned `scikit-network==0.33.0` PageRank API is `fit_predict`; the removed
-legacy `fit_transform` call caused a second post-training failure after graph
-rendering had been corrected.
+Run these commands from the repository root on the EC2 host. This tranche
+changes only the Data Ingestion image used by its API and Celery worker, and the
+Django monitoring UI image. The CRCA API/worker, Generic Detection Runtime,
+Learning API/worker, data-processing and legacy CGNN images remain unchanged.
 
 ```bash
 docker build \
-  -t jojojochem/data_ingestion:generic-monitoring-rca-readiness-fix-1 \
+  -t jojojochem/data_ingestion:generic-monitoring-rca-reanalysis-1 \
   ./data_ingestion
 
 docker build \
-  -t jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1 \
+  -t jojojochem/monitoring_project:generic-monitoring-rca-reanalysis-1 \
   ./user_interface/monitoring_project
-
-docker build \
-  -f anomaly_detection/crca/Dockerfile \
-  --build-arg PYTORCH_VERSION=2.2.2 \
-  --build-arg SCIKIT_NETWORK_VERSION=0.33.0 \
-  -t jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.2 \
-  .
 ```
 
-If an earlier failed CRCA build left a large build cache, inspect it first with
-`docker builder du`. Reclaim only unused build cache with `docker builder
-prune`; this does not remove tagged application images. Cache cleanup is not
-required for correctness, but may be needed when the Minikube/EC2 disk was
-filled by the earlier CUDA dependency download.
-
-Load the three changed images into Minikube:
+Load the two new immutable tags into the current Minikube node:
 
 ```bash
-minikube image load jojojochem/data_ingestion:generic-monitoring-rca-readiness-fix-1
-minikube image load jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1
-minikube image load jojojochem/anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.2
+minikube image load jojojochem/data_ingestion:generic-monitoring-rca-reanalysis-1
+minikube image load jojojochem/monitoring_project:generic-monitoring-rca-reanalysis-1
 ```
 
-When the readiness-fix API, worker and UI images are already deployed, only the
-CRCA image changed for the graph-rendering and PageRank API compatibility
-corrections. In that case build/load the
-`anomaly_detection_crca:generic-monitoring-rca-readiness-fix-1.2`
-image and apply only the CRCA API and worker manifests.
-
-The manifests use `imagePullPolicy: IfNotPresent`, which is required for these
-locally loaded tags. Apply the existing storage-backed services first, then API,
-workers and UI:
+The manifests use `imagePullPolicy: IfNotPresent`, which is required for locally
+loaded images. Preserve the existing PVC and apply only the changed manifests:
 
 ```bash
 kubectl apply -f k8s/data_ingestion-deployment.yml
-kubectl apply -f k8s/crca_anomaly_detection-deployment.yml
 kubectl apply -f k8s/data_ingestion_celery-deployment.yml
-kubectl apply -f k8s/crca_anomaly_detection-celery-deployment.yml
 kubectl apply -f k8s/monitoring_project-deployment.yml
 ```
 
-Check rollouts:
+Check the exact deployment names and the unchanged CRCA worker:
 
 ```bash
 kubectl rollout status deployment/data-ingestion-deployment -n cloudsentinel
 kubectl rollout status deployment/celery-worker-deployment -n cloudsentinel
-kubectl rollout status deployment/crca-anomaly-detection-deployment -n cloudsentinel
-kubectl rollout status deployment/crca-anomaly-detection-celery-deployment -n cloudsentinel
 kubectl rollout status deployment/monitoring-project-deployment -n cloudsentinel
 
 kubectl get pods -n cloudsentinel
+kubectl get deployment -n cloudsentinel \
+  data-ingestion-deployment celery-worker-deployment \
+  monitoring-project-deployment crca-anomaly-detection-deployment \
+  crca-anomaly-detection-celery-deployment \
+  -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,READY:.status.readyReplicas
+
 kubectl logs -n cloudsentinel deployment/celery-worker-deployment --tail=100
 kubectl logs -n cloudsentinel deployment/crca-anomaly-detection-celery-deployment --tail=100
 ```
 
-Optional local checks:
+Optional port-forwards, each in its own terminal:
 
 ```bash
 kubectl port-forward -n cloudsentinel service/data-ingestion-service 5001:80
@@ -288,7 +319,7 @@ kubectl port-forward -n cloudsentinel service/crca-anomaly-detection-service 502
 kubectl port-forward -n cloudsentinel service/monitoring-project-service 8000:80
 ```
 
-Then, in separate terminals:
+Then verify health/readiness without starting monitoring:
 
 ```bash
 curl --show-error --fail http://127.0.0.1:5001/healthz | jq
@@ -300,55 +331,65 @@ curl --show-error --fail \
   "http://127.0.0.1:5001/monitoring-rca/readiness/${MODEL_ID}" | jq
 ```
 
-The Learning API/worker, Generic Detection Runtime, data-processing service and
-legacy CGNN runtime images are unchanged in this tranche.
-
-For a non-destructive rollback, retain the PVC and roll back only deployments:
+For a non-destructive rollback, keep all PVCs and undo only the changed
+Deployments:
 
 ```bash
 kubectl rollout undo deployment/data-ingestion-deployment -n cloudsentinel
 kubectl rollout undo deployment/celery-worker-deployment -n cloudsentinel
-kubectl rollout undo deployment/crca-anomaly-detection-deployment -n cloudsentinel
-kubectl rollout undo deployment/crca-anomaly-detection-celery-deployment -n cloudsentinel
 kubectl rollout undo deployment/monitoring-project-deployment -n cloudsentinel
 ```
 
-Do not delete `data-catalogue-pvc`; new records are additive and older history
-remains readable. Existing live-ready models do not require refetch or retrain
-because their inference and recipe contracts are unchanged.
+Do not delete `data-catalogue-pvc`. New policy fields and run records are
+additive; older images ignore them, although a session created with reanalysis
+should be stopped before rollback to avoid applying mixed policy code to one
+active session. Existing models need no fetch, training or recipe change.
 
 ## Live acceptance procedure
 
 1. Open **Live Monitoring**, select an existing live-ready model and leave
-   automatic RCA disabled. Start it and verify committed graph cycles continue
-   normally and no RCA run appears.
-2. Before fetching or training anything new, reload Monitoring Setup and verify
-   an existing model with a complete recipe is reassessed as RCA-compatible.
-   Optionally inspect the safe readiness response through the Data Ingestion
-   API and verify `feature_metadata_contract` is
-   `cloudsentinel.crca-feature-metadata/v1`.
-3. Start a second session with automatic RCA enabled for a model shown as
-   RCA-compatible. Choose a test threshold, analysis window and cooldown.
-4. Verify session detail shows the exact configuration and red threshold line.
-5. When a committed cycle is strictly above the threshold, verify exactly one
-   marker and RCA run appear. Inspect both workers' logs without expecting a
-   Celery task ID in the browser.
-6. If subsequent cycles remain high, verify they are marked suppressed and no
-   additional run is created, including repeated 100% cycles.
-7. Wait for the run to become completed or failed. For completion, verify each
-   ranking label is the exact unique feature ID. Explicit pod metadata appears
-   as `pod: <id>`; features without it show `Unavailable`. Treat the stored
-   ranking/graph as diagnostic output, not as a proven root cause.
-8. Produce a valid cycle at or below threshold. Verify recovery. Test the
-   documented cooldown behavior before expecting a later episode to trigger.
-9. Stop monitoring while an RCA run is already submitted. Verify no later cycle
-   creates a trigger; allow the submitted run to finish and verify it stays in
-   historical detail.
-10. Restart Redis or let Celery results expire without deleting the PVC. Verify
-   the stopped session, cycles, RCA status and completed result still load.
+   automatic RCA disabled. Start it and verify committed AD cycles continue and
+   no RCA run appears.
+2. Start a session with automatic RCA enabled and same-episode reanalysis
+   disabled. Verify the setup and detail state both say that only one analysis
+   is allowed per continuous episode.
+3. Cause or wait for one committed cycle strictly above threshold. Verify one
+   first-analysis marker/run. Keep later cycles above threshold and verify
+   `episode_already_analyzed`, a link to the earlier run, and no second run.
+4. Start a separate session with reanalysis enabled. The safe temporary test
+   values are the defaults: 900-second interval, 20 new observations and budget
+   3, provided the recipe sampling/window can supply at least 20 new rows in 15
+   minutes. At 15-second sampling, about 60 timestamps may become available in
+   that interval. Do not shorten the interval merely to force heavy RCA runs.
+5. Verify attempt 1 starts at the first high eligible cycle. While it is queued
+   or running, verify later high cycles say another run is active and no
+   parallel run appears.
+6. After attempt 1 is terminal, verify high cycles remain suppressed until both
+   900 seconds since its durable intent and 20 unique timestamps after its
+   analysis end are available. The UI's “not earlier than” time is conditional,
+   not a scheduling guarantee.
+7. Verify attempt 2 is labelled **Reanalysis**, links to attempt 1, has its own
+   cycle/window/input checksums and shows its timestamp-based new-row count.
+8. Keep the episode high through accepted attempt 3. Verify later high cycles
+   report that the episode budget is reached. If an accepted run fails, confirm
+   it still consumes one attempt and no immediate replacement appears.
+9. For preflight behavior, use an analysis window for which the first high cycle
+   lacks stored context. Verify a skipped record uses attempt 0; a later high
+   cycle may start attempt 1 once enough context exists, without a recovery
+   cycle or Prometheus refetch.
+10. Produce a valid cycle at or below threshold. Verify episode recovery. Test
+    cooldown separately before expecting the first run of a new episode.
+11. Stop monitoring while a run is submitted. Verify no new intent is created;
+    the submitted run may finish and remain visible in history.
+12. Reopen the stopped session after Redis/Celery result expiry or service
+    restart without deleting the PVC. Verify every decision, attempt, independent
+    input provenance and completed result still loads.
+13. For a completed result, verify ranking labels are exact feature IDs and treat
+    the ranking/graph as diagnostic evidence, never proof of a root cause.
 
-These steps are operator acceptance checks. This implementation has not been
-validated with a real live monitoring or RCA run by the code change itself.
+These are operator acceptance checks. No real monitoring, inference or RCA run
+was executed by this code change. Repeated 100% IF results are useful only for
+checking rate limits and budget; their detection correctness remains unknown.
 
 ## Troubleshooting and limits
 
@@ -361,8 +402,14 @@ validated with a real live monitoring or RCA run by the code change itself.
 - **Queued/pending:** inspect API/worker connectivity and use the reconcile
   endpoint only while the monitoring session is active.
 - **Skipped:** the committed context did not contain enough valid rows for the
-  requested analysis window. No refetch or imputation occurs.
+  requested analysis window. No refetch or imputation occurs. The skip consumes
+  no attempt; a later high cycle is checked again.
+- **Reanalysis did not start:** inspect the durable cycle decision. Interval,
+  timestamp-based new data, unchanged input, an active run or budget may each
+  suppress it. “Not earlier than” is conditional and not a scheduled start.
 - **Running after worker crash:** no automatic lease recovery exists yet.
+  A hanging running run blocks reanalysis; this tranche deliberately does not
+  add a lease/reaper or allow a second parallel run.
 - **100% anomaly cycles:** this tranche does not diagnose or alter IF/LOF/CGNN
   scores, fitting or thresholds.
 - CausalRCA remains the existing algorithm and is not generalized into an RCA

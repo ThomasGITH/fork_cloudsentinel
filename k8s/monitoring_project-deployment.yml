@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: monitoring-project
-        image: jojojochem/monitoring_project:generic-monitoring-rca-readiness-fix-1
+        image: jojojochem/monitoring_project:generic-monitoring-rca-reanalysis-1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000

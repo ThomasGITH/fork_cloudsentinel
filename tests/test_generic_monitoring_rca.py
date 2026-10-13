@@ -458,6 +458,10 @@ class MonitoringRcaStaticBoundaryTests(unittest.TestCase):
         self.assertIn(': "Unavailable"', source)
         self.assertIn("item.feature_id||item.feature_name", source)
         self.assertNotIn('["Rank","Feature","Pod","Metric","Score"]', source)
+        self.assertIn("RCA reanalysis started", source)
+        self.assertIn("this episode was already analysed", source)
+        self.assertIn("View earlier analysis", source)
+        self.assertIn("episode budget reached", source)
 
 
 if __name__ == "__main__":

@@ -38,6 +38,26 @@
     return Number.isNaN(parsed.getTime()) ? "Unavailable" : parsed.toLocaleString();
   }
 
+  function rcaDecision(event) {
+    const labels = {
+      started: "First RCA analysis started",
+      reanalysis_started: "RCA reanalysis started",
+      suppressed_episode: "RCA not repeated: this episode was already analysed",
+      suppressed_interval: "RCA reanalysis interval has not elapsed",
+      suppressed_new_observations: "Not enough new observations for RCA reanalysis",
+      suppressed_identical_input: "RCA reanalysis input is unchanged",
+      suppressed_running: "Another RCA run is active",
+      suppressed_concurrent: "Another RCA intent was reserved first",
+      suppressed_budget: "RCA episode budget reached",
+      suppressed_cooldown: "Episode cooldown is active",
+      skipped: "RCA preflight skipped; a later high cycle can try again",
+      recovered: "Episode recovered",
+      below_or_equal: "Threshold not exceeded",
+      no_new_data: "No newly evaluated observations",
+    };
+    return labels[event.status] || String(event.status || "Unavailable").replaceAll("_", " ");
+  }
+
   function select(sessionId) {
     state.selected = sessionId;
     const url = new URL(window.location.href);
@@ -110,8 +130,14 @@
       label: "Anomalous newly evaluated observations (%)",
       data: ordered.map((cycle) => cycle.anomaly_percentage === null || cycle.anomaly_percentage === undefined ? null : cycle.anomaly_percentage),
       borderColor: "#0d6efd", backgroundColor: "rgba(13,110,253,.12)",
-      pointRadius: ordered.map((cycle) => cycle.rca_trigger && ["started","skipped"].includes(cycle.rca_trigger.status) ? 7 : 4),
-      pointBackgroundColor: ordered.map((cycle) => cycle.rca_trigger && cycle.rca_trigger.status === "started" ? "#dc3545" : "#0d6efd"),
+      pointRadius: ordered.map((cycle) => cycle.rca_trigger && ["started","reanalysis_started","skipped"].includes(cycle.rca_trigger.status) ? 7 : 4),
+      pointBackgroundColor: ordered.map((cycle) => {
+        const status = cycle.rca_trigger && cycle.rca_trigger.status;
+        if (["started","reanalysis_started"].includes(status)) return "#dc3545";
+        if (status === "skipped") return "#fd7e14";
+        if (status && status.startsWith("suppressed_")) return "#ffc107";
+        return "#0d6efd";
+      }),
       tension: .2, spanGaps: false,
     }];
     if (Number.isFinite(threshold)) datasets.push({
@@ -148,7 +174,7 @@
         if (result.truncated) target.append(node("p", "The ranking is truncated to the first 100 rows.", "small text-muted"));
       } else if (run.status === "completed") target.append(node("p", "No bounded ranking rows are available.", "text-muted"));
       if (result && Array.isArray(result.graphs)) result.graphs.forEach((graph)=>{ if(graph && graph.media_type==="image/png" && /^[A-Za-z0-9+/=]+$/.test(graph.base64||"")){ const img=node("img"); img.className="img-fluid border rounded mt-3"; img.alt="Stored CausalRCA dependency graph"; img.src="data:image/png;base64,"+graph.base64; target.append(img); } });
-      const details=node("details",null,"mt-3"); details.append(node("summary","RCA provenance")); const pre=node("pre",JSON.stringify({cycle_id:run.cycle_id,trigger_percentage:run.trigger_percentage,threshold_percentage:run.threshold_percentage,analysis_window:run.analysis_window,input_sha256:run.input_sha256,result_sha256:run.result_sha256,preprocessing:run.preprocessing,algorithm:run.algorithm},null,2),"small mt-2 provenance-value"); details.append(pre); target.append(details);
+      const details=node("details",null,"mt-3"); details.append(node("summary","RCA provenance")); const pre=node("pre",JSON.stringify({cycle_id:run.cycle_id,analysis_kind:run.analysis_kind,execution_attempt_number:run.execution_attempt_number,episode_attempt_budget:run.episode_attempt_budget,previous_run_id:run.previous_run_id,trigger_percentage:run.trigger_percentage,threshold_percentage:run.threshold_percentage,analysis_window:run.analysis_window,new_observation_count:run.new_observation_count,input_sha256:run.input_sha256,analysis_input_sha256:run.analysis_input_sha256,result_sha256:run.result_sha256,policy_version:run.policy_version,preprocessing:run.preprocessing,algorithm:run.algorithm},null,2),"small mt-2 provenance-value"); details.append(pre); target.append(details);
       target.append(node("p", "This ranking is diagnostic evidence from the stored analysis window; it is not proof of the actual root cause.", "small text-muted mt-3"));
     } catch(error) { target.replaceChildren(node("p", error.message, "alert alert-danger")); }
   }
@@ -162,20 +188,29 @@
       ? `Enabled · trigger strictly above ${config.threshold_percentage}% · ${Math.round((config.analysis_window_seconds||0)/60)} minute analysis window · ${Math.round((config.cooldown_seconds||0)/60)} minute cooldown`
       : "Disabled for this session.";
     section.append(node("p", summary));
+    if (config.enabled && config.reanalyze_within_episode) {
+      section.append(node("p", `Bounded same-episode reanalysis enabled · not more often than every ${config.reanalysis_min_interval_seconds} seconds · at least ${config.reanalysis_min_new_observations} new observations · ${config.attempt_count||0} / ${config.max_attempts_per_episode} accepted attempts used in this episode.`, "small text-muted"));
+      if (config.last_intent_at) {
+        const next = new Date(new Date(config.last_intent_at).getTime() + Number(config.reanalysis_min_interval_seconds||0)*1000);
+        section.append(node("p", `Reanalysis is not eligible before ${time(next.toISOString())}, and only if the threshold remains exceeded, enough new data is available, no run is active, and budget remains.`, "small text-muted"));
+      }
+    } else if (config.enabled) {
+      section.append(node("p", "Same-episode reanalysis is disabled. RCA is not run again after this episode has been analysed; select the earlier analysis below.", "small text-muted"));
+    }
     section.append(node("p", `Input readiness: ${readiness}${config.readiness && config.readiness.reason ? " — "+config.readiness.reason : ""}`, "small text-muted"));
     section.append(node("p", "A threshold crossing starts at most one run per episode. No-new-data cycles do not recover or re-arm an episode.", "small text-muted"));
     section.append(node("p", "A persistently high anomaly percentage is not by itself proof of a reliable incident detection.", "small text-muted"));
+    const runs = (payload.rca_runs && payload.rca_runs.items) || [];
     const triggerEvents = (((payload.cycles||{}).items)||[]).filter((cycle)=>cycle.rca_trigger);
     if (triggerEvents.length) {
       const events=node("div",null,"mb-3"); events.append(node("strong","Recent trigger decisions","d-block mb-1"));
-      triggerEvents.slice(0,10).forEach((cycle)=>{ const event=cycle.rca_trigger; events.append(node("div",`${time((cycle.prediction_window||{}).end)} · ${event.status}${event.reason ? " — "+event.reason : ""}`,"small text-muted")); });
+      triggerEvents.slice(0,10).forEach((cycle)=>{ const event=cycle.rca_trigger; const line=node("div",null,"small text-muted mb-1"); line.append(document.createTextNode(`${time((cycle.prediction_window||{}).end)} · ${rcaDecision(event)}${event.reason ? " — "+event.reason : ""}`)); if(event.related_run_id||event.previous_run_id){ const link=node("a","View earlier analysis","ms-2"); const url=new URL(window.location.href); url.searchParams.set("session",session.session_id); url.searchParams.set("rca",event.related_run_id||event.previous_run_id); link.href=url.toString(); line.append(link); } events.append(line); });
       section.append(events);
     }
-    const runs = (payload.rca_runs && payload.rca_runs.items) || [];
     if (!runs.length) section.append(node("p", "No automatic CausalRCA run has been stored for this session.", "alert alert-secondary"));
     else {
       const list=node("div",null,"list-group mb-3"); const detail=node("div",null,"border rounded p-3");
-      runs.forEach((run)=>{ const button=node("button",null,"list-group-item list-group-item-action"); button.type="button"; const top=node("div",null,"d-flex justify-content-between gap-2"); top.append(node("span",`${time((run.analysis_window||{}).start)} – ${time((run.analysis_window||{}).end)}`)); top.append(badge(run.status)); button.append(top); button.append(node("small",`Triggered at ${run.trigger_percentage}% (threshold ${run.threshold_percentage}%)`,"text-muted")); button.addEventListener("click",()=>loadRcaDetail(session.session_id,run.run_id,detail)); list.append(button); });
+      runs.forEach((run)=>{ const button=node("button",null,"list-group-item list-group-item-action"); button.type="button"; const top=node("div",null,"d-flex justify-content-between gap-2"); const kind=run.analysis_kind==="reanalysis" ? `Reanalysis ${run.execution_attempt_number||""}` : run.analysis_kind==="preflight_skip" ? "Preflight skip" : "First analysis"; top.append(node("span",`${kind} · ${time((run.analysis_window||{}).start)} – ${time((run.analysis_window||{}).end)}`)); top.append(badge(run.status)); button.append(top); button.append(node("small",`Triggered at ${run.trigger_percentage}% (threshold ${run.threshold_percentage}%)${run.new_observation_count!==undefined ? ` · ${run.new_observation_count} new observations` : ""}`,"text-muted")); button.addEventListener("click",()=>loadRcaDetail(session.session_id,run.run_id,detail)); list.append(button); });
       section.append(list); section.append(detail); if(!state.selectedRca) loadRcaDetail(session.session_id,runs[0].run_id,detail); else { const selected=runs.find((run)=>run.run_id===state.selectedRca)||runs[0]; loadRcaDetail(session.session_id,selected.run_id,detail); }
       if ((payload.rca_runs.pages || 0) > 1) {
         const navigation=node("div",null,"d-flex justify-content-between align-items-center mt-3");

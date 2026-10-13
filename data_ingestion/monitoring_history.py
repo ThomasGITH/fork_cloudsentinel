@@ -433,10 +433,47 @@ class MonitoringHistoryStore:
                         },
                     )
                 session = self.read_session(session_id)
-                session["rca"] = deepcopy(rca_state)
-                session["updated_at"] = utc_now()
-                _atomic_json(self._session_dir(session_id) / "session.json", session)
+                current_rca = session.get("rca") if isinstance(session.get("rca"), dict) else {}
+                current_attempt = int(current_rca.get("attempt_count", 0))
+                supplied_attempt = int(rca_state.get("attempt_count", 0))
+                if (
+                    not current_rca
+                    or (
+                        supplied_attempt >= current_attempt
+                        and current_rca.get("last_run_id") in {None, run_id}
+                    )
+                ):
+                    session["rca"] = deepcopy(rca_state)
+                    session["updated_at"] = utc_now()
+                    _atomic_json(self._session_dir(session_id) / "session.json", session)
                 return existing
+            attempt_number = run.get("execution_attempt_number")
+            if isinstance(attempt_number, int) and not isinstance(attempt_number, bool) and attempt_number > 0:
+                session = self.read_session(session_id)
+                current_rca = session.get("rca") if isinstance(session.get("rca"), dict) else {}
+                if (
+                    attempt_number != int(current_rca.get("attempt_count", 0)) + 1
+                    or run.get("previous_run_id") != current_rca.get("last_run_id")
+                ):
+                    raise MonitoringHistoryError(
+                        "RCA execution intent conflicts with current episode state"
+                    )
+                active = []
+                rca_directory = self._rca_dir(session_id)
+                if rca_directory.is_dir():
+                    for candidate in rca_directory.iterdir():
+                        if not candidate.is_dir() or candidate.name.startswith("."):
+                            continue
+                        try:
+                            candidate_record = _read_json(candidate / "run.json")
+                        except MonitoringHistoryError:
+                            continue
+                        if candidate_record.get("status") in {"queued", "running"}:
+                            active.append(candidate_record.get("run_id"))
+                if active:
+                    raise MonitoringHistoryError(
+                        "another CausalRCA execution intent is active"
+                    )
             stored = deepcopy(run)
             stored.update(schema_version=1, session_id=session_id, cycle_id=cycle_id)
             if input_payload is not None:
@@ -584,6 +621,10 @@ class MonitoringHistoryStore:
             "result_sha256", "ranking_count", "graph_count", "failure",
             "skip_reason_code", "skip_reason",
             "dispatch_status", "dispatch_error",
+            "analysis_kind", "execution_attempt_number", "episode_attempt_budget",
+            "previous_run_id", "intent_created_at", "previous_analysis_end",
+            "new_observation_count", "policy_version",
+            "analysis_input_sha256",
         )
         return {key: deepcopy(record[key]) for key in allowed if key in record}
 
@@ -656,6 +697,14 @@ class MonitoringHistoryStore:
                         "threshold_percentage",
                         "episode_state",
                         "run_id",
+                        "analysis_kind",
+                        "execution_attempt_number",
+                        "episode_attempt_budget",
+                        "previous_run_id",
+                        "related_run_id",
+                        "new_observation_count",
+                        "required_new_observations",
+                        "next_reanalysis_not_before",
                     )
                     if key in event
                 }

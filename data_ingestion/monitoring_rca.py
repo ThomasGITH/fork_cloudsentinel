@@ -15,11 +15,16 @@ RCA_INPUT_CONTRACT = "cloudsentinel.crca-input/v1"
 RCA_FEATURE_METADATA_CONTRACT = "cloudsentinel.crca-feature-metadata/v1"
 RCA_PREPROCESSING_CONTRACT = "cloudsentinel.crca-minmax/v1"
 RCA_ALGORITHM_ID = "cloudsentinel.causal-rca/legacy-v1"
+RCA_REANALYSIS_POLICY = "cloudsentinel.monitoring-rca-reanalysis/v1"
 DEFAULT_RCA_CONFIGURATION = {
     "enabled": False,
     "threshold_percentage": 50.0,
     "analysis_window_seconds": 600,
     "cooldown_seconds": 3600,
+    "reanalyze_within_episode": False,
+    "reanalysis_min_interval_seconds": 900,
+    "reanalysis_min_new_observations": 20,
+    "max_attempts_per_episode": 3,
 }
 
 
@@ -60,30 +65,71 @@ def utc_text(value: datetime) -> str:
 
 
 def validate_rca_configuration(value: Any) -> dict[str, Any]:
+    if value is not None and not isinstance(value, dict):
+        raise MonitoringRcaError("automatic RCA configuration must be an object")
     raw = value if isinstance(value, dict) else {}
     unknown = set(raw) - set(DEFAULT_RCA_CONFIGURATION)
     if unknown:
         raise MonitoringRcaError("automatic RCA configuration contains unknown fields")
     result = {**DEFAULT_RCA_CONFIGURATION, **raw}
-    if not isinstance(result["enabled"], bool):
-        raise MonitoringRcaError("automatic RCA enabled must be true or false")
+    for name in ("enabled", "reanalyze_within_episode"):
+        if not isinstance(result[name], bool):
+            raise MonitoringRcaError(
+                f"automatic RCA {name.replace('_', ' ')} must be true or false"
+            )
+    if isinstance(result["threshold_percentage"], bool):
+        raise MonitoringRcaError("automatic RCA threshold must be numeric")
+    integer_fields = (
+        "analysis_window_seconds",
+        "cooldown_seconds",
+        "reanalysis_min_interval_seconds",
+        "reanalysis_min_new_observations",
+        "max_attempts_per_episode",
+    )
+    if any(isinstance(result[name], bool) for name in integer_fields):
+        raise MonitoringRcaError("automatic RCA timing and budget values must be integers")
     try:
         threshold = float(result["threshold_percentage"])
         window = int(result["analysis_window_seconds"])
         cooldown = int(result["cooldown_seconds"])
+        reanalysis_interval = int(result["reanalysis_min_interval_seconds"])
+        reanalysis_observations = int(result["reanalysis_min_new_observations"])
+        episode_budget = int(result["max_attempts_per_episode"])
     except (TypeError, ValueError) as exc:
         raise MonitoringRcaError("automatic RCA timing configuration is invalid") from exc
+    for name in integer_fields:
+        raw_value = result[name]
+        if not isinstance(raw_value, int) or isinstance(raw_value, bool):
+            raise MonitoringRcaError(
+                f"automatic RCA {name.replace('_', ' ')} must be an integer"
+            )
     if not math.isfinite(threshold) or threshold < 0 or threshold > 100:
         raise MonitoringRcaError("automatic RCA threshold must be between 0 and 100")
     if window < 60 or window > 86400:
         raise MonitoringRcaError("automatic RCA analysis window must be between 60 and 86400 seconds")
     if cooldown < 0 or cooldown > 604800:
         raise MonitoringRcaError("automatic RCA cooldown must be between 0 and 604800 seconds")
+    if reanalysis_interval < 60 or reanalysis_interval > 604800:
+        raise MonitoringRcaError(
+            "automatic RCA reanalysis interval must be between 60 and 604800 seconds"
+        )
+    if reanalysis_observations < 1 or reanalysis_observations > 100000:
+        raise MonitoringRcaError(
+            "automatic RCA minimum new observations must be between 1 and 100000"
+        )
+    if episode_budget < 1 or episode_budget > 20:
+        raise MonitoringRcaError(
+            "automatic RCA episode budget must be between 1 and 20 attempts"
+        )
     return {
         "enabled": result["enabled"],
         "threshold_percentage": threshold,
         "analysis_window_seconds": window,
         "cooldown_seconds": cooldown,
+        "reanalyze_within_episode": result["reanalyze_within_episode"],
+        "reanalysis_min_interval_seconds": reanalysis_interval,
+        "reanalysis_min_new_observations": reanalysis_observations,
+        "max_attempts_per_episode": episode_budget,
     }
 
 
@@ -275,11 +321,17 @@ def initial_rca_state(
         ),
         "minimum_observations": int(safe_capability.get("minimum_observations", 2)),
         "minimum_features": int(safe_capability.get("minimum_features", 2)),
+        "policy_version": RCA_REANALYSIS_POLICY,
         "episode_state": "armed",
         "episode_id": None,
         "active_run_id": None,
         "cooldown_until": None,
         "recovered_at": None,
+        "attempt_count": 0,
+        "last_run_id": None,
+        "last_intent_at": None,
+        "last_analysis_end": None,
+        "last_input_sha256": None,
     }
 
 
@@ -293,55 +345,211 @@ def decide_trigger(state: dict[str, Any], cycle: dict[str, Any]) -> tuple[dict[s
         return updated, _event("disabled", updated)
     if updated.get("readiness", {}).get("status") != "ready":
         return updated, _event("incompatible", updated, updated.get("readiness", {}).get("reason"))
-    if not isinstance(count, int) or count <= 0 or percentage is None:
-        return updated, _event("no_new_data", updated)
+    if not isinstance(count, int) or isinstance(count, bool) or count <= 0 or percentage is None:
+        return updated, _event(
+            "no_new_data",
+            updated,
+            "No newly evaluated predictions were available for an RCA decision.",
+            "no_new_data",
+        )
     try:
         percentage = float(percentage)
         moment = parse_utc(at)
     except (TypeError, ValueError, MonitoringRcaError):
         return updated, _event("invalid_cycle", updated, "The committed cycle has invalid trigger metadata.")
+    if not math.isfinite(percentage):
+        return updated, _event(
+            "invalid_cycle",
+            updated,
+            "The committed cycle has invalid trigger metadata.",
+            "invalid_cycle",
+        )
     threshold = float(updated["threshold_percentage"])
     state_name = updated.get("episode_state", "armed")
     cooldown_until = updated.get("cooldown_until")
     cooldown_end = parse_utc(cooldown_until) if cooldown_until else None
     if percentage <= threshold:
         if state_name == "armed":
-            return updated, _event("below_or_equal", updated)
+            return updated, _event(
+                "below_or_equal",
+                updated,
+                "The anomaly percentage did not strictly exceed the RCA threshold.",
+                "threshold_not_exceeded",
+            )
         updated["active_run_id"] = None
         updated["recovered_at"] = at
         updated["episode_id"] = None
+        updated["attempt_count"] = 0
+        updated["last_run_id"] = None
+        updated["last_intent_at"] = None
+        updated["last_analysis_end"] = None
+        updated["last_input_sha256"] = None
         updated["episode_state"] = "armed" if cooldown_end is None or moment >= cooldown_end else "recovered_cooldown"
-        return updated, _event("recovered", updated)
+        return updated, _event(
+            "recovered",
+            updated,
+            "The episode recovered at or below the RCA threshold.",
+            "episode_recovered",
+        )
     if state_name == "armed":
         return updated, _event("trigger", updated)
-    if state_name == "recovered_cooldown":
+    if state_name in {"recovered_cooldown", "cooldown_episode"}:
         updated["episode_state"] = "cooldown_episode"
-        return updated, _event("suppressed_cooldown", updated)
-    return updated, _event("suppressed_episode", updated)
+        return updated, _event(
+            "suppressed_cooldown",
+            updated,
+            "The previous episode recovered, but the episode cooldown has not elapsed.",
+            "episode_cooldown_active",
+        )
+    if updated.get("reanalyze_within_episode"):
+        return updated, _event("reanalysis_candidate", updated)
+    return updated, _event(
+        "suppressed_episode",
+        updated,
+        "RCA was not run again because this episode has already been analysed.",
+        "episode_already_analyzed",
+        related_run_id=updated.get("last_run_id"),
+    )
 
 
-def mark_triggered(state: dict[str, Any], run_id: str, cycle_time: str) -> dict[str, Any]:
+def mark_triggered(
+    state: dict[str, Any],
+    run_id: str,
+    cycle_time: str,
+    *,
+    intent_at: str | None = None,
+    analysis_end: str | None = None,
+    input_sha256: str | None = None,
+) -> dict[str, Any]:
     updated = deepcopy(state)
     moment = parse_utc(cycle_time)
     updated["episode_state"] = "triggered"
-    updated["episode_id"] = run_id
+    updated["episode_id"] = updated.get("episode_id") or run_id
     updated["active_run_id"] = run_id
     updated["last_triggered_at"] = cycle_time
+    updated["last_run_id"] = run_id
+    updated["last_intent_at"] = intent_at or cycle_time
+    updated["last_analysis_end"] = analysis_end
+    updated["last_input_sha256"] = input_sha256
+    updated["attempt_count"] = int(updated.get("attempt_count", 0)) + 1
     updated["cooldown_until"] = utc_text(
         moment + timedelta(seconds=int(updated.get("cooldown_seconds", 0)))
     )
     return updated
 
 
-def _event(status: str, state: dict[str, Any], reason: str | None = None) -> dict[str, Any]:
+def _event(
+    status: str,
+    state: dict[str, Any],
+    reason: str | None = None,
+    reason_code: str | None = None,
+    **metadata: Any,
+) -> dict[str, Any]:
     value = {
         "status": status,
         "threshold_percentage": state.get("threshold_percentage"),
         "episode_state": state.get("episode_state"),
+        "attempt_count": int(state.get("attempt_count", 0)),
+        "max_attempts_per_episode": state.get("max_attempts_per_episode"),
     }
+    if reason_code:
+        value["reason_code"] = reason_code
     if reason:
         value["reason"] = str(reason)[:500]
+    for key, item in metadata.items():
+        if item is not None:
+            value[key] = item
     return value
+
+
+def evaluate_reanalysis(
+    state: dict[str, Any],
+    selected_input: dict[str, Any],
+    input_sha256: str,
+    *,
+    decision_time: str,
+) -> dict[str, Any]:
+    """Evaluate rate, data and budget gates for one same-episode candidate."""
+    attempt_count = int(state.get("attempt_count", 0))
+    budget = int(state.get("max_attempts_per_episode", 1))
+    if attempt_count >= budget:
+        return _event(
+            "suppressed_budget",
+            state,
+            "RCA was not run because this episode has reached its execution budget.",
+            "episode_budget_reached",
+            related_run_id=state.get("last_run_id"),
+        )
+    last_intent_at = state.get("last_intent_at")
+    next_not_before = None
+    if last_intent_at:
+        next_moment = parse_utc(last_intent_at) + timedelta(
+            seconds=int(state.get("reanalysis_min_interval_seconds", 900))
+        )
+        next_not_before = utc_text(next_moment)
+        if parse_utc(decision_time) < next_moment:
+            return _event(
+                "suppressed_interval",
+                state,
+                "RCA reanalysis is rate-limited for this episode.",
+                "reanalysis_interval_not_elapsed",
+                next_reanalysis_not_before=next_not_before,
+                related_run_id=state.get("last_run_id"),
+            )
+    timestamps = selected_input.get("timestamps")
+    if not isinstance(timestamps, list):
+        raise MonitoringRcaError("The selected RCA input timestamps are invalid.")
+    previous_end = state.get("last_analysis_end")
+    if previous_end:
+        previous_moment = parse_utc(previous_end)
+        new_observations = len(
+            {item for item in timestamps if parse_utc(item) > previous_moment}
+        )
+    else:
+        new_observations = len(set(timestamps))
+    minimum = int(state.get("reanalysis_min_new_observations", 20))
+    if new_observations < minimum:
+        return _event(
+            "suppressed_new_observations",
+            state,
+            "RCA was not run because too few new observations are available.",
+            "insufficient_new_observations",
+            new_observation_count=new_observations,
+            required_new_observations=minimum,
+            next_reanalysis_not_before=next_not_before,
+            related_run_id=state.get("last_run_id"),
+        )
+    if state.get("last_input_sha256") == input_sha256:
+        return _event(
+            "suppressed_identical_input",
+            state,
+            "RCA was not run because the selected analysis input is unchanged.",
+            "identical_analysis_input",
+            new_observation_count=new_observations,
+            related_run_id=state.get("last_run_id"),
+        )
+    return _event(
+        "reanalysis",
+        state,
+        new_observation_count=new_observations,
+        required_new_observations=minimum,
+        next_reanalysis_not_before=next_not_before,
+    )
+
+
+def analysis_input_identity(selected_input: dict[str, Any]) -> str:
+    """Identify analysis content independently of its cycle artifact reference."""
+    return canonical_sha256(
+        {
+            "contract": selected_input.get("contract"),
+            "analysis_window": selected_input.get("analysis_window"),
+            "feature_order": selected_input.get("feature_order"),
+            "feature_order_sha256": selected_input.get("feature_order_sha256"),
+            "feature_metadata_sha256": selected_input.get("feature_metadata_sha256"),
+            "timestamps": selected_input.get("timestamps"),
+            "matrix": selected_input.get("matrix"),
+        }
+    )
 
 
 def select_analysis_input(

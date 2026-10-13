@@ -78,9 +78,11 @@ except ModuleNotFoundError:
 try:
     from data_ingestion.monitoring_rca import (
         MonitoringRcaError,
+        analysis_input_identity,
         assess_recipe_compatibility,
         canonical_sha256 as rca_sha256,
         decide_trigger,
+        evaluate_reanalysis,
         initial_rca_state,
         mark_triggered,
         select_analysis_input,
@@ -90,9 +92,11 @@ try:
 except ModuleNotFoundError:
     from monitoring_rca import (
         MonitoringRcaError,
+        analysis_input_identity,
         assess_recipe_compatibility,
         canonical_sha256 as rca_sha256,
         decide_trigger,
+        evaluate_reanalysis,
         initial_rca_state,
         mark_triggered,
         select_analysis_input,
@@ -364,8 +368,9 @@ def _process_cycle_rca(session_id, cycle_id):
         )
     cycle = monitoring_history.read_cycle(session_id, cycle_id)
     updated, event = decide_trigger(state, cycle)
-    if event["status"] != "trigger" or session.get("status") == "stopped":
-        if session.get("status") == "stopped" and event["status"] == "trigger":
+    candidates = {"trigger", "reanalysis_candidate"}
+    if event["status"] not in candidates or session.get("status") == "stopped":
+        if session.get("status") == "stopped" and event["status"] in candidates:
             event = {**event, "status": "suppressed_stopped", "reason": "Monitoring was stopped before RCA dispatch."}
         monitoring_history.record_rca_event(session_id, cycle_id, event, rca_state=updated)
         return
@@ -380,7 +385,13 @@ def _process_cycle_rca(session_id, cycle_id):
         monitoring_history.record_rca_event(
             session_id,
             cycle_id,
-            {**event, "status": "suppressed_running", "reason": "Another CausalRCA run is already queued or running."},
+            {
+                **event,
+                "status": "suppressed_running",
+                "reason_code": "rca_run_active",
+                "reason": "Another CausalRCA run is already queued or running.",
+                "related_run_id": active_runs[0]["run_id"],
+            },
             rca_state=updated,
         )
         return
@@ -410,6 +421,11 @@ def _process_cycle_rca(session_id, cycle_id):
         "algorithm_config_sha256": updated.get("algorithm_config_sha256"),
         "preprocessing_contract": updated.get("preprocessing_contract"),
         "feature_metadata_contract": readiness.get("feature_metadata_contract"),
+        "policy_version": updated.get("policy_version"),
+        "reanalyze_within_episode": bool(updated.get("reanalyze_within_episode", False)),
+        "reanalysis_min_interval_seconds": updated.get("reanalysis_min_interval_seconds"),
+        "reanalysis_min_new_observations": updated.get("reanalysis_min_new_observations"),
+        "max_attempts_per_episode": updated.get("max_attempts_per_episode"),
     }
     detection_time = (cycle.get("prediction_window") or {}).get("end")
     base_run = {
@@ -451,13 +467,51 @@ def _process_cycle_rca(session_id, cycle_id):
             minimum_features=updated.get("minimum_features", 2),
         )
         selected_sha = rca_sha256(selected)
+        selected_identity = analysis_input_identity(selected)
+        intent_at = utc_now()
+        analysis_kind = "first_analysis"
+        if event["status"] == "reanalysis_candidate":
+            decision = evaluate_reanalysis(
+                updated,
+                selected,
+                selected_identity,
+                decision_time=intent_at,
+            )
+            if decision["status"] != "reanalysis":
+                monitoring_history.record_rca_event(
+                    session_id,
+                    cycle_id,
+                    decision,
+                    rca_state=updated,
+                )
+                return
+            event = decision
+            analysis_kind = "reanalysis"
+        previous_run_id = updated.get("last_run_id")
+        attempt_number = int(updated.get("attempt_count", 0)) + 1
         run_id = stable_run_id(session_id, cycle_id, selected_sha, configuration_identity)
-        updated = mark_triggered(updated, run_id, cycle.get("completed_at") or cycle["committed_at"])
+        updated = mark_triggered(
+            updated,
+            run_id,
+            cycle.get("completed_at") or cycle["committed_at"],
+            intent_at=intent_at,
+            analysis_end=selected["analysis_window"]["end"],
+            input_sha256=selected_identity,
+        )
         run = {
             **base_run,
             "run_id": run_id,
-            "episode_id": run_id,
+            "episode_id": updated["episode_id"],
             "cooldown_until": updated["cooldown_until"],
+            "analysis_kind": analysis_kind,
+            "execution_attempt_number": attempt_number,
+            "episode_attempt_budget": updated.get("max_attempts_per_episode"),
+            "previous_run_id": previous_run_id,
+            "intent_created_at": intent_at,
+            "previous_analysis_end": state.get("last_analysis_end"),
+            "new_observation_count": event.get("new_observation_count", len(selected["timestamps"])),
+            "analysis_input_sha256": selected_identity,
+            "policy_version": updated.get("policy_version"),
             "analysis_window": selected["analysis_window"],
             "observation_count": len(selected["matrix"]),
             "feature_count": len(selected["feature_order"]),
@@ -472,22 +526,35 @@ def _process_cycle_rca(session_id, cycle_id):
             cycle_id,
             run,
             input_payload=selected,
-            event={**event, "status": "started", "episode_state": "triggered"},
+            event={
+                **event,
+                "status": "reanalysis_started" if analysis_kind == "reanalysis" else "started",
+                "reason_code": "reanalysis_started" if analysis_kind == "reanalysis" else "first_analysis_started",
+                "analysis_kind": analysis_kind,
+                "execution_attempt_number": attempt_number,
+                "episode_attempt_budget": updated.get("max_attempts_per_episode"),
+                "previous_run_id": previous_run_id,
+                "episode_state": "triggered",
+            },
             rca_state=updated,
         )
         _dispatch_rca_run(session_id, run_id)
     except MonitoringRcaError as exc:
         skipped_id = stable_run_id(session_id, cycle_id, cycle["input_sha256"], configuration_identity)
-        updated = mark_triggered(updated, skipped_id, cycle.get("completed_at") or cycle["committed_at"])
         monitoring_history.create_rca_run(
             session_id,
             cycle_id,
             {
                 **base_run,
                 "run_id": skipped_id,
-                "episode_id": skipped_id,
+                "episode_id": updated.get("episode_id"),
                 "status": "skipped",
                 "completed_at": utc_now(),
+                "analysis_kind": "preflight_skip",
+                "execution_attempt_number": 0,
+                "episode_attempt_budget": updated.get("max_attempts_per_episode"),
+                "previous_run_id": updated.get("last_run_id"),
+                "policy_version": updated.get("policy_version"),
                 "skip_reason_code": exc.reason_code,
                 "skip_reason": str(exc)[:500],
             },
@@ -497,9 +564,24 @@ def _process_cycle_rca(session_id, cycle_id):
                 "status": "skipped",
                 "reason_code": exc.reason_code,
                 "reason": str(exc)[:500],
-                "episode_state": "triggered",
+                "analysis_kind": "preflight_skip",
+                "execution_attempt_number": 0,
+                "episode_state": updated.get("episode_state", "armed"),
             },
             rca_state=updated,
+        )
+    except MonitoringHistoryError:
+        current = monitoring_history.read_session(session_id).get("rca", updated)
+        monitoring_history.record_rca_event(
+            session_id,
+            cycle_id,
+            {
+                **event,
+                "status": "suppressed_concurrent",
+                "reason_code": "concurrent_intent_reserved",
+                "reason": "Another CausalRCA execution intent was reserved first.",
+            },
+            rca_state=current,
         )
 
 

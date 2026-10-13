@@ -22,7 +22,7 @@ def environment(path):
 
 class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
     def test_changed_images_use_one_immutable_tag(self):
-        tag = "generic-monitoring-rca-readiness-fix-1"
+        tag = "generic-monitoring-rca-reanalysis-1"
         self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], f"jojojochem/monitoring_project:{tag}")
