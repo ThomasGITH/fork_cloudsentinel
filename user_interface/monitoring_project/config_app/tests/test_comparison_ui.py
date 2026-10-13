@@ -156,6 +156,29 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertEqual(rejected.status_code, 400)
         self.learning.create_comparison.assert_not_called()
 
+    def test_technical_saved_model_id_gets_readable_label_but_remains_visible(self):
+        technical_id = "run_9db880e4243e49d8acdb405bdc60ff9e-cgnn-ac2846b2"
+        self.learning.list_compatible_models.return_value = {
+            "items": [
+                {
+                    "model_id": technical_id,
+                    "display_name": technical_id,
+                    "detector_id": "cgnn",
+                    "detector_version": "1.0.0",
+                    "model_created_at": "2026-10-10T20:24:00Z",
+                    "training_dataset": {},
+                    "compatible": True,
+                    "compatibility_reasons": [],
+                }
+            ]
+        }
+        response = self._step(2)
+        self.assertContains(
+            response,
+            "CGNN v1.0.0 · trained 10 Oct 2026, 20:24 UTC",
+        )
+        self.assertContains(response, technical_id)
+
     def test_wizard_requires_two_and_creates_payload(self):
         second = self._step(2)
         too_few = self.client.post(reverse("comparison_new"), {"step": 2, "wizard_state": second.context["state_token"], "model_ids": ["model-one"]})

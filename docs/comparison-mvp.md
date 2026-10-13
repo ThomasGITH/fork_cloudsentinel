@@ -6,6 +6,14 @@ Root-cause analysis, remediation, exports, composite robustness scoring and
 model training are outside this feature. Historical per-context robustness is
 documented in `docs/comparison-robustness.md`.
 
+Saved Models without an explicit display name are presented with a readable,
+generic label based on detector, detector version and creation timestamp, for
+example `CGNN v1.0.0 · trained 10 Oct 2026, 20:24 UTC`. The immutable
+`model_id` remains visible as secondary provenance and continues to be used for
+all API calls and compatibility checks. Existing ComparisonRuns are humanized
+at the Django presentation boundary; stored records and artifact identities are
+not rewritten. An explicit Saved Model display name always takes precedence.
+
 ## Execution and persistence
 
 The learning-adaptation API stores each `ComparisonRun` atomically under

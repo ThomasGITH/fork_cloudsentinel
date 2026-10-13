@@ -61,7 +61,7 @@ class MonitoringPollingUiRegressionTests(unittest.TestCase):
 
 
 class MonitoringPollingDeploymentTests(unittest.TestCase):
-    def test_ui_manifest_uses_fix_image(self):
+    def test_ui_manifest_uses_image_containing_the_polling_fix(self):
         documents = list(
             yaml.safe_load_all(
                 (ROOT / "k8s/monitoring_project-deployment.yml").read_text()
@@ -71,7 +71,7 @@ class MonitoringPollingDeploymentTests(unittest.TestCase):
         container = deployment["spec"]["template"]["spec"]["containers"][0]
         self.assertEqual(
             container["image"],
-            "jojojochem/monitoring_project:fix-polling-issue-1",
+            "jojojochem/monitoring_project:comparison-readable-model-names-1",
         )
         self.assertEqual(container["imagePullPolicy"], "IfNotPresent")
 

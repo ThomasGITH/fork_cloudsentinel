@@ -12,6 +12,11 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from ..learning_client import LearningClientError, get_learning_client, safe_learning_message
+from ..comparison_labels import (
+    humanize_comparison,
+    humanize_model_items,
+    humanize_robustness,
+)
 
 
 _SALT = "cloudsentinel.comparison-wizard.v1"
@@ -57,6 +62,9 @@ def comparison_overview(request: HttpRequest):
     context = {"filters": filters, "error": None, "retryable": False}
     try:
         payload = get_learning_client().list_comparisons(filters)
+        for item in payload.get("items", []):
+            if isinstance(item, dict):
+                humanize_comparison(item)
         previous, following = _page_links(payload, filters)
         context.update(comparisons=payload, previous=previous, next=following)
     except LearningClientError as exc:
@@ -95,6 +103,7 @@ def comparison_new(request: HttpRequest):
                 models_payload = client.list_compatible_models(
                     dataset["dataset_id"], dataset["version"], dataset["partition_id"]
                 )
+                humanize_model_items(models_payload.get("items", []))
                 compatible = {
                     item["model_id"]: item
                     for item in models_payload.get("items", [])
@@ -134,6 +143,7 @@ def comparison_new(request: HttpRequest):
             context["models_payload"] = client.list_compatible_models(
                 dataset["dataset_id"], dataset["version"], dataset["partition_id"]
             )
+            humanize_model_items(context["models_payload"].get("items", []))
         return render(request, "config_app/comparison/new.html", context, status=status)
     except (ValueError, KeyError, TypeError, LearningClientError) as exc:
         status = 400 if isinstance(exc, (ValueError, KeyError, TypeError)) else 502
@@ -158,6 +168,7 @@ def comparison_new(request: HttpRequest):
                 context["models_payload"] = client.list_compatible_models(
                     dataset["dataset_id"], dataset["version"], dataset["partition_id"]
                 )
+                humanize_model_items(context["models_payload"].get("items", []))
             except LearningClientError:
                 context["models_payload"] = {"items": []}
         return render(request, "config_app/comparison/new.html", context, status=status)
@@ -171,6 +182,7 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
     try:
         client = get_learning_client()
         comparison = client.get_comparison(comparison_id)
+        humanize_comparison(comparison)
         comparison["is_active"] = comparison.get("status") in {"queued", "running"}
         comparison["has_timeline"] = any(
             bool(result.get("timeline")) for result in comparison.get("results", [])
@@ -199,6 +211,7 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
                 robustness = client.get_comparison_robustness(
                     comparison_id, robustness_filters
                 )
+                humanize_robustness(robustness)
             except LearningClientError as exc:
                 robustness_error = _safe_error(exc)
         return render(

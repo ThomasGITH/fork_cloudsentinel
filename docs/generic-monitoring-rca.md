@@ -282,9 +282,9 @@ repository root on the EC2 host:
 
 ```bash
 docker build \
-  -t jojojochem/monitoring_project:fix-polling-issue-1 \
+  -t jojojochem/monitoring_project:comparison-readable-model-names-1 \
   ./user_interface/monitoring_project
-minikube image load jojojochem/monitoring_project:fix-polling-issue-1
+minikube image load jojojochem/monitoring_project:comparison-readable-model-names-1
 kubectl apply -f k8s/monitoring_project-deployment.yml
 kubectl rollout status deployment/monitoring-project-deployment -n cloudsentinel
 ```
