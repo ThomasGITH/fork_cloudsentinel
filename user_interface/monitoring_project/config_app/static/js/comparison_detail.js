@@ -129,10 +129,19 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {position: "bottom"},
-          incidentBands: {bands: incidentBands}
+          incidentBands: {bands: incidentBands},
+          tooltip: {
+            callbacks: {
+              title(items) {
+                return items.length ? window.CloudSentinel.formatDateTime(items[0].label) : "";
+              }
+            }
+          }
         },
         scales: {
-          x: {ticks: {maxTicksLimit: 10}},
+          x: {ticks: {maxTicksLimit: 10, callback(value) {
+            return window.CloudSentinel.formatDateTime(this.getLabelForValue(value));
+          }}},
           y: {title: {display: true, text: "Anomaly score"}}
         }
       }

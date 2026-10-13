@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 from ..forms import MonitoringForm
+from ..comparison_labels import readable_model_name
 from ..learning_client import LearningClientError, get_learning_client
 
 
@@ -15,7 +16,10 @@ def _models():
     payload = get_learning_client().list_models(
         {"page": 1, "page_size": 100, "status": "available", "sort": "newest"}
     )
-    return [item for item in payload.get("items", []) if isinstance(item, dict)]
+    items = [item for item in payload.get("items", []) if isinstance(item, dict)]
+    for item in items:
+        item["display_name"] = readable_model_name(item)
+    return items
 
 
 def _add_rca_readiness(items):
@@ -47,7 +51,7 @@ def _choices(items):
     return [
         (
             item["model_id"],
-            f"{item.get('detector_id', 'Detector')} v{item.get('detector_version', '—')} — {item['model_id']}",
+            f"{item['display_name']} — {item['model_id']}",
         )
         for item in items
         if _ready(item)

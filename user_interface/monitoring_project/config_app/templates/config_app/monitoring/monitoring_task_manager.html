@@ -112,9 +112,8 @@
     }
 
     function formatStartTime(startTime) {
-        const date = new Date(startTime * 1000);
-        return date.toLocaleString();
-    }
+            return window.CloudSentinel.formatDateTime(startTime, "Unavailable");
+        }
 
     function populateResultsList(results) {
         const resultsList = document.getElementById('resultsList');

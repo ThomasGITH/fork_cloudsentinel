@@ -282,9 +282,9 @@ repository root on the EC2 host:
 
 ```bash
 docker build \
-  -t jojojochem/monitoring_project:comparison-readable-model-names-1 \
+  -t jojojochem/monitoring_project:ui-readable-models-dates-1 \
   ./user_interface/monitoring_project
-minikube image load jojojochem/monitoring_project:comparison-readable-model-names-1
+minikube image load jojojochem/monitoring_project:ui-readable-models-dates-1
 kubectl apply -f k8s/monitoring_project-deployment.yml
 kubectl rollout status deployment/monitoring-project-deployment -n cloudsentinel
 ```
@@ -292,7 +292,7 @@ kubectl rollout status deployment/monitoring-project-deployment -n cloudsentinel
 The manifest uses `imagePullPolicy: IfNotPresent`, which is required for the
 locally loaded image. Data Ingestion API/worker, CRCA API/worker, Generic
 Detection Runtime, Learning API/worker, data-processing and legacy CGNN images
-remain unchanged by this fix. A clean environment must also receive the images
+remain unchanged by this UI update. A clean environment must also receive the images
 and manifests from the preceding RCA reanalysis tranche.
 
 Check the exact deployment names and the unchanged CRCA worker:

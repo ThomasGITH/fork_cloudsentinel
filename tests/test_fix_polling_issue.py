@@ -71,7 +71,7 @@ class MonitoringPollingDeploymentTests(unittest.TestCase):
         container = deployment["spec"]["template"]["spec"]["containers"][0]
         self.assertEqual(
             container["image"],
-            "jojojochem/monitoring_project:comparison-readable-model-names-1",
+            "jojojochem/monitoring_project:ui-readable-models-dates-1",
         )
         self.assertEqual(container["imagePullPolicy"], "IfNotPresent")
 

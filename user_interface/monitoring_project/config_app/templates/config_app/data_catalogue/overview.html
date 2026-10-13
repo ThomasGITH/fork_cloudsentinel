@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% load static %}
+{% extends "base.html" %}{% load static ui_format %}
 {% block title %}Data Catalogue | CloudSentinel{% endblock %}
 {% block extra_head %}<link href="{% static 'css/data_catalogue.css' %}" rel="stylesheet">{% endblock %}
 {% block content %}
@@ -26,7 +26,7 @@
       <td>{{ item.feature_count }} × {{ item.observation_count }}<small class="d-block catalogue-muted">features × observations</small></td>
       <td>{% if item.labels_available %}Labels available{% else %}No labels{% endif %}<small class="d-block catalogue-muted">{{ item.partition_mode }} partition</small></td>
       <td>{% if item.usages.labeled_evaluation.supported %}<span class="readiness-supported">Training &amp; evaluation ready</span>{% elif item.usages.unsupervised_training.supported %}<span class="text-warning">Training data ready</span>{% else %}<span class="readiness-blocked">Preparation needed</span>{% endif %}</td>
-      <td>{% if item.start_time %}<small>{{ item.start_time }}<br>to {{ item.end_time }}</small>{% else %}<small>{{ item.created_at }}</small>{% endif %}</td>
+      <td>{% if item.start_time %}<small>{{ item.start_time|ui_datetime }}<br>to {{ item.end_time|ui_datetime }}</small>{% else %}<small>{{ item.created_at|ui_datetime }}</small>{% endif %}</td>
       <td><a class="btn btn-sm btn-outline-primary" href="{% url 'data_catalogue_detail' item.dataset_id %}?version={{ item.version }}">View details</a></td>
     </tr>{% endfor %}
   </tbody></table></div></div>

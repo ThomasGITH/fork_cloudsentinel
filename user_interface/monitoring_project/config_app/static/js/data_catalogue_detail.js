@@ -68,7 +68,7 @@
         (data.rows || []).forEach(function (item) {
           const tr = document.createElement("tr");
           const timestampCell = document.createElement("td");
-          timestampCell.textContent = item.timestamp == null ? "missing" : String(item.timestamp);
+          timestampCell.textContent = window.CloudSentinel.formatDateTime(item.timestamp, "missing");
           tr.appendChild(timestampCell);
           const values = item.values || {};
           const missing = item.missing || {};

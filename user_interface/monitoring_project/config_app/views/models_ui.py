@@ -14,6 +14,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_http_methods
 
 from config_app.catalogue_client import CatalogueClientError, get_catalogue_client
+from config_app.comparison_labels import readable_model_name
 from config_app.learning_client import (
     LearningClientError,
     get_learning_client,
@@ -153,6 +154,21 @@ def _add_dataset_display_names(items: list[dict]) -> None:
         dataset["display_name"] = names[dataset_id]
 
 
+def _add_model_display_names(items: list[dict]) -> None:
+    """Add readable labels while retaining immutable model IDs as provenance."""
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        item["display_name"] = readable_model_name(item)
+        for child in item.get("children", []):
+            if not isinstance(child, dict) or not child.get("model_id"):
+                continue
+            child["model_display_name"] = readable_model_name({
+                **child,
+                "created_at": item.get("created_at"),
+            })
+
+
 @require_GET
 def models_overview(request: HttpRequest):
     tab = request.GET.get("tab", "detectors")
@@ -168,6 +184,7 @@ def models_overview(request: HttpRequest):
             filters = _filters(request, allowed)
             payload = _safe(get_learning_client().list_models(filters))
             _add_dataset_display_names(payload.get("items", []))
+            _add_model_display_names(payload.get("items", []))
             previous, following = _page_links(payload, filters, tab=tab)
             context.update(models=payload, filters=filters, previous=previous, next=following)
         else:
@@ -175,6 +192,7 @@ def models_overview(request: HttpRequest):
             filters = _filters(request, allowed)
             payload = _safe(get_learning_client().list_training_runs(filters))
             _add_dataset_display_names(payload.get("items", []))
+            _add_model_display_names(payload.get("items", []))
             for item in payload.get("items", []):
                 statuses = {}
                 for child in item.get("children", []):
@@ -524,6 +542,7 @@ def train_models(request: HttpRequest):
 
 def _run_ui(run: dict) -> dict:
     run = _safe(run)
+    _add_model_display_names([run])
     for child in run.get("children", []):
         metadata = child.get("result_metadata") or {}
         child["promotion_status"] = (metadata.get("promotion") or {}).get("status") or child.get("model_status")
@@ -563,6 +582,7 @@ def _child_progress_text(child: dict) -> str:
 def training_run_detail(request: HttpRequest, run_id: str):
     try:
         run = _run_ui(get_learning_client().get_training_run(run_id))
+        _add_dataset_display_names([run])
         return render(request, "config_app/models/run_detail.html", {"run": run})
     except LearningClientError as exc:
         if exc.status_code == 404:
@@ -582,6 +602,8 @@ def training_run_status(request: HttpRequest, run_id: str):
 def saved_model_detail(request: HttpRequest, model_id: str):
     try:
         model = _safe(get_learning_client().get_model(model_id))
+        _add_dataset_display_names([model])
+        _add_model_display_names([model])
         return render(request, "config_app/models/model_detail.html", {"model": model})
     except LearningClientError as exc:
         if exc.status_code == 404:

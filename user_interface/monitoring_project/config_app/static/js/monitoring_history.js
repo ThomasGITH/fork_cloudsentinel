@@ -37,9 +37,7 @@
   }
 
   function time(value) {
-    if (!value) return "Unavailable";
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? "Unavailable" : parsed.toLocaleString();
+    return window.CloudSentinel.formatDateTime(value, "Unavailable");
   }
 
   function rcaDecision(event) {
