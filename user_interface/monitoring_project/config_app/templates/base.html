@@ -30,10 +30,10 @@
                         Menu
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMain">
-                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'home' %} active{% endif %}" href="{% url 'home' %}">Home</a></li>
-                        <li><a class="dropdown-item{% if request.path|slice:':15' == '/data-catalogue' %} active{% endif %}" href="{% url 'data_catalogue_overview' %}">Data Catalogue</a></li>
-                        <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}" href="{% url 'models_overview' %}">Models</a></li>
-                        <li><a class="dropdown-item{% if request.path|slice:':12' == '/comparison/' %} active{% endif %}" href="{% url 'comparison_overview' %}">Comparison</a></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'home' %} active{% endif %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %} href="{% url 'home' %}">Home</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':15' == '/data-catalogue' %} active{% endif %}"{% if request.path|slice:':15' == '/data-catalogue' %} aria-current="page"{% endif %} href="{% url 'data_catalogue_overview' %}">Data Catalogue</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}"{% if request.path|slice:':8' == '/models/' %} aria-current="page"{% endif %} href="{% url 'models_overview' %}">Models</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':12' == '/comparison/' %} active{% endif %}"{% if request.path|slice:':12' == '/comparison/' %} aria-current="page"{% endif %} href="{% url 'comparison_overview' %}">Comparison</a></li>
                         <li class="dropdown-submenu">
                             <a class="dropdown-item dropdown-toggle" href="#">Monitoring</a>
                             <ul class="dropdown-menu">
