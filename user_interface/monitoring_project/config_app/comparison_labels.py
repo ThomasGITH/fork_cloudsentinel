@@ -96,6 +96,27 @@ def humanize_robustness(payload: dict[str, Any]) -> None:
     models = payload.get("models")
     models = models if isinstance(models, list) else []
     names = humanize_model_items(models)
+
+    warnings = payload.get("coverage_warnings")
+    if isinstance(warnings, list):
+        readable_coverage = "; ".join(
+            (
+                f"{model.get('display_name')} has "
+                f"{model.get('labelled_context_count', 0)} labelled "
+                f"{'context' if model.get('labelled_context_count') == 1 else 'contexts'}"
+            )
+            for model in models
+        )
+        payload["coverage_warnings"] = [
+            (
+                f"Comparison coverage differs: {readable_coverage}."
+                if isinstance(warning, str)
+                and warning.startswith("Comparison coverage differs:")
+                and readable_coverage
+                else warning
+            )
+            for warning in warnings
+        ]
     for model in models:
         contexts = model.get("contexts") if isinstance(model, dict) else None
         if not isinstance(contexts, list):

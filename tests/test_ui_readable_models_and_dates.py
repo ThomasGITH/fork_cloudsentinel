@@ -67,6 +67,12 @@ class UiReadableModelsAndDatesTests(unittest.TestCase):
         self.assertIn('data-initial="{{ source.start_time|default:\'\' }}"', source_fields)
         self.assertNotIn("ui_datetime", source_fields)
 
+    def test_robustness_explains_labelled_context_filter(self):
+        template = (UI_ROOT / "templates/config_app/comparison/_robustness.html").read_text()
+        self.assertIn("Labelled contexts only", template)
+        self.assertIn("stored ground-truth labels", template)
+        self.assertIn("Precision, recall and F1", template)
+
 
 if __name__ == "__main__":
     unittest.main()

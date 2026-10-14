@@ -15,11 +15,11 @@ Only the Django monitoring image changes:
 
 ```bash
 docker build \
-  -t jojojochem/monitoring_project:ui-readable-models-dates-1 \
+  -t jojojochem/monitoring_project:ui-readable-models-dates-1.2 \
   ./user_interface/monitoring_project
 
 minikube image load --overwrite=true \
-  jojojochem/monitoring_project:ui-readable-models-dates-1
+  jojojochem/monitoring_project:ui-readable-models-dates-1.2
 
 kubectl apply -f k8s/monitoring_project-deployment.yml
 kubectl rollout status deployment/monitoring-project-deployment \

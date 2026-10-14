@@ -38,6 +38,11 @@ median/minimum/maximum.
 Accuracy and lead-time statistics use only contexts where those values are
 actually available. Unlabelled contexts still contribute runtime and context
 coverage, but never receive fabricated precision, recall, F1 or lead time.
+The **Labelled contexts only** filter keeps only evaluation partitions with
+stored ground-truth labels. Those labels identify which observations were
+actually anomalous, allowing precision, recall, F1 and confusion-matrix values
+to be calculated. Unlabelled contexts can still contribute runtime and anomaly
+counts, but cannot provide trustworthy accuracy metrics.
 At least two distinct contexts are required before the UI describes the data
 as sufficient for robustness assessment.
 

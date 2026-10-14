@@ -25,7 +25,7 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
         tag = "generic-monitoring-rca-reanalysis-1"
         self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
-        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], "jojojochem/monitoring_project:ui-readable-models-dates-1")
+        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], "jojojochem/monitoring_project:ui-readable-models-dates-1.2")
         crca_tag = "generic-monitoring-rca-readiness-fix-1.2"
         self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
         self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")

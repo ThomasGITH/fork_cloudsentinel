@@ -78,6 +78,44 @@ class ComparisonReadableModelNameTests(unittest.TestCase):
             "Local Outlier Factor v1.0.1 Saved Model",
         )
 
+    def test_robustness_coverage_warning_uses_readable_names(self):
+        first_id = "run-one-isolation-forest-123"
+        second_id = "run-two-cgnn-456"
+        payload = {
+            "models": [
+                {
+                    "model_id": first_id,
+                    "display_name": first_id,
+                    "detector_id": "isolation-forest",
+                    "detector_version": "1.0.0",
+                    "model_created_at": "2026-10-10T17:20:00Z",
+                    "labelled_context_count": 2,
+                    "contexts": [],
+                },
+                {
+                    "model_id": second_id,
+                    "display_name": second_id,
+                    "detector_id": "cgnn",
+                    "model_created_at": "2026-10-12T11:28:00Z",
+                    "labelled_context_count": 1,
+                    "contexts": [],
+                },
+            ],
+            "coverage_warnings": [
+                f"Comparison coverage differs: {first_id} has 2 labelled contexts; "
+                f"{second_id} has 1 labelled contexts."
+            ],
+            "shared_context_matrix": [],
+        }
+
+        labels.humanize_robustness(payload)
+
+        warning = payload["coverage_warnings"][0]
+        self.assertIn("Isolation Forest v1.0.0 · 10 Oct 2026, 17:20 UTC has 2 labelled contexts", warning)
+        self.assertIn("CGNN · 12 Oct 2026, 11:28 UTC has 1 labelled context", warning)
+        self.assertNotIn(first_id, warning)
+        self.assertNotIn(second_id, warning)
+
 
 if __name__ == "__main__":
     unittest.main()
