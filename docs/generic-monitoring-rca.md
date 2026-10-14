@@ -2,33 +2,67 @@
 
 ## RCA method contract foundation
 
-`EXPAND-RCA-1` adds stable method identities without changing the established
+`EXPAND-RCA-1` added stable method identities. `EXPAND-RCA-2` registers the
+version-pinned BARO RobustScorer adapter while retaining the established
 CausalRCA calculation:
 
 ```text
 cloudsentinel.causal-rca/legacy-v1       available
-cloudsentinel.baro-robust-scorer/v1      unavailable (not implemented)
+cloudsentinel.baro-robust-scorer/v1      available when fse-baro 0.2.2 loads
 ```
 
 `automatic_rca.method` is pinned in each new monitoring session, RCA intent,
 stable run identity and algorithm provenance. Requests and historical records
 without this field resolve to `cloudsentinel.causal-rca/legacy-v1`; stored
-records are not rewritten. Unknown IDs are rejected. BARO is advertised so
-clients can understand the future contract, but it cannot be selected or
-dispatched in this version.
+records are not rewritten. Unknown IDs are rejected. BARO is advertised as
+available only when the API can import the exact `fse-baro==0.2.2` dependency.
 
 The internal capability response retains its legacy single-method fields and
 also provides a bounded `methods` list. Each item has an ID, display name,
 availability, input contract, preprocessing contract and minimum requirements.
 The Monitoring Setup form renders only methods reported as `available`, and
 Data Ingestion validates the chosen ID and runtime availability again. The RCA
-worker uses an explicit method registry; only the legacy CausalRCA runner is
-registered in this step.
+worker uses an explicit method registry with separate CausalRCA and BARO
+execution adapters.
 
 Method identity is part of the configuration material hashed by
 `stable_run_id`. Consequently, two otherwise identical intents for different
 methods cannot share an ID. Capability responses expose no matrix, PromQL,
 filesystem path or private algorithm configuration.
+
+### BARO RobustScorer scope and change point
+
+This integration uses the official
+`baro.root_cause_analysis.robust_scorer(data, anomalies=[index])` interface.
+It does not run BARO's BOCPD component: CloudSentinel's selected Saved Model,
+committed anomaly predictions and threshold policy remain responsible for
+detection and triggering.
+
+For a BARO intent, Data Ingestion reads the immutable result artifact belonging
+to the triggering monitoring cycle. Within the already selected RCA analysis
+window it chooses the chronologically first stored binary prediction equal to
+one. Its timestamp and exact matrix index become the pinned change point. Rows
+before the index are the baseline; rows at and after it are the anomalous
+segment. The input contract requires at least two rows in both segments because
+the official implementation drops constant columns independently in each
+segment before fitting/transformation. At least two mapped features remain a
+CloudSentinel RCA requirement.
+
+The change-point contract, source cycle, result checksum, timestamp, index and
+segment counts are included in the private immutable RCA input and therefore in
+its hashes and stable run identity. Safe run/result provenance exposes those
+bounded evidence fields without exposing predictions, matrices or storage
+references. Missing positives or insufficient segment data produce a preflight
+skip with attempt number zero; monitoring continues.
+
+CausalRCA keeps its pinned MinMax preprocessing. BARO receives the finite raw
+metric matrix and performs its baseline normalization through RobustScorer's
+`RobustScaler`. The official package returns ordered feature names but no
+numeric scores. The adapter consequently calculates the same maximum robust
+z-score used by version 0.2.2, verifies that these scores reproduce the official
+ordering, and maps the internal columns back to the exact immutable feature IDs
+and optional entity metadata. BARO results intentionally contain no causal
+graph.
 
 `GENERIC-MONITORING-RCA-1` reconnects the existing CausalRCA implementation to
 recipe-pinned generic monitoring. It does not change anomaly-detector training,
@@ -306,24 +340,42 @@ erasing the last successfully rendered dashboard.
 
 ## Build, load and apply (do not run from this document automatically)
 
-When `GENERIC-MONITORING-RCA-REANALYSIS-1` is already deployed, this polling
-fix changes only the Django monitoring UI image. Run these commands from the
-repository root on the EC2 host:
+`EXPAND-RCA-2` changes Data Ingestion API/worker, CRCA API/worker and the Django
+monitoring UI. Run these commands from the repository root on the EC2 host:
 
 ```bash
 docker build \
-  -t jojojochem/monitoring_project:ui-readable-models-dates-1.2 \
+  -t jojojochem/data_ingestion:expand-rca-2 \
+  ./data_ingestion
+docker build \
+  -f anomaly_detection/crca/Dockerfile \
+  -t jojojochem/anomaly_detection_crca:expand-rca-2 \
+  .
+docker build \
+  -t jojojochem/monitoring_project:expand-rca-2 \
   ./user_interface/monitoring_project
-minikube image load jojojochem/monitoring_project:ui-readable-models-dates-1.2
+
+minikube image load jojojochem/data_ingestion:expand-rca-2
+minikube image load jojojochem/anomaly_detection_crca:expand-rca-2
+minikube image load jojojochem/monitoring_project:expand-rca-2
+
+kubectl apply -f k8s/data_ingestion-deployment.yml
+kubectl apply -f k8s/data_ingestion_celery-deployment.yml
+kubectl apply -f k8s/crca_anomaly_detection-deployment.yml
+kubectl apply -f k8s/crca_anomaly_detection-celery-deployment.yml
 kubectl apply -f k8s/monitoring_project-deployment.yml
+kubectl rollout status deployment/data-ingestion-deployment -n cloudsentinel
+kubectl rollout status deployment/celery-worker-deployment -n cloudsentinel
+kubectl rollout status deployment/crca-anomaly-detection-deployment -n cloudsentinel
+kubectl rollout status deployment/crca-anomaly-detection-celery-deployment -n cloudsentinel
 kubectl rollout status deployment/monitoring-project-deployment -n cloudsentinel
 ```
 
 The manifest uses `imagePullPolicy: IfNotPresent`, which is required for the
-locally loaded image. Data Ingestion API/worker, CRCA API/worker, Generic
-Detection Runtime, Learning API/worker, data-processing and legacy CGNN images
-remain unchanged by this UI update. A clean environment must also receive the images
-and manifests from the preceding RCA reanalysis tranche.
+locally loaded images. Generic Detection Runtime, Learning API/worker,
+data-processing and legacy CGNN images remain unchanged. The BARO wheel is
+installed with `--no-deps` after the CRCA image's explicit dependency pins, so
+the package cannot silently replace pandas, NumPy or scikit-learn versions.
 
 Check the exact deployment names and the unchanged CRCA worker:
 
@@ -431,6 +483,12 @@ checking rate limits and budget; their detection correctness remains unknown.
   is optional. Continue AD monitoring with RCA off.
 - **RCA runtime readiness unavailable:** verify the CRCA API and `/healthz`, then
   its internal capability endpoint. No monitoring input is sent by that check.
+- **BARO unavailable:** verify that the capability response reports
+  `cloudsentinel.baro-robust-scorer/v1` as available and that the runtime has
+  exactly `fse-baro==0.2.2`. An absent or different version is rejected.
+- **BARO skipped:** inspect the safe reason code. A stored positive detector
+  prediction must exist inside the selected immutable analysis window, with at
+  least two baseline and two post-change rows. No data is refetched.
 - **Queued/pending:** inspect API/worker connectivity and use the reconcile
   endpoint only while the monitoring session is active.
 - **Skipped:** the committed context did not contain enough valid rows for the
@@ -444,6 +502,6 @@ checking rate limits and budget; their detection correctness remains unknown.
   add a lease/reaper or allow a second parallel run.
 - **100% anomaly cycles:** this tranche does not diagnose or alter IF/LOF/CGNN
   scores, fitting or thresholds.
-- CausalRCA remains the existing algorithm and is not generalized into an RCA
-  plugin framework. Automatic remediation and monitoring auto-resume remain out
-  of scope.
+- CausalRCA and BARO RobustScorer are explicit registered methods, not a new RCA
+  plugin framework. BARO BOCPD, automatic remediation and monitoring auto-resume
+  remain out of scope.

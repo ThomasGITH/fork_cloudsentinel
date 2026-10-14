@@ -29,7 +29,7 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
         api = container("k8s/data_ingestion-deployment.yml")
         worker = container("k8s/data_ingestion_celery-deployment.yml")
         self.assertEqual(api["image"], worker["image"])
-        self.assertEqual(api["image"], "jojojochem/data_ingestion:generic-monitoring-rca-reanalysis-1")
+        self.assertEqual(api["image"], "jojojochem/data_ingestion:expand-rca-2")
         self.assertEqual(environment("k8s/data_ingestion-deployment.yml")["MONITORING_HISTORY_STORAGE_ROOT"], "/app/storage/monitoring_history")
         self.assertEqual(environment("k8s/data_ingestion_celery-deployment.yml")["MONITORING_HISTORY_STORAGE_ROOT"], "/app/storage/monitoring_history")
         self.assertEqual(mounts("k8s/data_ingestion-deployment.yml")["catalogue-storage"]["mountPath"], "/app/storage")
@@ -53,7 +53,7 @@ class GenericLiveMonitoringInfrastructureTests(unittest.TestCase):
         ui = container("k8s/monitoring_project-deployment.yml")
         self.assertEqual(learning_api["image"], learning_worker["image"])
         self.assertTrue(learning_api["image"].endswith(":generic-monitoring-history-1"))
-        self.assertTrue(ui["image"].endswith(":ui-readable-models-dates-1.2"))
+        self.assertTrue(ui["image"].endswith(":expand-rca-2"))
         self.assertEqual(ui["imagePullPolicy"], "IfNotPresent")
 
         admin = yaml.safe_load((ROOT / "k8s/plugin-admin-pod.yml").read_text())

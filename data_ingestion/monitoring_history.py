@@ -605,6 +605,8 @@ class MonitoringHistoryStore:
             result = {
                 "ranking": deepcopy(stored.get("ranking", [])[:100]),
                 "graphs": deepcopy(stored.get("graphs", [])[:3]),
+                "method": stored.get("method"),
+                "change_point_evidence": deepcopy(stored.get("change_point_evidence")),
                 "truncated": len(stored.get("ranking", [])) > 100,
             }
         return {"run": self.public_rca_run(record), "result": result}
@@ -626,6 +628,7 @@ class MonitoringHistoryStore:
             "new_observation_count", "policy_version",
             "analysis_input_sha256",
             "method",
+            "change_point_evidence",
         )
         return {key: deepcopy(record[key]) for key in allowed if key in record}
 

@@ -11,10 +11,24 @@ try:
     from .crca import run_crca
     from .config import get_config
     from .monitoring_result import normalize_feature_metadata, safe_monitoring_result
+    from .baro_adapter import (
+        BARO_METHOD_ID,
+        BARO_PREPROCESSING_CONTRACT,
+        BaroRobustScorerAdapter,
+        configuration as baro_configuration,
+        configuration_sha256 as baro_configuration_sha256,
+    )
 except ImportError:  # Flat module layout inside the service image.
     from crca import run_crca
     from config import get_config
     from monitoring_result import normalize_feature_metadata, safe_monitoring_result
+    from baro_adapter import (
+        BARO_METHOD_ID,
+        BARO_PREPROCESSING_CONTRACT,
+        BaroRobustScorerAdapter,
+        configuration as baro_configuration,
+        configuration_sha256 as baro_configuration_sha256,
+    )
 
 try:
     from monitoring_history import MonitoringHistoryStore, MonitoringHistoryError, canonical_sha256
@@ -132,8 +146,40 @@ def _run_causal_legacy(store, claimed, session_id, run_id):
     store.complete_rca_run(session_id, run_id, result)
 
 
+def _run_baro_robust_scorer(store, claimed, session_id, run_id):
+    expected_config = claimed.get("algorithm", {}).get("configuration_sha256")
+    actual_config = baro_configuration_sha256()
+    if expected_config != actual_config:
+        raise ValueError("BARO configuration no longer matches the pinned run")
+    input_payload = store.read_artifact(claimed["input_reference"])
+    result = BaroRobustScorerAdapter().run(input_payload)
+    result.update(
+        run_id=run_id,
+        session_id=session_id,
+        input_sha256=claimed.get("input_sha256"),
+        preprocessing={
+            "contract": BARO_PREPROCESSING_CONTRACT,
+            "configuration": {
+                "input": "raw_finite_numeric",
+                "baseline_normalization": "fse-baro RobustScorer",
+            },
+            "configuration_sha256": canonical_sha256({
+                "input": "raw_finite_numeric",
+                "baseline_normalization": "fse-baro RobustScorer",
+            }),
+        },
+        algorithm={
+            "id": BARO_METHOD_ID,
+            "configuration": baro_configuration(),
+            "configuration_sha256": actual_config,
+        },
+    )
+    store.complete_rca_run(session_id, run_id, result)
+
+
 RCA_METHOD_RUNNERS = {
     RCA_METHOD_CAUSAL_LEGACY: _run_causal_legacy,
+    RCA_METHOD_BARO: _run_baro_robust_scorer,
 }
 
 

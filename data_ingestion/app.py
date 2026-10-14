@@ -15,6 +15,7 @@ from kubernetes import client, config
 from flask_cors import CORS
 import redis
 import hashlib
+from copy import deepcopy
 
 from data_collector import collect_crca_data
 from config import set_initial_metric_config, get_config, set_config
@@ -80,7 +81,10 @@ try:
         MonitoringRcaError,
         DEFAULT_RCA_METHOD,
         RCA_METHOD_CAUSAL_LEGACY,
+        RCA_METHOD_BARO,
+        RCA_METHOD_DEFINITIONS,
         analysis_input_identity,
+        attach_detected_change_point,
         assess_recipe_compatibility,
         canonical_sha256 as rca_sha256,
         decide_trigger,
@@ -98,7 +102,10 @@ except ModuleNotFoundError:
         MonitoringRcaError,
         DEFAULT_RCA_METHOD,
         RCA_METHOD_CAUSAL_LEGACY,
+        RCA_METHOD_BARO,
+        RCA_METHOD_DEFINITIONS,
         analysis_input_identity,
+        attach_detected_change_point,
         assess_recipe_compatibility,
         canonical_sha256 as rca_sha256,
         decide_trigger,
@@ -296,15 +303,15 @@ def _rca_runtime_capability():
     try:
         response = requests.get(f"{_crca_url()}/internal/monitoring-capability", timeout=(5, 15))
     except requests.RequestException as exc:
-        raise MonitoringRcaError("CausalRCA runtime readiness could not be verified.") from exc
+        raise MonitoringRcaError("RCA runtime readiness could not be verified.") from exc
     if response.status_code != 200:
-        raise MonitoringRcaError("CausalRCA runtime readiness could not be verified.")
+        raise MonitoringRcaError("RCA runtime readiness could not be verified.")
     try:
         payload = response.json()
     except ValueError as exc:
-        raise MonitoringRcaError("CausalRCA runtime returned invalid readiness metadata.") from exc
+        raise MonitoringRcaError("RCA runtime returned invalid readiness metadata.") from exc
     if not isinstance(payload, dict) or not isinstance(payload.get("config_sha256"), str):
-        raise MonitoringRcaError("CausalRCA runtime returned invalid readiness metadata.")
+        raise MonitoringRcaError("RCA runtime returned invalid readiness metadata.")
     return payload
 
 
@@ -337,21 +344,28 @@ def _rca_method_capability(method_id):
     if isinstance(minimum, dict):
         value["minimum_observations"] = value.get("minimum_observations", minimum.get("observations"))
         value["minimum_features"] = value.get("minimum_features", minimum.get("features"))
+        value["minimum_baseline_observations"] = value.get(
+            "minimum_baseline_observations", minimum.get("baseline_observations", 0)
+        )
+        value["minimum_post_change_observations"] = value.get(
+            "minimum_post_change_observations", minimum.get("post_change_observations", 0)
+        )
     return value
 
 
-def _dispatch_causal_rca(session_id, run_id, method_id):
+def _dispatch_rca_method(session_id, run_id, method_id):
     response = requests.post(
         f"{_crca_url()}/internal/monitoring-runs",
         json={"session_id": session_id, "run_id": run_id, "method": method_id},
         timeout=(5, 15),
     )
     if response.status_code not in {200, 202}:
-        raise MonitoringRcaError(_safe_upstream_error(response, "CausalRCA dispatch failed"))
+        raise MonitoringRcaError(_safe_upstream_error(response, "RCA dispatch failed"))
 
 
 RCA_METHOD_DISPATCHERS = {
-    RCA_METHOD_CAUSAL_LEGACY: _dispatch_causal_rca,
+    RCA_METHOD_CAUSAL_LEGACY: _dispatch_rca_method,
+    RCA_METHOD_BARO: _dispatch_rca_method,
 }
 
 
@@ -385,10 +399,10 @@ def _dispatch_rca_run(session_id, run_id):
             run_id,
             lambda record: record.update(
                 dispatch_status="pending",
-                dispatch_error={"type": "rca_dispatch_error", "message": "CausalRCA dispatch is temporarily unavailable."},
+                dispatch_error={"type": "rca_dispatch_error", "message": "RCA dispatch is temporarily unavailable."},
             ),
         )
-        logger.warning("Durable CausalRCA intent %s remains pending", run_id)
+        logger.warning("Durable RCA intent %s remains pending", run_id)
         return False
 
 
@@ -446,7 +460,7 @@ def _process_cycle_rca(session_id, cycle_id):
                 **event,
                 "status": "suppressed_running",
                 "reason_code": "rca_run_active",
-                "reason": "Another CausalRCA run is already queued or running.",
+                "reason": "Another RCA run is already queued or running.",
                 "related_run_id": active_runs[0]["run_id"],
             },
             rca_state=updated,
@@ -500,6 +514,12 @@ def _process_cycle_rca(session_id, cycle_id):
         "max_attempts_per_episode": updated.get("max_attempts_per_episode"),
     }
     detection_time = (cycle.get("prediction_window") or {}).get("end")
+    method_definition = RCA_METHOD_DEFINITIONS[method_id]
+    preprocessing_configuration = (
+        {"feature_range": [0.0, 1.0]}
+        if method_id == RCA_METHOD_CAUSAL_LEGACY
+        else {"input": "raw_finite_numeric", "baseline_normalization": "fse-baro RobustScorer"}
+    )
     base_run = {
         "status": "queued",
         "created_at": utc_now(),
@@ -519,8 +539,9 @@ def _process_cycle_rca(session_id, cycle_id):
             "feature_order_sha256": session.get("feature_order_sha256"),
         },
         "preprocessing": {
-            "contract": updated.get("preprocessing_contract"),
-            "configuration_sha256": rca_sha256({"feature_range": [0.0, 1.0]}),
+            "contract": updated.get("preprocessing_contract")
+            or method_definition["preprocessing_contract"],
+            "configuration_sha256": rca_sha256(preprocessing_configuration),
         },
         "algorithm": {
             "id": method_id,
@@ -539,6 +560,31 @@ def _process_cycle_rca(session_id, cycle_id):
             minimum_observations=updated.get("minimum_observations", 2),
             minimum_features=updated.get("minimum_features", 2),
         )
+        if method_id == RCA_METHOD_BARO:
+            try:
+                cycle_result = monitoring_history.read_artifact(cycle["result_reference"])
+            except MonitoringHistoryError as exc:
+                raise MonitoringRcaError(
+                    "The stored monitoring result failed integrity validation.",
+                    "invalid_change_point_result_integrity",
+                ) from exc
+            if rca_sha256(cycle_result) != cycle.get("result_sha256"):
+                raise MonitoringRcaError(
+                    "The stored monitoring result failed integrity validation.",
+                    "invalid_change_point_result_integrity",
+                )
+            selected = attach_detected_change_point(
+                selected,
+                cycle_result,
+                cycle_id=cycle_id,
+                cycle_result_sha256=cycle["result_sha256"],
+                minimum_baseline_observations=updated.get(
+                    "minimum_baseline_observations", 2
+                ),
+                minimum_post_change_observations=updated.get(
+                    "minimum_post_change_observations", 2
+                ),
+            )
         selected_sha = rca_sha256(selected)
         selected_identity = analysis_input_identity(selected)
         intent_at = utc_now()
@@ -593,6 +639,7 @@ def _process_cycle_rca(session_id, cycle_id):
                 "feature_metadata_contract": selected.get("feature_metadata_contract"),
                 "feature_metadata_sha256": selected.get("feature_metadata_sha256"),
             },
+            "change_point_evidence": deepcopy(selected.get("change_point")),
         }
         monitoring_history.create_rca_run(
             session_id,
@@ -652,7 +699,7 @@ def _process_cycle_rca(session_id, cycle_id):
                 **event,
                 "status": "suppressed_concurrent",
                 "reason_code": "concurrent_intent_reserved",
-                "reason": "Another CausalRCA execution intent was reserved first.",
+                "reason": "Another RCA execution intent was reserved first.",
             },
             rca_state=current,
         )

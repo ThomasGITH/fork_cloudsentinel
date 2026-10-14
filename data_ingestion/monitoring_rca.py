@@ -12,8 +12,10 @@ from typing import Any
 
 RCA_TRIGGER_CONTRACT = "cloudsentinel.monitoring-rca/v1"
 RCA_INPUT_CONTRACT = "cloudsentinel.crca-input/v1"
+RCA_BARO_INPUT_CONTRACT = "cloudsentinel.baro-input/v1"
 RCA_FEATURE_METADATA_CONTRACT = "cloudsentinel.crca-feature-metadata/v1"
 RCA_PREPROCESSING_CONTRACT = "cloudsentinel.crca-minmax/v1"
+RCA_BARO_PREPROCESSING_CONTRACT = "cloudsentinel.baro-robust-scorer-raw/v1"
 RCA_ALGORITHM_ID = "cloudsentinel.causal-rca/legacy-v1"
 RCA_METHOD_CAUSAL_LEGACY = RCA_ALGORITHM_ID
 RCA_METHOD_BARO = "cloudsentinel.baro-robust-scorer/v1"
@@ -29,12 +31,13 @@ RCA_METHOD_DEFINITIONS = {
     RCA_METHOD_BARO: {
         "id": RCA_METHOD_BARO,
         "display_name": "BARO robust scorer",
-        "input_contract": "cloudsentinel.baro-input/v1",
-        "preprocessing_contract": "cloudsentinel.baro-preprocessing/v1",
+        "input_contract": RCA_BARO_INPUT_CONTRACT,
+        "preprocessing_contract": RCA_BARO_PREPROCESSING_CONTRACT,
         "minimum_requirements": {
-            "observations": None,
-            "features": None,
-            "status": "not_defined",
+            "observations": 4,
+            "features": 2,
+            "baseline_observations": 2,
+            "post_change_observations": 2,
         },
     },
 }
@@ -201,14 +204,10 @@ def safe_method_capabilities(
         status = advertised.get("status", "unavailable")
         reason_code = advertised.get("reason_code")
         reason = advertised.get("reason")
-        if method_id == RCA_METHOD_CAUSAL_LEGACY and readiness.get("status") != "ready":
+        if readiness.get("status") != "ready":
             status = "incompatible"
             reason_code = readiness.get("reason_code")
             reason = readiness.get("reason")
-        if method_id == RCA_METHOD_BARO:
-            status = "unavailable"
-            reason_code = "not_implemented"
-            reason = "BARO is not implemented in this CloudSentinel version."
         projected.append({
             **deepcopy(definition),
             "status": status,
@@ -403,7 +402,9 @@ def initial_rca_state(
             "reason_code": readiness.get("reason_code"),
             "reason": readiness.get("reason"),
         },
-        "input_contract": readiness.get("input_contract"),
+        "input_contract": safe_capability.get(
+            "input_contract", readiness.get("input_contract")
+        ),
         "feature_metadata_contract": readiness.get("feature_metadata_contract"),
         "feature_metadata_sha256": readiness.get("feature_metadata_sha256"),
         "method": method,
@@ -414,6 +415,12 @@ def initial_rca_state(
         ),
         "minimum_observations": int(safe_capability.get("minimum_observations", 2)),
         "minimum_features": int(safe_capability.get("minimum_features", 2)),
+        "minimum_baseline_observations": int(
+            safe_capability.get("minimum_baseline_observations", 0)
+        ),
+        "minimum_post_change_observations": int(
+            safe_capability.get("minimum_post_change_observations", 0)
+        ),
         "policy_version": RCA_REANALYSIS_POLICY,
         "episode_state": "armed",
         "episode_id": None,
@@ -635,12 +642,14 @@ def analysis_input_identity(selected_input: dict[str, Any]) -> str:
     return canonical_sha256(
         {
             "contract": selected_input.get("contract"),
+            "input_contract": selected_input.get("input_contract"),
             "analysis_window": selected_input.get("analysis_window"),
             "feature_order": selected_input.get("feature_order"),
             "feature_order_sha256": selected_input.get("feature_order_sha256"),
             "feature_metadata_sha256": selected_input.get("feature_metadata_sha256"),
             "timestamps": selected_input.get("timestamps"),
             "matrix": selected_input.get("matrix"),
+            "change_point": selected_input.get("change_point"),
         }
     )
 
@@ -759,3 +768,86 @@ def stable_run_id(
         }
     )
     return f"rca_{digest[:32]}"
+
+
+def attach_detected_change_point(
+    selected_input: dict[str, Any],
+    cycle_result: dict[str, Any],
+    *,
+    cycle_id: str,
+    cycle_result_sha256: str,
+    minimum_baseline_observations: int = 2,
+    minimum_post_change_observations: int = 2,
+) -> dict[str, Any]:
+    """Pin the first stored positive prediction inside the selected BARO window."""
+    timestamps = selected_input.get("timestamps")
+    predictions = cycle_result.get("prediction_timestamps")
+    binary = cycle_result.get("binary_predictions")
+    if (
+        not isinstance(timestamps, list)
+        or not timestamps
+        or len(set(timestamps)) != len(timestamps)
+        or not isinstance(predictions, list)
+        or not isinstance(binary, list)
+        or len(predictions) != len(binary)
+        or any(value not in (0, 1) or isinstance(value, bool) for value in binary)
+        or any(not isinstance(value, str) for value in predictions)
+    ):
+        raise MonitoringRcaError(
+            "Stored detector predictions cannot provide a valid BARO change point.",
+            "invalid_baro_change_point_source",
+        )
+    try:
+        parsed_predictions = [parse_utc(timestamp) for timestamp in predictions]
+    except MonitoringRcaError as exc:
+        raise MonitoringRcaError(
+            "Stored detector predictions cannot provide a valid BARO change point.",
+            "invalid_baro_change_point_source",
+        ) from exc
+    if len(set(predictions)) != len(predictions) or any(
+        current <= previous
+        for previous, current in zip(parsed_predictions, parsed_predictions[1:])
+    ):
+        raise MonitoringRcaError(
+            "Stored detector prediction timestamps are not strictly ordered.",
+            "invalid_baro_change_point_source",
+        )
+    selected_indexes = {timestamp: index for index, timestamp in enumerate(timestamps)}
+    positive = [
+        (parsed, timestamp)
+        for parsed, timestamp, prediction in zip(parsed_predictions, predictions, binary)
+        if prediction == 1 and timestamp in selected_indexes
+    ]
+    if not positive:
+        raise MonitoringRcaError(
+            "No positive detector prediction exists in the selected RCA analysis window.",
+            "baro_change_point_unavailable",
+        )
+    _, detected_timestamp = min(positive, key=lambda item: item[0])
+    index = selected_indexes[detected_timestamp]
+    baseline_count = index
+    anomalous_count = len(timestamps) - index
+    if baseline_count < minimum_baseline_observations:
+        raise MonitoringRcaError(
+            "BARO requires more baseline observations before the detected change point.",
+            "insufficient_baro_baseline",
+        )
+    if anomalous_count < minimum_post_change_observations:
+        raise MonitoringRcaError(
+            "BARO requires more observations from the detected change point onward.",
+            "insufficient_baro_post_change",
+        )
+    result = deepcopy(selected_input)
+    result["contract"] = RCA_BARO_INPUT_CONTRACT
+    result["input_contract"] = RCA_BARO_INPUT_CONTRACT
+    result["change_point"] = {
+        "contract": "cloudsentinel.baro-change-point/v1",
+        "source": "stored_monitoring_cycle_result",
+        "cycle_id": cycle_id,
+        "cycle_result_sha256": cycle_result_sha256,
+        "detected_change_point": detected_timestamp,
+        "index": index,
+        "baseline_observation_count": baseline_count,
+        "anomalous_observation_count": anomalous_count,
+    }
+    return result

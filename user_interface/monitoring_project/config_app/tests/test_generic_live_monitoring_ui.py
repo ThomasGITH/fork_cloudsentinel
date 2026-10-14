@@ -141,6 +141,11 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertContains(response, "Allow bounded RCA reanalysis within the same episode")
         self.assertContains(response, "Technical default: 900 seconds")
 
+    def test_baro_is_selectable_only_when_backend_reports_available(self):
+        self.readiness_get.return_value.json.return_value["methods"][1]["status"] = "available"
+        response = self.client.get(reverse("monitoring"))
+        self.assertContains(response, "BARO robust scorer")
+
     @patch("config_app.views.monitoring.requests.post")
     def test_offline_only_model_cannot_start(self, post):
         response = self.client.post(

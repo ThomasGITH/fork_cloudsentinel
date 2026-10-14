@@ -1,2 +1,4 @@
 env
 thesis_v12_working
+.venv-ui/
+.python-managed/

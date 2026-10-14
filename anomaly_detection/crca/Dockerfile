@@ -6,6 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 ARG PYTORCH_VERSION=2.2.2
 ARG SCIKIT_NETWORK_VERSION=0.33.0
+ARG FSE_BARO_VERSION=0.2.2
 
 # Set the working directory
 WORKDIR /app
@@ -22,6 +23,8 @@ RUN python -m pip install --no-cache-dir --upgrade \
     && python -m pip install --no-cache-dir \
         --only-binary=:all: \
         "scikit-network==${SCIKIT_NETWORK_VERSION}" \
+    && python -m pip install --no-cache-dir --no-deps \
+        "fse-baro==${FSE_BARO_VERSION}" \
     && python -m pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cpu \
         "torch==${PYTORCH_VERSION}+cpu" \

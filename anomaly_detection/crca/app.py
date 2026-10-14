@@ -12,9 +12,11 @@ from celery import Celery
 try:
     from .tasks import run_crca_task, run_monitoring_rca_task
     from .config import set_config, get_config, set_initial_config
+    from .baro_adapter import capability as baro_capability
 except ImportError:  # Flat module layout inside the service image.
     from tasks import run_crca_task, run_monitoring_rca_task
     from config import set_config, get_config, set_initial_config
+    from baro_adapter import capability as baro_capability
 
 # Set multiprocessing start method to 'spawn' for Celery compatibility
 import multiprocessing
@@ -54,6 +56,7 @@ RCA_METHOD_BARO = "cloudsentinel.baro-robust-scorer/v1"
 DEFAULT_RCA_METHOD = RCA_METHOD_CAUSAL_LEGACY
 RCA_METHOD_TASKS = {
     RCA_METHOD_CAUSAL_LEGACY: run_monitoring_rca_task,
+    RCA_METHOD_BARO: run_monitoring_rca_task,
 }
 
 
@@ -71,6 +74,7 @@ def healthz():
 @app.route('/internal/monitoring-capability', methods=['GET'])
 def monitoring_capability():
     config_sha256 = _canonical_sha256(get_config())
+    baro = baro_capability()
     return jsonify(
         {
             "contract": "cloudsentinel.monitoring-rca/v1",
@@ -91,20 +95,7 @@ def monitoring_capability():
                     "minimum_requirements": {"observations": 2, "features": 2},
                     "config_sha256": config_sha256,
                 },
-                {
-                    "id": RCA_METHOD_BARO,
-                    "display_name": "BARO robust scorer",
-                    "status": "unavailable",
-                    "reason_code": "not_implemented",
-                    "reason": "BARO is not implemented in this CloudSentinel version.",
-                    "input_contract": "cloudsentinel.baro-input/v1",
-                    "preprocessing_contract": "cloudsentinel.baro-preprocessing/v1",
-                    "minimum_requirements": {
-                        "observations": None,
-                        "features": None,
-                        "status": "not_defined",
-                    },
-                },
+                baro,
             ],
         }
     ), 200
@@ -128,13 +119,15 @@ def submit_monitoring_run():
     task_runner = RCA_METHOD_TASKS.get(method)
     if task_runner is None:
         return jsonify({"error": "RCA method is unavailable"}), 409
+    if method == RCA_METHOD_BARO and baro_capability().get("status") != "available":
+        return jsonify({"error": "RCA method is unavailable"}), 409
     try:
         task_runner.apply_async(
             args=[session_id, run_id, method], task_id=f"monitoring-rca-{run_id}"
         )
     except Exception:
         logger.error("Monitoring RCA dispatch failed")
-        return jsonify({"error": "CausalRCA dispatch failed"}), 503
+        return jsonify({"error": "RCA dispatch failed"}), 503
     return jsonify({"status": "submitted", "run_id": run_id}), 202
 
 # Command to run the Celery worker:
