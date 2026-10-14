@@ -625,6 +625,7 @@ class MonitoringHistoryStore:
             "previous_run_id", "intent_created_at", "previous_analysis_end",
             "new_observation_count", "policy_version",
             "analysis_input_sha256",
+            "method",
         )
         return {key: deepcopy(record[key]) for key in allowed if key in record}
 

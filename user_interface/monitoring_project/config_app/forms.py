@@ -35,10 +35,16 @@ class MonitoringForm(forms.Form):
     window_minutes = forms.IntegerField(min_value=1, max_value=1440, initial=10, help_text="Amount of recent Prometheus data retained per detection cycle.")
     poll_interval_seconds = forms.IntegerField(min_value=5, max_value=3600, initial=300, help_text="How often CloudSentinel collects and evaluates a new window.")
     automatic_rca_enabled = forms.BooleanField(
-        label="Enable automatic CausalRCA",
+        label="Enable automatic RCA",
         required=False,
         initial=False,
         help_text="Optional. Monitoring remains available when this model input is not RCA-compatible.",
+    )
+    rca_method = forms.ChoiceField(
+        choices=[],
+        label="RCA method",
+        required=False,
+        help_text="Only methods currently advertised as available can be selected.",
     )
     rca_threshold_percentage = forms.FloatField(
         label="RCA anomaly threshold (%)",

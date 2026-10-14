@@ -44,6 +44,19 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
             "status": "ready",
             "reason": None,
             "input_contract": "cloudsentinel.crca-input/v1",
+            "default_method": "cloudsentinel.causal-rca/legacy-v1",
+            "methods": [
+                {
+                    "id": "cloudsentinel.causal-rca/legacy-v1",
+                    "display_name": "CausalRCA",
+                    "status": "available",
+                },
+                {
+                    "id": "cloudsentinel.baro-robust-scorer/v1",
+                    "display_name": "BARO robust scorer",
+                    "status": "unavailable",
+                },
+            ],
         }
         self.addCleanup(self.readiness_patch.stop)
 
@@ -79,6 +92,10 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertNotIn("detector_id", payload)
         self.assertNotIn("prometheus_url", payload)
         self.assertFalse(payload["automatic_rca"]["enabled"])
+        self.assertEqual(
+            payload["automatic_rca"]["method"],
+            "cloudsentinel.causal-rca/legacy-v1",
+        )
         self.assertFalse(payload["automatic_rca"]["reanalyze_within_episode"])
         self.assertEqual(payload["automatic_rca"]["reanalysis_min_interval_seconds"], 900)
         self.assertEqual(payload["automatic_rca"]["reanalysis_min_new_observations"], 20)
@@ -105,6 +122,7 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
             post.call_args.kwargs["json"]["automatic_rca"],
             {
                 "enabled": True,
+                "method": "cloudsentinel.causal-rca/legacy-v1",
                 "threshold_percentage": 75.0,
                 "analysis_window_seconds": 1200,
                 "cooldown_seconds": 5400,
@@ -117,6 +135,9 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
 
     def test_setup_explains_reanalysis_is_bounded_and_disabled_by_default(self):
         response = self.client.get(reverse("monitoring"))
+        self.assertContains(response, "RCA method")
+        self.assertContains(response, "CausalRCA")
+        self.assertNotContains(response, "BARO robust scorer")
         self.assertContains(response, "Allow bounded RCA reanalysis within the same episode")
         self.assertContains(response, "Technical default: 900 seconds")
 

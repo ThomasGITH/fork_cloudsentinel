@@ -49,6 +49,13 @@ celery.conf.update(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+RCA_METHOD_CAUSAL_LEGACY = "cloudsentinel.causal-rca/legacy-v1"
+RCA_METHOD_BARO = "cloudsentinel.baro-robust-scorer/v1"
+DEFAULT_RCA_METHOD = RCA_METHOD_CAUSAL_LEGACY
+RCA_METHOD_TASKS = {
+    RCA_METHOD_CAUSAL_LEGACY: run_monitoring_rca_task,
+}
+
 
 def _canonical_sha256(value):
     return hashlib.sha256(
@@ -63,15 +70,42 @@ def healthz():
 
 @app.route('/internal/monitoring-capability', methods=['GET'])
 def monitoring_capability():
+    config_sha256 = _canonical_sha256(get_config())
     return jsonify(
         {
             "contract": "cloudsentinel.monitoring-rca/v1",
             "input_contract": "cloudsentinel.crca-input/v1",
-            "algorithm_id": "cloudsentinel.causal-rca/legacy-v1",
+            "algorithm_id": RCA_METHOD_CAUSAL_LEGACY,
             "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
             "minimum_observations": 2,
             "minimum_features": 2,
-            "config_sha256": _canonical_sha256(get_config()),
+            "config_sha256": config_sha256,
+            "default_method": DEFAULT_RCA_METHOD,
+            "methods": [
+                {
+                    "id": RCA_METHOD_CAUSAL_LEGACY,
+                    "display_name": "CausalRCA",
+                    "status": "available",
+                    "input_contract": "cloudsentinel.crca-input/v1",
+                    "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
+                    "minimum_requirements": {"observations": 2, "features": 2},
+                    "config_sha256": config_sha256,
+                },
+                {
+                    "id": RCA_METHOD_BARO,
+                    "display_name": "BARO robust scorer",
+                    "status": "unavailable",
+                    "reason_code": "not_implemented",
+                    "reason": "BARO is not implemented in this CloudSentinel version.",
+                    "input_contract": "cloudsentinel.baro-input/v1",
+                    "preprocessing_contract": "cloudsentinel.baro-preprocessing/v1",
+                    "minimum_requirements": {
+                        "observations": None,
+                        "features": None,
+                        "status": "not_defined",
+                    },
+                },
+            ],
         }
     ), 200
 
@@ -83,14 +117,20 @@ def submit_monitoring_run():
         return jsonify({"error": "a JSON request is required"}), 400
     session_id = payload.get("session_id")
     run_id = payload.get("run_id")
+    method = payload.get("method", DEFAULT_RCA_METHOD)
     safe = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     if not isinstance(session_id, str) or not safe.fullmatch(session_id):
         return jsonify({"error": "session_id is invalid"}), 400
     if not isinstance(run_id, str) or not safe.fullmatch(run_id):
         return jsonify({"error": "run_id is invalid"}), 400
+    if method not in {RCA_METHOD_CAUSAL_LEGACY, RCA_METHOD_BARO}:
+        return jsonify({"error": "RCA method is unknown"}), 400
+    task_runner = RCA_METHOD_TASKS.get(method)
+    if task_runner is None:
+        return jsonify({"error": "RCA method is unavailable"}), 409
     try:
-        task = run_monitoring_rca_task.apply_async(
-            args=[session_id, run_id], task_id=f"monitoring-rca-{run_id}"
+        task_runner.apply_async(
+            args=[session_id, run_id, method], task_id=f"monitoring-rca-{run_id}"
         )
     except Exception:
         logger.error("Monitoring RCA dispatch failed")

@@ -12,6 +12,9 @@ from ..comparison_labels import readable_model_name
 from ..learning_client import LearningClientError, get_learning_client
 
 
+DEFAULT_RCA_METHOD = "cloudsentinel.causal-rca/legacy-v1"
+
+
 def _models():
     payload = get_learning_client().list_models(
         {"page": 1, "page_size": 100, "status": "available", "sort": "newest"}
@@ -58,6 +61,46 @@ def _choices(items):
     ]
 
 
+def _available_rca_methods(items):
+    methods = {}
+    for item in items:
+        readiness = item.get("rca_readiness")
+        if not isinstance(readiness, dict):
+            continue
+        advertised = readiness.get("methods")
+        if isinstance(advertised, list):
+            for method in advertised:
+                if (
+                    isinstance(method, dict)
+                    and method.get("status") == "available"
+                    and isinstance(method.get("id"), str)
+                ):
+                    methods[method["id"]] = str(method.get("display_name") or method["id"])
+        elif readiness.get("status") == "ready":
+            # Backward compatibility with a Data Ingestion API from before
+            # multi-method capability advertisement.
+            methods[DEFAULT_RCA_METHOD] = "CausalRCA"
+    return sorted(methods.items(), key=lambda item: item[1].lower())
+
+
+def _model_available_rca_methods(item):
+    readiness = item.get("rca_readiness") if isinstance(item, dict) else None
+    if not isinstance(readiness, dict):
+        return set()
+    advertised = readiness.get("methods")
+    if isinstance(advertised, list):
+        return {
+            method["id"]
+            for method in advertised
+            if (
+                isinstance(method, dict)
+                and method.get("status") == "available"
+                and isinstance(method.get("id"), str)
+            )
+        }
+    return {DEFAULT_RCA_METHOD} if readiness.get("status") == "ready" else set()
+
+
 def monitoring_home(request):
     return render(request, "config_app/monitoring/monitoring_home.html")
 
@@ -71,9 +114,13 @@ def monitoring(request):
         upstream_error = "Saved Models are temporarily unavailable."
     form = MonitoringForm(
         request.POST or None,
-        initial={"model_id": request.GET.get("model_id", "")},
+        initial={
+            "model_id": request.GET.get("model_id", ""),
+            "rca_method": DEFAULT_RCA_METHOD,
+        },
     )
     form.fields["model_id"].choices = _choices(models)
+    form.fields["rca_method"].choices = _available_rca_methods(models)
     if request.method == "POST" and form.is_valid():
         selected = next(
             (item for item in models if item.get("model_id") == form.cleaned_data["model_id"]),
@@ -81,6 +128,12 @@ def monitoring(request):
         )
         if selected is None or not _ready(selected):
             form.add_error("model_id", "This model is not ready for live monitoring.")
+        elif (
+            form.cleaned_data["automatic_rca_enabled"]
+            and (form.cleaned_data["rca_method"] or DEFAULT_RCA_METHOD)
+            not in _model_available_rca_methods(selected)
+        ):
+            form.add_error("rca_method", "This RCA method is unavailable for the selected model input.")
         else:
             try:
                 response = requests.post(
@@ -92,6 +145,7 @@ def monitoring(request):
                         "poll_interval_seconds": form.cleaned_data["poll_interval_seconds"],
                         "automatic_rca": {
                             "enabled": form.cleaned_data["automatic_rca_enabled"],
+                            "method": form.cleaned_data["rca_method"] or DEFAULT_RCA_METHOD,
                             "threshold_percentage": form.cleaned_data["rca_threshold_percentage"] if form.cleaned_data["rca_threshold_percentage"] is not None else 50,
                             "analysis_window_seconds": (form.cleaned_data["rca_analysis_window_minutes"] if form.cleaned_data["rca_analysis_window_minutes"] is not None else 10) * 60,
                             "cooldown_seconds": (form.cleaned_data["rca_cooldown_minutes"] if form.cleaned_data["rca_cooldown_minutes"] is not None else 60) * 60,

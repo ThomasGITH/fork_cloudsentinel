@@ -15,9 +15,33 @@ RCA_INPUT_CONTRACT = "cloudsentinel.crca-input/v1"
 RCA_FEATURE_METADATA_CONTRACT = "cloudsentinel.crca-feature-metadata/v1"
 RCA_PREPROCESSING_CONTRACT = "cloudsentinel.crca-minmax/v1"
 RCA_ALGORITHM_ID = "cloudsentinel.causal-rca/legacy-v1"
+RCA_METHOD_CAUSAL_LEGACY = RCA_ALGORITHM_ID
+RCA_METHOD_BARO = "cloudsentinel.baro-robust-scorer/v1"
+DEFAULT_RCA_METHOD = RCA_METHOD_CAUSAL_LEGACY
+RCA_METHOD_DEFINITIONS = {
+    RCA_METHOD_CAUSAL_LEGACY: {
+        "id": RCA_METHOD_CAUSAL_LEGACY,
+        "display_name": "CausalRCA",
+        "input_contract": RCA_INPUT_CONTRACT,
+        "preprocessing_contract": RCA_PREPROCESSING_CONTRACT,
+        "minimum_requirements": {"observations": 2, "features": 2},
+    },
+    RCA_METHOD_BARO: {
+        "id": RCA_METHOD_BARO,
+        "display_name": "BARO robust scorer",
+        "input_contract": "cloudsentinel.baro-input/v1",
+        "preprocessing_contract": "cloudsentinel.baro-preprocessing/v1",
+        "minimum_requirements": {
+            "observations": None,
+            "features": None,
+            "status": "not_defined",
+        },
+    },
+}
 RCA_REANALYSIS_POLICY = "cloudsentinel.monitoring-rca-reanalysis/v1"
 DEFAULT_RCA_CONFIGURATION = {
     "enabled": False,
+    "method": DEFAULT_RCA_METHOD,
     "threshold_percentage": 50.0,
     "analysis_window_seconds": 600,
     "cooldown_seconds": 3600,
@@ -72,6 +96,11 @@ def validate_rca_configuration(value: Any) -> dict[str, Any]:
     if unknown:
         raise MonitoringRcaError("automatic RCA configuration contains unknown fields")
     result = {**DEFAULT_RCA_CONFIGURATION, **raw}
+    method = result.get("method")
+    if not isinstance(method, str) or method not in RCA_METHOD_DEFINITIONS:
+        raise MonitoringRcaError(
+            "automatic RCA method is unknown", "unknown_rca_method"
+        )
     for name in ("enabled", "reanalyze_within_episode"):
         if not isinstance(result[name], bool):
             raise MonitoringRcaError(
@@ -123,6 +152,7 @@ def validate_rca_configuration(value: Any) -> dict[str, Any]:
         )
     return {
         "enabled": result["enabled"],
+        "method": method,
         "threshold_percentage": threshold,
         "analysis_window_seconds": window,
         "cooldown_seconds": cooldown,
@@ -131,6 +161,61 @@ def validate_rca_configuration(value: Any) -> dict[str, Any]:
         "reanalysis_min_new_observations": reanalysis_observations,
         "max_attempts_per_episode": episode_budget,
     }
+
+
+def rca_method_id(value: Any) -> str:
+    """Resolve legacy records without a method to the established algorithm."""
+    if not isinstance(value, dict):
+        return DEFAULT_RCA_METHOD
+    method = value.get("method")
+    if isinstance(method, str) and method:
+        return method
+    algorithm = value.get("algorithm")
+    algorithm_id = algorithm.get("id") if isinstance(algorithm, dict) else None
+    legacy_algorithm = value.get("algorithm_id")
+    candidate = algorithm_id or legacy_algorithm
+    return candidate if isinstance(candidate, str) and candidate else DEFAULT_RCA_METHOD
+
+
+def safe_method_capabilities(
+    recipe_readiness: dict[str, Any] | None,
+    runtime_capability: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Project bounded multi-method capability metadata without private config."""
+    readiness = recipe_readiness if isinstance(recipe_readiness, dict) else {}
+    runtime = runtime_capability if isinstance(runtime_capability, dict) else {}
+    runtime_methods = runtime.get("methods")
+    if not isinstance(runtime_methods, list):
+        runtime_methods = [{
+            "id": runtime.get("algorithm_id", DEFAULT_RCA_METHOD),
+            "status": "available" if isinstance(runtime.get("config_sha256"), str) else "unavailable",
+        }]
+    by_id = {
+        item.get("id"): item
+        for item in runtime_methods
+        if isinstance(item, dict) and item.get("id") in RCA_METHOD_DEFINITIONS
+    }
+    projected = []
+    for method_id, definition in RCA_METHOD_DEFINITIONS.items():
+        advertised = by_id.get(method_id, {})
+        status = advertised.get("status", "unavailable")
+        reason_code = advertised.get("reason_code")
+        reason = advertised.get("reason")
+        if method_id == RCA_METHOD_CAUSAL_LEGACY and readiness.get("status") != "ready":
+            status = "incompatible"
+            reason_code = readiness.get("reason_code")
+            reason = readiness.get("reason")
+        if method_id == RCA_METHOD_BARO:
+            status = "unavailable"
+            reason_code = "not_implemented"
+            reason = "BARO is not implemented in this CloudSentinel version."
+        projected.append({
+            **deepcopy(definition),
+            "status": status,
+            "reason_code": reason_code,
+            "reason": str(reason)[:500] if reason else None,
+        })
+    return projected
 
 
 def assess_recipe_compatibility(recipe: Any) -> dict[str, Any]:
@@ -303,6 +388,13 @@ def initial_rca_state(
     configuration: dict[str, Any], readiness: dict[str, Any], capability: dict[str, Any] | None
 ) -> dict[str, Any]:
     safe_capability = capability if isinstance(capability, dict) else {}
+    method = configuration.get("method", DEFAULT_RCA_METHOD)
+    capability_method = safe_capability.get("id") or safe_capability.get("algorithm_id")
+    if capability_method is not None and capability_method != method:
+        raise MonitoringRcaError(
+            "RCA runtime capability does not match the selected method",
+            "rca_method_capability_mismatch",
+        )
     return {
         **deepcopy(configuration),
         "contract": RCA_TRIGGER_CONTRACT,
@@ -314,7 +406,8 @@ def initial_rca_state(
         "input_contract": readiness.get("input_contract"),
         "feature_metadata_contract": readiness.get("feature_metadata_contract"),
         "feature_metadata_sha256": readiness.get("feature_metadata_sha256"),
-        "algorithm_id": safe_capability.get("algorithm_id", RCA_ALGORITHM_ID),
+        "method": method,
+        "algorithm_id": method,
         "algorithm_config_sha256": safe_capability.get("config_sha256"),
         "preprocessing_contract": safe_capability.get(
             "preprocessing_contract", RCA_PREPROCESSING_CONTRACT

@@ -1,5 +1,35 @@
 # Generic monitoring CausalRCA
 
+## RCA method contract foundation
+
+`EXPAND-RCA-1` adds stable method identities without changing the established
+CausalRCA calculation:
+
+```text
+cloudsentinel.causal-rca/legacy-v1       available
+cloudsentinel.baro-robust-scorer/v1      unavailable (not implemented)
+```
+
+`automatic_rca.method` is pinned in each new monitoring session, RCA intent,
+stable run identity and algorithm provenance. Requests and historical records
+without this field resolve to `cloudsentinel.causal-rca/legacy-v1`; stored
+records are not rewritten. Unknown IDs are rejected. BARO is advertised so
+clients can understand the future contract, but it cannot be selected or
+dispatched in this version.
+
+The internal capability response retains its legacy single-method fields and
+also provides a bounded `methods` list. Each item has an ID, display name,
+availability, input contract, preprocessing contract and minimum requirements.
+The Monitoring Setup form renders only methods reported as `available`, and
+Data Ingestion validates the chosen ID and runtime availability again. The RCA
+worker uses an explicit method registry; only the legacy CausalRCA runner is
+registered in this step.
+
+Method identity is part of the configuration material hashed by
+`stable_run_id`. Consequently, two otherwise identical intents for different
+methods cannot share an ID. Capability responses expose no matrix, PromQL,
+filesystem path or private algorithm configuration.
+
 `GENERIC-MONITORING-RCA-1` reconnects the existing CausalRCA implementation to
 recipe-pinned generic monitoring. It does not change anomaly-detector training,
 scalers, thresholds or prediction semantics. An anomaly percentage, including a

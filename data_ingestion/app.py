@@ -78,6 +78,8 @@ except ModuleNotFoundError:
 try:
     from data_ingestion.monitoring_rca import (
         MonitoringRcaError,
+        DEFAULT_RCA_METHOD,
+        RCA_METHOD_CAUSAL_LEGACY,
         analysis_input_identity,
         assess_recipe_compatibility,
         canonical_sha256 as rca_sha256,
@@ -85,6 +87,8 @@ try:
         evaluate_reanalysis,
         initial_rca_state,
         mark_triggered,
+        rca_method_id,
+        safe_method_capabilities,
         select_analysis_input,
         stable_run_id,
         validate_rca_configuration,
@@ -92,6 +96,8 @@ try:
 except ModuleNotFoundError:
     from monitoring_rca import (
         MonitoringRcaError,
+        DEFAULT_RCA_METHOD,
+        RCA_METHOD_CAUSAL_LEGACY,
         analysis_input_identity,
         assess_recipe_compatibility,
         canonical_sha256 as rca_sha256,
@@ -99,6 +105,8 @@ except ModuleNotFoundError:
         evaluate_reanalysis,
         initial_rca_state,
         mark_triggered,
+        rca_method_id,
+        safe_method_capabilities,
         select_analysis_input,
         stable_run_id,
         validate_rca_configuration,
@@ -284,7 +292,7 @@ def _crca_url():
     ).rstrip("/")
 
 
-def _crca_capability():
+def _rca_runtime_capability():
     try:
         response = requests.get(f"{_crca_url()}/internal/monitoring-capability", timeout=(5, 15))
     except requests.RequestException as exc:
@@ -300,6 +308,53 @@ def _crca_capability():
     return payload
 
 
+def _rca_method_capability(method_id):
+    payload = _rca_runtime_capability()
+    methods = payload.get("methods")
+    if not isinstance(methods, list):
+        methods = [{
+            "id": payload.get("algorithm_id", DEFAULT_RCA_METHOD),
+            "status": "available",
+            "input_contract": payload.get("input_contract"),
+            "preprocessing_contract": payload.get("preprocessing_contract"),
+            "minimum_observations": payload.get("minimum_observations"),
+            "minimum_features": payload.get("minimum_features"),
+            "config_sha256": payload.get("config_sha256"),
+        }]
+    capability = next(
+        (item for item in methods if isinstance(item, dict) and item.get("id") == method_id),
+        None,
+    )
+    if not isinstance(capability, dict) or capability.get("status") != "available":
+        raise MonitoringRcaError(
+            "The selected RCA method is not available.", "rca_method_unavailable"
+        )
+    value = dict(capability)
+    value["config_sha256"] = value.get("config_sha256") or payload.get("config_sha256")
+    if not isinstance(value["config_sha256"], str):
+        raise MonitoringRcaError("RCA runtime returned invalid method metadata.")
+    minimum = value.get("minimum_requirements")
+    if isinstance(minimum, dict):
+        value["minimum_observations"] = value.get("minimum_observations", minimum.get("observations"))
+        value["minimum_features"] = value.get("minimum_features", minimum.get("features"))
+    return value
+
+
+def _dispatch_causal_rca(session_id, run_id, method_id):
+    response = requests.post(
+        f"{_crca_url()}/internal/monitoring-runs",
+        json={"session_id": session_id, "run_id": run_id, "method": method_id},
+        timeout=(5, 15),
+    )
+    if response.status_code not in {200, 202}:
+        raise MonitoringRcaError(_safe_upstream_error(response, "CausalRCA dispatch failed"))
+
+
+RCA_METHOD_DISPATCHERS = {
+    RCA_METHOD_CAUSAL_LEGACY: _dispatch_causal_rca,
+}
+
+
 def _dispatch_rca_run(session_id, run_id):
     """Idempotently submit a durable intent. Failure never fails AD monitoring."""
     session = monitoring_history.read_session(session_id)
@@ -308,14 +363,16 @@ def _dispatch_rca_run(session_id, run_id):
     run = monitoring_history.read_rca_run(session_id, run_id)
     if run.get("status") != "queued" or run.get("dispatch_status") == "submitted":
         return False
-    try:
-        response = requests.post(
-            f"{_crca_url()}/internal/monitoring-runs",
-            json={"session_id": session_id, "run_id": run_id},
-            timeout=(5, 15),
+    method_id = rca_method_id(run)
+    dispatcher = RCA_METHOD_DISPATCHERS.get(method_id)
+    if dispatcher is None:
+        monitoring_history.fail_rca_run(
+            session_id, run_id, "The selected RCA method is unavailable."
         )
-        if response.status_code not in {200, 202}:
-            raise MonitoringRcaError(_safe_upstream_error(response, "CausalRCA dispatch failed"))
+        logger.warning("Unavailable RCA method %s rejected for run %s", method_id, run_id)
+        return False
+    try:
+        dispatcher(session_id, run_id, method_id)
         monitoring_history.update_rca_run(
             session_id,
             run_id,
@@ -396,6 +453,20 @@ def _process_cycle_rca(session_id, cycle_id):
         )
         return
     recipe = monitoring_history.read_recipe(session_id)
+    method_id = rca_method_id(updated)
+    if method_id not in RCA_METHOD_DISPATCHERS:
+        monitoring_history.record_rca_event(
+            session_id,
+            cycle_id,
+            {
+                **event,
+                "status": "incompatible",
+                "reason_code": "rca_method_unavailable",
+                "reason": "The selected RCA method is unavailable.",
+            },
+            rca_state=updated,
+        )
+        return
     readiness = assess_recipe_compatibility(recipe)
     if readiness.get("status") != "ready":
         updated["readiness"] = {
@@ -414,6 +485,7 @@ def _process_cycle_rca(session_id, cycle_id):
     cycle_input["input_reference"] = cycle["input_reference"]
     cycle_input["input_sha256"] = cycle["input_sha256"]
     configuration_identity = {
+        "method": method_id,
         "threshold_percentage": updated["threshold_percentage"],
         "analysis_window_seconds": updated["analysis_window_seconds"],
         "cooldown_seconds": updated["cooldown_seconds"],
@@ -451,9 +523,10 @@ def _process_cycle_rca(session_id, cycle_id):
             "configuration_sha256": rca_sha256({"feature_range": [0.0, 1.0]}),
         },
         "algorithm": {
-            "id": updated.get("algorithm_id"),
+            "id": method_id,
             "configuration_sha256": updated.get("algorithm_config_sha256"),
         },
+        "method": method_id,
         "dispatch_status": "pending",
     }
     try:
@@ -878,12 +951,13 @@ def start_monitoring():
         rca_readiness = assess_recipe_compatibility(recipe)
         rca_capability = None
         if rca_configuration["enabled"]:
+            try:
+                rca_capability = _rca_method_capability(rca_configuration["method"])
+            except MonitoringRcaError as exc:
+                status = 409 if exc.reason_code == "rca_method_unavailable" else 503
+                return jsonify({"error": str(exc)}), status
             if rca_readiness.get("status") != "ready":
                 return jsonify({"error": rca_readiness.get("reason") or "This model input is not compatible with CausalRCA."}), 409
-            try:
-                rca_capability = _crca_capability()
-            except MonitoringRcaError as exc:
-                return jsonify({"error": str(exc)}), 503
         session_id = f"monitor_{uuid.uuid4().hex}"
         now = utc_now()
         session = {
@@ -1011,14 +1085,19 @@ def monitoring_rca_readiness(model_id):
             f"{learning_url}/internal/models/{model_id}/live-input-recipe", timeout=(5, 30)
         )
         if response.status_code != 200:
-            return jsonify({
+            readiness = {
                 "status": "incompatible",
                 "reason_code": "missing_recipe",
                 "reason": "A validated live input recipe is unavailable.",
-            }), 200
-        resolved = validate_resolved_live_model(response.json(), model_id)
-        readiness = assess_recipe_compatibility(resolved["recipe"])
-        return jsonify({
+            }
+        else:
+            resolved = validate_resolved_live_model(response.json(), model_id)
+            readiness = assess_recipe_compatibility(resolved["recipe"])
+        try:
+            runtime = _rca_runtime_capability()
+        except MonitoringRcaError:
+            runtime = None
+        projection = {
             key: readiness.get(key)
             for key in (
                 "status",
@@ -1027,18 +1106,33 @@ def monitoring_rca_readiness(model_id):
                 "input_contract",
                 "feature_metadata_contract",
             )
-        }), 200
+        }
+        projection.update(
+            default_method=DEFAULT_RCA_METHOD,
+            methods=safe_method_capabilities(readiness, runtime),
+        )
+        return jsonify(projection), 200
     except (ValueError, LiveMonitoringError):
-        return jsonify({
+        readiness = {
             "status": "incompatible",
             "reason_code": "invalid_recipe_integrity",
             "reason": "The pinned live input recipe failed integrity validation.",
+        }
+        return jsonify({
+            **readiness,
+            "default_method": DEFAULT_RCA_METHOD,
+            "methods": safe_method_capabilities(readiness, None),
         }), 200
     except requests.RequestException:
-        return jsonify({
+        readiness = {
             "status": "unavailable",
             "reason_code": "readiness_unavailable",
             "reason": "RCA readiness could not be verified.",
+        }
+        return jsonify({
+            **readiness,
+            "default_method": DEFAULT_RCA_METHOD,
+            "methods": safe_method_capabilities(readiness, None),
         }), 200
 
 
