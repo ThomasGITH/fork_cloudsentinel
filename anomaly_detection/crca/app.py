@@ -89,6 +89,9 @@ def monitoring_capability():
                 {
                     "id": RCA_METHOD_CAUSAL_LEGACY,
                     "display_name": "CausalRCA",
+                    "description": "Dependency-oriented analysis that ranks features and can produce a causal dependency graph.",
+                    "input_type": "A finite, time-aligned metrics matrix with explicit feature identities.",
+                    "output_type": "A ranked suspect list and, when available, a dependency graph.",
                     "status": "available",
                     "input_contract": "cloudsentinel.crca-input/v1",
                     "preprocessing_contract": "cloudsentinel.crca-minmax/v1",

@@ -13,6 +13,22 @@ from ..learning_client import LearningClientError, get_learning_client
 
 
 DEFAULT_RCA_METHOD = "cloudsentinel.causal-rca/legacy-v1"
+BARO_RCA_METHOD = "cloudsentinel.baro-robust-scorer/v1"
+
+RCA_METHOD_PRESENTATION = {
+    DEFAULT_RCA_METHOD: {
+        "display_name": "CausalRCA",
+        "description": "Dependency-oriented analysis that ranks features and can show a dependency graph when one is available.",
+        "input_type": "Time-aligned metrics with explicit, unique feature identities.",
+        "output_type": "Ranked suspects and, when available, a dependency graph.",
+    },
+    BARO_RCA_METHOD: {
+        "display_name": "BARO RobustScorer",
+        "description": "Ranks robust changes between a baseline and the detector-derived anomalous segment.",
+        "input_type": "Raw finite metrics with a valid detector-derived change point and sufficient baseline and anomalous observations.",
+        "output_type": "Ranked suspects with change-point evidence; no causal graph.",
+    },
+}
 
 
 def _models():
@@ -101,6 +117,49 @@ def _model_available_rca_methods(item):
     return {DEFAULT_RCA_METHOD} if readiness.get("status") == "ready" else set()
 
 
+def _rca_method_catalog(items):
+    """Build a safe operator-facing projection of advertised method capability."""
+    advertised = {method_id: [] for method_id in RCA_METHOD_PRESENTATION}
+    for item in items:
+        readiness = item.get("rca_readiness") if isinstance(item, dict) else None
+        methods = readiness.get("methods") if isinstance(readiness, dict) else None
+        if isinstance(methods, list):
+            for method in methods:
+                if isinstance(method, dict) and method.get("id") in advertised:
+                    advertised[method["id"]].append(method)
+        elif isinstance(readiness, dict) and readiness.get("status") == "ready":
+            advertised[DEFAULT_RCA_METHOD].append({"status": "available"})
+
+    result = []
+    for method_id, fallback in RCA_METHOD_PRESENTATION.items():
+        capabilities = advertised[method_id]
+        available = any(item.get("status") == "available" for item in capabilities)
+        representative = next(
+            (item for item in capabilities if item.get("status") == "available"),
+            capabilities[0] if capabilities else {},
+        )
+        reason = None
+        if not available:
+            reason = next(
+                (str(item.get("reason"))[:500] for item in capabilities if item.get("reason")),
+                "This method is not available for the current live-ready model inputs.",
+            )
+        result.append(
+            {
+                "id": method_id,
+                # Stable UI names avoid small spelling/capitalisation differences
+                # between older capability responses.
+                "display_name": fallback["display_name"],
+                "description": str(representative.get("description") or fallback["description"]),
+                "input_type": str(representative.get("input_type") or fallback["input_type"]),
+                "output_type": str(representative.get("output_type") or fallback["output_type"]),
+                "status": "available" if available else "unavailable",
+                "reason": reason,
+            }
+        )
+    return result
+
+
 def monitoring_home(request):
     return render(request, "config_app/monitoring/monitoring_home.html")
 
@@ -172,7 +231,13 @@ def monitoring(request):
     return render(
         request,
         "config_app/monitoring/monitoring_setup.html",
-        {"form": form, "models": models, "upstream_error": upstream_error, "ready_count": len(_choices(models))},
+        {
+            "form": form,
+            "models": models,
+            "upstream_error": upstream_error,
+            "ready_count": len(_choices(models)),
+            "rca_methods": _rca_method_catalog(models),
+        },
     )
 
 

@@ -48,6 +48,66 @@ def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(canonical_bytes(value)).hexdigest()
 
 
+def _project(value: Any, allowed: tuple[str, ...]) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    return {key: deepcopy(value[key]) for key in allowed if key in value}
+
+
+def _public_entity(value: Any) -> dict[str, Any] | None:
+    return _project(value, ("type", "id", "source"))
+
+
+def _public_ranking(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    rows = []
+    for item in value[:100]:
+        projected = _project(
+            item,
+            (
+                "rank",
+                "column_index",
+                "feature_id",
+                "feature_name",
+                "entity_type",
+                "entity_id",
+                "metric_name",
+                "score",
+            ),
+        )
+        if projected is None:
+            continue
+        projected["entity"] = _public_entity(item.get("entity"))
+        rows.append(projected)
+    return rows
+
+
+def _public_graphs(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [
+        projected
+        for item in value[:3]
+        if (projected := _project(item, ("media_type", "base64"))) is not None
+    ]
+
+
+def _public_change_point(value: Any) -> dict[str, Any] | None:
+    return _project(
+        value,
+        (
+            "source",
+            "cycle_id",
+            "cycle_result_sha256",
+            "detected_change_point",
+            "index",
+            "baseline_observation_count",
+            "anomalous_observation_count",
+        ),
+    )
+
+
 def _atomic_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -603,34 +663,58 @@ class MonitoringHistoryStore:
         if record.get("status") == "completed" and record.get("result_reference"):
             stored = self.read_artifact(record["result_reference"])
             result = {
-                "ranking": deepcopy(stored.get("ranking", [])[:100]),
-                "graphs": deepcopy(stored.get("graphs", [])[:3]),
+                "ranking": _public_ranking(stored.get("ranking")),
+                "graphs": _public_graphs(stored.get("graphs")),
                 "method": stored.get("method"),
-                "change_point_evidence": deepcopy(stored.get("change_point_evidence")),
-                "truncated": len(stored.get("ranking", [])) > 100,
+                "change_point_evidence": _public_change_point(
+                    stored.get("change_point_evidence")
+                ),
+                "truncated": isinstance(stored.get("ranking"), list)
+                and len(stored["ranking"]) > 100,
             }
         return {"run": self.public_rca_run(record), "result": result}
 
     @staticmethod
     def public_rca_run(record: dict[str, Any]) -> dict[str, Any]:
-        allowed = (
+        scalar_allowed = (
             "run_id", "session_id", "cycle_id", "status", "created_at",
             "started_at", "updated_at", "completed_at", "trigger_percentage",
             "threshold_percentage", "episode_id", "cooldown_until", "trigger_window",
             "context_window", "analysis_window", "observation_count", "feature_count",
-            "feature_identity", "input_sha256", "preprocessing", "algorithm",
-            "model_identity", "recipe_identity",
-            "result_sha256", "ranking_count", "graph_count", "failure",
+            "input_sha256",
+            "result_sha256", "ranking_count", "graph_count",
             "skip_reason_code", "skip_reason",
-            "dispatch_status", "dispatch_error",
+            "dispatch_status",
             "analysis_kind", "execution_attempt_number", "episode_attempt_budget",
             "previous_run_id", "intent_created_at", "previous_analysis_end",
             "new_observation_count", "policy_version",
             "analysis_input_sha256",
             "method",
-            "change_point_evidence",
         )
-        return {key: deepcopy(record[key]) for key in allowed if key in record}
+        projected = {
+            key: deepcopy(record[key]) for key in scalar_allowed if key in record
+        }
+        nested = {
+            "feature_identity": (
+                "feature_order_sha256",
+                "feature_metadata_contract",
+                "feature_metadata_sha256",
+            ),
+            "preprocessing": ("contract", "configuration_sha256"),
+            "algorithm": ("id", "configuration_sha256"),
+            "model_identity": ("model_id", "artifact_id", "artifact_manifest_sha256"),
+            "recipe_identity": ("contract", "recipe_sha256", "feature_order_sha256"),
+            "failure": ("type", "message"),
+            "dispatch_error": ("type", "message"),
+        }
+        for key, allowed in nested.items():
+            value = _project(record.get(key), allowed)
+            if value is not None:
+                projected[key] = value
+        change_point = _public_change_point(record.get("change_point_evidence"))
+        if change_point is not None:
+            projected["change_point_evidence"] = change_point
+        return projected
 
     def list_cycles(
         self, session_id: str, *, page: int = 1, page_size: int = 50

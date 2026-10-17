@@ -24,13 +24,19 @@ RCA_METHOD_DEFINITIONS = {
     RCA_METHOD_CAUSAL_LEGACY: {
         "id": RCA_METHOD_CAUSAL_LEGACY,
         "display_name": "CausalRCA",
+        "description": "Dependency-oriented analysis that ranks features and can produce a causal dependency graph.",
+        "input_type": "A finite, time-aligned metrics matrix with explicit feature identities.",
+        "output_type": "A ranked suspect list and, when available, a dependency graph.",
         "input_contract": RCA_INPUT_CONTRACT,
         "preprocessing_contract": RCA_PREPROCESSING_CONTRACT,
         "minimum_requirements": {"observations": 2, "features": 2},
     },
     RCA_METHOD_BARO: {
         "id": RCA_METHOD_BARO,
-        "display_name": "BARO robust scorer",
+        "display_name": "BARO RobustScorer",
+        "description": "Ranks robust metric changes between a baseline and the detector-derived anomalous segment.",
+        "input_type": "Finite raw metrics with a detector-derived change point and enough observations on both sides.",
+        "output_type": "A ranked suspect list with change-point evidence; no causal graph.",
         "input_contract": RCA_BARO_INPUT_CONTRACT,
         "preprocessing_contract": RCA_BARO_PREPROCESSING_CONTRACT,
         "minimum_requirements": {
@@ -39,6 +45,13 @@ RCA_METHOD_DEFINITIONS = {
             "baseline_observations": 2,
             "post_change_observations": 2,
         },
+    },
+}
+RCA_METHOD_PREPROCESSING_CONFIGURATIONS = {
+    RCA_METHOD_CAUSAL_LEGACY: {"feature_range": [0.0, 1.0]},
+    RCA_METHOD_BARO: {
+        "input": "raw_finite_numeric",
+        "baseline_normalization": "fse-baro RobustScorer",
     },
 }
 RCA_REANALYSIS_POLICY = "cloudsentinel.monitoring-rca-reanalysis/v1"
@@ -215,6 +228,69 @@ def safe_method_capabilities(
             "reason": str(reason)[:500] if reason else None,
         })
     return projected
+
+
+def validate_method_capability(
+    method_id: str, capability: Any
+) -> dict[str, Any]:
+    """Validate runtime metadata against the selected pinned method contract."""
+    definition = RCA_METHOD_DEFINITIONS.get(method_id)
+    if definition is None:
+        raise MonitoringRcaError(
+            "The selected RCA method is unknown.", "unknown_rca_method"
+        )
+    if not isinstance(capability, dict) or capability.get("id") != method_id:
+        raise MonitoringRcaError(
+            "RCA runtime capability does not match the selected method.",
+            "rca_method_capability_mismatch",
+        )
+    if capability.get("status") != "available":
+        raise MonitoringRcaError(
+            "The selected RCA method is not available.", "rca_method_unavailable"
+        )
+    for key in ("input_contract", "preprocessing_contract"):
+        if capability.get(key) != definition[key]:
+            raise MonitoringRcaError(
+                "RCA runtime method contracts are incompatible.",
+                "rca_method_contract_mismatch",
+            )
+    digest = capability.get("config_sha256")
+    if (
+        not isinstance(digest, str)
+        or len(digest) != 64
+        or any(character not in "0123456789abcdef" for character in digest)
+    ):
+        raise MonitoringRcaError(
+            "RCA runtime returned invalid method metadata.",
+            "invalid_rca_method_metadata",
+        )
+    minimum = capability.get("minimum_requirements")
+    if not isinstance(minimum, dict):
+        raise MonitoringRcaError(
+            "RCA runtime returned invalid method metadata.",
+            "invalid_rca_method_metadata",
+        )
+    for name, lower_bound in definition["minimum_requirements"].items():
+        value = minimum.get(name)
+        if (
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value < lower_bound
+        ):
+            raise MonitoringRcaError(
+                "RCA runtime returned invalid method metadata.",
+                "invalid_rca_method_metadata",
+            )
+    return deepcopy(capability)
+
+
+def method_preprocessing_configuration(method_id: str) -> dict[str, Any]:
+    try:
+        return deepcopy(RCA_METHOD_PREPROCESSING_CONFIGURATIONS[method_id])
+    except KeyError as exc:
+        raise MonitoringRcaError(
+            "The selected RCA method is unavailable.", "rca_method_unavailable"
+        ) from exc
 
 
 def assess_recipe_compatibility(recipe: Any) -> dict[str, Any]:
@@ -394,6 +470,14 @@ def initial_rca_state(
             "RCA runtime capability does not match the selected method",
             "rca_method_capability_mismatch",
         )
+    definition = RCA_METHOD_DEFINITIONS[method]
+    for key in ("input_contract", "preprocessing_contract"):
+        advertised = safe_capability.get(key)
+        if advertised is not None and advertised != definition[key]:
+            raise MonitoringRcaError(
+                "RCA runtime method contracts are incompatible.",
+                "rca_method_contract_mismatch",
+            )
     return {
         **deepcopy(configuration),
         "contract": RCA_TRIGGER_CONTRACT,
@@ -403,7 +487,7 @@ def initial_rca_state(
             "reason": readiness.get("reason"),
         },
         "input_contract": safe_capability.get(
-            "input_contract", readiness.get("input_contract")
+            "input_contract", definition["input_contract"]
         ),
         "feature_metadata_contract": readiness.get("feature_metadata_contract"),
         "feature_metadata_sha256": readiness.get("feature_metadata_sha256"),
@@ -411,7 +495,7 @@ def initial_rca_state(
         "algorithm_id": method,
         "algorithm_config_sha256": safe_capability.get("config_sha256"),
         "preprocessing_contract": safe_capability.get(
-            "preprocessing_contract", RCA_PREPROCESSING_CONTRACT
+            "preprocessing_contract", definition["preprocessing_contract"]
         ),
         "minimum_observations": int(safe_capability.get("minimum_observations", 2)),
         "minimum_features": int(safe_capability.get("minimum_features", 2)),
@@ -673,12 +757,12 @@ def select_analysis_input(
         )
     if not isinstance(feature_order, list) or len(feature_order) < minimum_features:
         raise MonitoringRcaError(
-            "The committed cycle has too few features for CausalRCA.",
+            "The committed cycle has too few features for RCA.",
             "insufficient_runtime_features",
         )
     if [item.get("feature_id") for item in feature_metadata] != feature_order:
         raise MonitoringRcaError(
-            "CausalRCA feature metadata does not match the committed column order.",
+            "RCA feature metadata does not match the committed column order.",
             "feature_metadata_mismatch",
         )
     end = parse_utc(end_timestamp)

@@ -58,6 +58,9 @@ class ExpandRcaContractTests(unittest.TestCase):
         self.assertEqual(by_id[RCA_METHOD_CAUSAL_LEGACY]["status"], "available")
         self.assertEqual(by_id[RCA_METHOD_BARO]["status"], "unavailable")
         self.assertEqual(by_id[RCA_METHOD_BARO]["reason_code"], "dependency_unavailable")
+        self.assertIn("dependency", by_id[RCA_METHOD_CAUSAL_LEGACY]["description"].lower())
+        self.assertIn("change point", by_id[RCA_METHOD_BARO]["input_type"].lower())
+        self.assertIn("no causal graph", by_id[RCA_METHOD_BARO]["output_type"].lower())
         self.assertNotIn("config_sha256", by_id[RCA_METHOD_CAUSAL_LEGACY])
 
     def test_selected_method_is_persisted_in_state_and_provenance(self):

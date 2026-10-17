@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: crca-anomaly-detection
-        image: jojojochem/anomaly_detection_crca:expand-rca-2
+        image: jojojochem/anomaly_detection_crca:expand-rca-hardening-1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false

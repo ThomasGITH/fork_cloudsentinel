@@ -91,10 +91,12 @@ try:
         evaluate_reanalysis,
         initial_rca_state,
         mark_triggered,
+        method_preprocessing_configuration,
         rca_method_id,
         safe_method_capabilities,
         select_analysis_input,
         stable_run_id,
+        validate_method_capability,
         validate_rca_configuration,
     )
 except ModuleNotFoundError:
@@ -112,10 +114,12 @@ except ModuleNotFoundError:
         evaluate_reanalysis,
         initial_rca_state,
         mark_triggered,
+        method_preprocessing_configuration,
         rca_method_id,
         safe_method_capabilities,
         select_analysis_input,
         stable_run_id,
+        validate_method_capability,
         validate_rca_configuration,
     )
 
@@ -326,6 +330,10 @@ def _rca_method_capability(method_id):
             "preprocessing_contract": payload.get("preprocessing_contract"),
             "minimum_observations": payload.get("minimum_observations"),
             "minimum_features": payload.get("minimum_features"),
+            "minimum_requirements": {
+                "observations": payload.get("minimum_observations"),
+                "features": payload.get("minimum_features"),
+            },
             "config_sha256": payload.get("config_sha256"),
         }]
     capability = next(
@@ -350,6 +358,7 @@ def _rca_method_capability(method_id):
         value["minimum_post_change_observations"] = value.get(
             "minimum_post_change_observations", minimum.get("post_change_observations", 0)
         )
+    validate_method_capability(method_id, value)
     return value
 
 
@@ -515,11 +524,7 @@ def _process_cycle_rca(session_id, cycle_id):
     }
     detection_time = (cycle.get("prediction_window") or {}).get("end")
     method_definition = RCA_METHOD_DEFINITIONS[method_id]
-    preprocessing_configuration = (
-        {"feature_range": [0.0, 1.0]}
-        if method_id == RCA_METHOD_CAUSAL_LEGACY
-        else {"input": "raw_finite_numeric", "baseline_normalization": "fse-baro RobustScorer"}
-    )
+    preprocessing_configuration = method_preprocessing_configuration(method_id)
     base_run = {
         "status": "queued",
         "created_at": utc_now(),

@@ -9,6 +9,44 @@ import math
 from typing import Any
 
 
+RCA_METHOD_CAUSAL_LEGACY = "cloudsentinel.causal-rca/legacy-v1"
+RCA_METHOD_BARO = "cloudsentinel.baro-robust-scorer/v1"
+RCA_METHOD_RUNTIME_CONTRACTS = {
+    RCA_METHOD_CAUSAL_LEGACY: {
+        "input_contract": "cloudsentinel.crca-input/v1",
+        "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
+    },
+    RCA_METHOD_BARO: {
+        "input_contract": "cloudsentinel.baro-input/v1",
+        "preprocessing_contract": "cloudsentinel.baro-robust-scorer-raw/v1",
+    },
+}
+
+
+def validate_pinned_method_contract(
+    record: Any, input_payload: Any, method_id: str
+) -> None:
+    """Reject cross-wired method inputs before algorithm-specific processing."""
+    expected = RCA_METHOD_RUNTIME_CONTRACTS.get(method_id)
+    if expected is None:
+        raise ValueError("The selected RCA method is unavailable")
+    preprocessing = record.get("preprocessing") if isinstance(record, dict) else None
+    preprocessing_contract = (
+        preprocessing.get("contract") if isinstance(preprocessing, dict) else None
+    )
+    if (
+        preprocessing_contract is not None
+        and preprocessing_contract != expected["preprocessing_contract"]
+    ):
+        raise ValueError("RCA preprocessing contract does not match the pinned method")
+    input_contract = None
+    if isinstance(input_payload, dict):
+        input_contract = input_payload.get("input_contract") or input_payload.get("contract")
+    # Already queued legacy CausalRCA inputs may predate an explicit contract.
+    if input_contract is not None and input_contract != expected["input_contract"]:
+        raise ValueError("RCA input contract does not match the pinned method")
+
+
 def normalize_feature_metadata(
     feature_metadata: Any, expected_columns: int | None = None
 ) -> list[dict[str, Any]]:
@@ -99,6 +137,8 @@ def safe_monitoring_result(
     normalized_metadata = normalize_feature_metadata(feature_metadata)
     allowed = {item["feature_name"]: item for item in normalized_metadata}
     ranking = []
+    ranked_labels = set()
+    ranked_indexes = set()
     for row in csv.DictReader(StringIO(ranking_csv)):
         label = row.get("metric")
         if label not in allowed:
@@ -109,8 +149,15 @@ def safe_monitoring_result(
         except (TypeError, ValueError) as exc:
             raise ValueError("CausalRCA returned an invalid ranking") from exc
         metadata = allowed[label]
-        if index != metadata["column_index"] or not math.isfinite(score):
+        if (
+            index != metadata["column_index"]
+            or not math.isfinite(score)
+            or label in ranked_labels
+            or index in ranked_indexes
+        ):
             raise ValueError("CausalRCA returned an invalid ranking")
+        ranked_labels.add(label)
+        ranked_indexes.add(index)
         ranking.append(
             {
                 "rank": len(ranking) + 1,

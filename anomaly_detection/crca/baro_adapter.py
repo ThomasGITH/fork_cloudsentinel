@@ -75,6 +75,9 @@ def capability() -> dict[str, Any]:
         return {
             "id": BARO_METHOD_ID,
             "display_name": "BARO RobustScorer",
+            "description": "Ranks robust metric changes between a baseline and the detector-derived anomalous segment.",
+            "input_type": "Finite raw metrics with a detector-derived change point and enough observations on both sides.",
+            "output_type": "A ranked suspect list with change-point evidence; no causal graph.",
             "status": "unavailable",
             "reason_code": "dependency_unavailable",
             "reason": "BARO RobustScorer is unavailable in this runtime.",
@@ -90,6 +93,9 @@ def capability() -> dict[str, Any]:
     return {
         "id": BARO_METHOD_ID,
         "display_name": "BARO RobustScorer",
+        "description": "Ranks robust metric changes between a baseline and the detector-derived anomalous segment.",
+        "input_type": "Finite raw metrics with a detector-derived change point and enough observations on both sides.",
+        "output_type": "A ranked suspect list with change-point evidence; no causal graph.",
         "status": "available",
         "input_contract": BARO_INPUT_CONTRACT,
         "preprocessing_contract": BARO_PREPROCESSING_CONTRACT,

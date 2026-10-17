@@ -71,7 +71,7 @@ class MonitoringPollingDeploymentTests(unittest.TestCase):
         container = deployment["spec"]["template"]["spec"]["containers"][0]
         self.assertEqual(
             container["image"],
-            "jojojochem/monitoring_project:expand-rca-2",
+            "jojojochem/monitoring_project:expand-rca-hardening-1",
         )
         self.assertEqual(container["imagePullPolicy"], "IfNotPresent")
 

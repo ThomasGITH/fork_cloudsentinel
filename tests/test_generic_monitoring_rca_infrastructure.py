@@ -22,11 +22,11 @@ def environment(path):
 
 class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
     def test_changed_images_use_immutable_tags(self):
-        tag = "expand-rca-2"
+        tag = "expand-rca-hardening-1"
         self.assertEqual(container("k8s/data_ingestion-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
         self.assertEqual(container("k8s/data_ingestion_celery-deployment.yml")["image"], f"jojojochem/data_ingestion:{tag}")
-        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], "jojojochem/monitoring_project:expand-rca-2")
-        crca_tag = "expand-rca-2"
+        self.assertEqual(container("k8s/monitoring_project-deployment.yml")["image"], "jojojochem/monitoring_project:expand-rca-hardening-1")
+        crca_tag = "expand-rca-hardening-1"
         self.assertEqual(container("k8s/crca_anomaly_detection-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
         self.assertEqual(container("k8s/crca_anomaly_detection-celery-deployment.yml")["image"], f"jojojochem/anomaly_detection_crca:{crca_tag}")
 
@@ -87,11 +87,14 @@ class GenericMonitoringRcaInfrastructureTests(unittest.TestCase):
     def test_crca_image_pins_baro_without_unbounded_dependency_resolution(self):
         dockerfile = (ROOT / "anomaly_detection/crca/Dockerfile").read_text()
         self.assertIn("ARG FSE_BARO_VERSION=0.2.2", dockerfile)
-        self.assertIn('"fse-baro==${FSE_BARO_VERSION}"', dockerfile)
+        locked = (ROOT / "anomaly_detection/crca/requirements-baro.txt").read_text()
+        self.assertIn("fse-baro==0.2.2", locked)
+        self.assertIn("--require-hashes -r /tmp/requirements-baro.txt", dockerfile)
+        self.assertIn("COPY THIRD_PARTY_NOTICES.md", dockerfile)
         self.assertIn("--no-deps", dockerfile)
         self.assertLess(
             dockerfile.index("-r /tmp/requirements.txt"),
-            dockerfile.index('"fse-baro==${FSE_BARO_VERSION}"'),
+            dockerfile.index("--require-hashes -r /tmp/requirements-baro.txt"),
         )
 
     def test_graph_rendering_uses_networkx_api_compatible_with_matplotlib_39(self):

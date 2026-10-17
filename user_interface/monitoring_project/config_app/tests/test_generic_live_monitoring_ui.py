@@ -137,14 +137,26 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         response = self.client.get(reverse("monitoring"))
         self.assertContains(response, "RCA method")
         self.assertContains(response, "CausalRCA")
-        self.assertNotContains(response, "BARO robust scorer")
+        self.assertContains(response, "BARO RobustScorer")
+        self.assertContains(response, "Dependency-oriented analysis")
+        self.assertContains(response, "detector-derived anomalous segment")
+        self.assertContains(response, "independent of the selected anomaly-detection model")
+        self.assertContains(response, "Unavailable")
+        self.assertNotIn(
+            "cloudsentinel.baro-robust-scorer/v1",
+            dict(response.context["form"].fields["rca_method"].choices),
+        )
         self.assertContains(response, "Allow bounded RCA reanalysis within the same episode")
         self.assertContains(response, "Technical default: 900 seconds")
 
     def test_baro_is_selectable_only_when_backend_reports_available(self):
         self.readiness_get.return_value.json.return_value["methods"][1]["status"] = "available"
         response = self.client.get(reverse("monitoring"))
-        self.assertContains(response, "BARO robust scorer")
+        self.assertContains(response, "BARO RobustScorer")
+        self.assertIn(
+            "cloudsentinel.baro-robust-scorer/v1",
+            dict(response.context["form"].fields["rca_method"].choices),
+        )
 
     @patch("config_app.views.monitoring.requests.post")
     def test_offline_only_model_cannot_start(self, post):
@@ -164,6 +176,7 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertContains(response, "Warm-up observations")
         self.assertContains(response, "Buffered observations")
         self.assertContains(response, "Monitoring History")
+        self.assertContains(response, "monitoring_rca_presentation.js")
         self.assertContains(response, "monitoring_history.js")
         self.assertNotContains(response, "API_CGNN_ANOMALY_DETECTION_URL")
 

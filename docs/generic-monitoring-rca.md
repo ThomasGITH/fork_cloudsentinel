@@ -1,5 +1,10 @@
 # Generic monitoring CausalRCA
 
+The current selectable CausalRCA/BARO architecture, hardened contracts,
+attribution and rollout procedure are documented in
+[`selectable-rca-pipeline.md`](selectable-rca-pipeline.md). This document keeps
+the detailed monitoring trigger, history and reanalysis semantics.
+
 ## RCA method contract foundation
 
 `EXPAND-RCA-1` added stable method identities. `EXPAND-RCA-2` registers the
@@ -345,19 +350,19 @@ monitoring UI. Run these commands from the repository root on the EC2 host:
 
 ```bash
 docker build \
-  -t jojojochem/data_ingestion:expand-rca-2 \
+  -t jojojochem/data_ingestion:expand-rca-hardening-1 \
   ./data_ingestion
 docker build \
   -f anomaly_detection/crca/Dockerfile \
-  -t jojojochem/anomaly_detection_crca:expand-rca-2 \
+  -t jojojochem/anomaly_detection_crca:expand-rca-hardening-1 \
   .
 docker build \
-  -t jojojochem/monitoring_project:expand-rca-2 \
+  -t jojojochem/monitoring_project:expand-rca-hardening-1 \
   ./user_interface/monitoring_project
 
-minikube image load jojojochem/data_ingestion:expand-rca-2
-minikube image load jojojochem/anomaly_detection_crca:expand-rca-2
-minikube image load jojojochem/monitoring_project:expand-rca-2
+minikube image load jojojochem/data_ingestion:expand-rca-hardening-1
+minikube image load jojojochem/anomaly_detection_crca:expand-rca-hardening-1
+minikube image load jojojochem/monitoring_project:expand-rca-hardening-1
 
 kubectl apply -f k8s/data_ingestion-deployment.yml
 kubectl apply -f k8s/data_ingestion_celery-deployment.yml

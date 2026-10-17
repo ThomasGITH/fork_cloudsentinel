@@ -10,7 +10,11 @@ from sklearn.preprocessing import MinMaxScaler
 try:
     from .crca import run_crca
     from .config import get_config
-    from .monitoring_result import normalize_feature_metadata, safe_monitoring_result
+    from .monitoring_result import (
+        normalize_feature_metadata,
+        safe_monitoring_result,
+        validate_pinned_method_contract,
+    )
     from .baro_adapter import (
         BARO_METHOD_ID,
         BARO_PREPROCESSING_CONTRACT,
@@ -21,7 +25,11 @@ try:
 except ImportError:  # Flat module layout inside the service image.
     from crca import run_crca
     from config import get_config
-    from monitoring_result import normalize_feature_metadata, safe_monitoring_result
+    from monitoring_result import (
+        normalize_feature_metadata,
+        safe_monitoring_result,
+        validate_pinned_method_contract,
+    )
     from baro_adapter import (
         BARO_METHOD_ID,
         BARO_PREPROCESSING_CONTRACT,
@@ -52,8 +60,6 @@ logger = logging.getLogger(__name__)
 RCA_METHOD_CAUSAL_LEGACY = "cloudsentinel.causal-rca/legacy-v1"
 RCA_METHOD_BARO = "cloudsentinel.baro-robust-scorer/v1"
 DEFAULT_RCA_METHOD = RCA_METHOD_CAUSAL_LEGACY
-
-
 @celery.task(bind=True)
 def run_crca_task(self, crca_data_json, crca_info):
     """
@@ -87,6 +93,9 @@ def _history_store():
 
 def _run_causal_legacy(store, claimed, session_id, run_id):
     input_payload = store.read_artifact(claimed["input_reference"])
+    validate_pinned_method_contract(
+        claimed, input_payload, RCA_METHOD_CAUSAL_LEGACY
+    )
     expected_config = claimed.get("algorithm", {}).get("configuration_sha256")
     actual_config = canonical_sha256(get_config())
     if expected_config != actual_config:
@@ -152,6 +161,7 @@ def _run_baro_robust_scorer(store, claimed, session_id, run_id):
     if expected_config != actual_config:
         raise ValueError("BARO configuration no longer matches the pinned run")
     input_payload = store.read_artifact(claimed["input_reference"])
+    validate_pinned_method_contract(claimed, input_payload, RCA_METHOD_BARO)
     result = BaroRobustScorerAdapter().run(input_payload)
     result.update(
         run_id=run_id,
@@ -189,7 +199,9 @@ def _resolve_method(record, requested_method=None):
     algorithm_id = algorithm.get("id") if isinstance(algorithm, dict) else None
     if isinstance(method, str) and isinstance(algorithm_id, str) and method != algorithm_id:
         raise ValueError("RCA method does not match algorithm provenance")
-    method = method or algorithm_id or requested_method or DEFAULT_RCA_METHOD
+    # A durable legacy record without either field is always CausalRCA. The
+    # transient dispatch argument may verify that identity, never redefine it.
+    method = method or algorithm_id or DEFAULT_RCA_METHOD
     if requested_method is not None and method != requested_method:
         raise ValueError("RCA method does not match the pinned run")
     return method

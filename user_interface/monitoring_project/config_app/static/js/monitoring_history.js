@@ -3,6 +3,7 @@
 
   const root = document.getElementById("monitoring-history");
   if (!root) return;
+  const rcaPresentation = window.CloudSentinelRcaPresentation;
   const listNode = document.getElementById("monitoring-sessions");
   const detailNode = document.getElementById("monitoring-detail");
   const errorNode = document.getElementById("monitoring-error");
@@ -179,23 +180,128 @@
     });
   }
 
+  function summaryValue(label, value) {
+    const wrapper = node("div", null, "col-sm-6 col-xl-4");
+    const card = node("div", null, "border rounded p-3 h-100");
+    card.append(node("div", label, "small text-muted"));
+    card.append(node("strong", value));
+    wrapper.append(card);
+    return wrapper;
+  }
+
+  function rankingScore(item) {
+    const value = rcaPresentation.score(item);
+    return value === null ? "Unavailable" : value.toFixed(6);
+  }
+
+  function renderSuspects(rows, target) {
+    const section = node("section", null, "mb-3");
+    section.append(node("h4", "Top suspects", "h6"));
+    section.append(node("p", "Bars show relative score magnitude within this run only. Scores are not probabilities and must not be compared between RCA methods.", "small text-muted"));
+    const list = node("ol", null, "list-group list-group-numbered");
+    rows.forEach((item) => {
+      const entry = node("li", null, "list-group-item");
+      const identity = rcaPresentation.entity(item);
+      const top = node("div", null, "d-flex justify-content-between gap-3 flex-wrap");
+      const labels = node("div");
+      labels.append(node("strong", rcaPresentation.humanMetric(item.metric_name || item.feature_name || item.feature_id)));
+      labels.append(node("div", identity.available ? identity.label : "Entity unavailable", "small text-muted"));
+      top.append(labels);
+      top.append(node("span", rankingScore(item), "font-monospace small"));
+      entry.append(top);
+      const track = node("div", null, "rca-score-track mt-2");
+      const bar = node("div", null, "rca-score-bar");
+      const percentage = rcaPresentation.relativeScore(item, rows);
+      bar.style.width = `${percentage.toFixed(2)}%`;
+      bar.setAttribute("role", "img");
+      bar.setAttribute("aria-label", `Relative score magnitude ${percentage.toFixed(1)} percent within this run`);
+      track.append(bar); entry.append(track); list.append(entry);
+    });
+    section.append(list); target.append(section);
+  }
+
+  function renderBaroEvidence(summary, target) {
+    const evidence = summary.change_point || {};
+    const card = node("section", null, "alert alert-light border mb-3");
+    card.append(node("h4", "BARO change evidence", "h6"));
+    if (!evidence.detected_change_point) {
+      card.append(node("p", "Change-point evidence is unavailable for this stored result.", "mb-0 text-muted"));
+      target.append(card); return;
+    }
+    const window = summary.analysis_window || {};
+    const list = node("dl", null, "row mb-2");
+    [
+      ["Detector change point", time(evidence.detected_change_point)],
+      ["Evidence source", evidence.source === "stored_monitoring_cycle_result" ? "Stored monitoring-cycle detector result" : "Unavailable"],
+      ["Change-point index", Number.isInteger(evidence.index) ? evidence.index : "Unavailable"],
+      ["Baseline period", `${time(window.start)} – ${time(evidence.detected_change_point)}`],
+      ["Anomalous period", `${time(evidence.detected_change_point)} – ${time(window.end)}`],
+      ["Baseline observations", evidence.baseline_observation_count ?? "Unavailable"],
+      ["Post-change observations", evidence.anomalous_observation_count ?? "Unavailable"],
+    ].forEach(([label, value]) => { list.append(node("dt", label, "col-sm-4")); list.append(node("dd", value, "col-sm-8")); });
+    card.append(list);
+    card.append(node("p", "The detector supplied this change point. BARO compares robust metric behaviour before and from that point; the first metric is shown because it received the largest score in this run.", "small mb-0"));
+    target.append(card);
+  }
+
+  function renderTechnicalRanking(result, rows, target) {
+    const details = node("details", null, "mb-3");
+    details.append(node("summary", "Full technical ranking"));
+    if (!rows.length) {
+      details.append(node("p", "No bounded ranking rows are available.", "text-muted mt-2"));
+      target.append(details); return;
+    }
+    const responsive = node("div", null, "table-responsive mt-2");
+    const table = node("table", null, "table table-sm align-middle");
+    const head = node("thead"); const row = node("tr");
+    ["Rank","Feature","Entity","Metric","Score"].forEach((label)=>row.append(node("th",label))); head.append(row); table.append(head);
+    const body = node("tbody");
+    rows.forEach((item)=>{
+      const tr=node("tr");
+      const identity=rcaPresentation.entity(item);
+      [item.rank ?? "Unavailable",item.feature_id||item.feature_name||"Unavailable",identity.label,item.metric_name||"Unavailable",rankingScore(item)].forEach((value)=>tr.append(node("td",value)));
+      body.append(tr);
+    });
+    table.append(body); responsive.append(table); details.append(responsive);
+    if (result && result.truncated) details.append(node("p", "The ranking is truncated to the first 100 rows.", "small text-muted"));
+    target.append(details);
+  }
+
   function renderRcaDetail(payload, target) {
     const run = payload.run || {};
+    const result = payload.result || null;
+    const summary = rcaPresentation.summary(payload);
+    const rows = rcaPresentation.ranking(result);
     target.replaceChildren();
-    const heading = node("div", null, "d-flex justify-content-between align-items-center mb-2");
-    heading.append(node("strong", run.run_id || "CausalRCA run")); heading.append(badge(run.status)); target.append(heading);
-    if (run.failure) target.append(node("p", run.failure.message || "CausalRCA failed.", "alert alert-danger"));
+    const heading = node("div", null, "d-flex justify-content-between align-items-center mb-3");
+    const title = node("div");
+    title.append(node("strong", summary.method_name));
+    title.append(node("div", run.run_id || "Stored RCA run", "small text-muted provenance-value"));
+    heading.append(title); heading.append(badge(run.status)); target.append(heading);
+    if (run.failure) target.append(node("p", run.failure.message || "RCA execution failed.", "alert alert-danger"));
     if (run.skip_reason) target.append(node("p", run.skip_reason, "alert alert-warning"));
-    const result = payload.result;
-    if (result && Array.isArray(result.ranking) && result.ranking.length) {
-      const table = node("table", null, "table table-sm table-responsive align-middle");
-      const head = node("thead"); const row = node("tr"); ["Rank","Feature","Entity","Metric","Score"].forEach((label)=>row.append(node("th",label))); head.append(row); table.append(head);
-      const body = node("tbody"); result.ranking.forEach((item)=>{ const tr=node("tr"); const entity=item.entity&&item.entity.id ? `${item.entity.type}: ${item.entity.id}` : (item.entity_id ? `${item.entity_type||"entity"}: ${item.entity_id}` : "Unavailable"); [item.rank,item.feature_id||item.feature_name,entity,item.metric_name||"Unavailable",Number(item.score).toFixed(6)].forEach((value)=>tr.append(node("td",value))); body.append(tr); }); table.append(body); target.append(table);
-      if (result.truncated) target.append(node("p", "The ranking is truncated to the first 100 rows.", "small text-muted"));
-    } else if (run.status === "completed") target.append(node("p", "No bounded ranking rows are available.", "text-muted"));
-    if (result && Array.isArray(result.graphs)) result.graphs.forEach((graph)=>{ if(graph && graph.media_type==="image/png" && /^[A-Za-z0-9+/=]+$/.test(graph.base64||"")){ const img=node("img"); img.className="img-fluid border rounded mt-3"; img.alt="Stored CausalRCA dependency graph"; img.src="data:image/png;base64,"+graph.base64; target.append(img); } });
-    const details=node("details",null,"mt-3"); details.append(node("summary","RCA provenance")); const pre=node("pre",JSON.stringify({cycle_id:run.cycle_id,analysis_kind:run.analysis_kind,execution_attempt_number:run.execution_attempt_number,episode_attempt_budget:run.episode_attempt_budget,previous_run_id:run.previous_run_id,trigger_percentage:run.trigger_percentage,threshold_percentage:run.threshold_percentage,analysis_window:run.analysis_window,new_observation_count:run.new_observation_count,input_sha256:run.input_sha256,analysis_input_sha256:run.analysis_input_sha256,result_sha256:run.result_sha256,policy_version:run.policy_version,preprocessing:run.preprocessing,algorithm:run.algorithm},null,2),"small mt-2 provenance-value"); details.append(pre); target.append(details);
-    target.append(node("p", "This ranking is diagnostic evidence from the stored analysis window; it is not proof of the actual root cause.", "small text-muted mt-3"));
+
+    const overview = node("section", null, "mb-3");
+    overview.append(node("h4", "Operator summary", "h6"));
+    const grid = node("div", null, "row g-2");
+    const window = summary.analysis_window || {};
+    grid.append(summaryValue("RCA method", summary.method_name));
+    grid.append(summaryValue("Analysis window", window.start || window.end ? `${time(window.start)} – ${time(window.end)}` : "Unavailable"));
+    grid.append(summaryValue("Most strongly represented entity", summary.strongest_entity.label));
+    grid.append(summaryValue("Strongest metric", summary.strongest_metric));
+    grid.append(summaryValue("Analysed observations", summary.observation_count ?? "Unavailable"));
+    grid.append(summaryValue("Analysed features", summary.feature_count ?? "Unavailable"));
+    overview.append(grid); target.append(overview);
+
+    if (rows.length) renderSuspects(rows.slice(0, 3), target);
+    else if (run.status === "completed") target.append(node("p", "This completed run contains no ranking rows.", "alert alert-secondary"));
+    else if (["failed","skipped"].includes(run.status)) target.append(node("p", "No ranking is available for this run.", "alert alert-secondary"));
+
+    if (summary.method_id === rcaPresentation.BARO) renderBaroEvidence(summary, target);
+    if (result && Array.isArray(result.graphs)) result.graphs.forEach((graph)=>{ if(graph && graph.media_type==="image/png" && /^[A-Za-z0-9+/=]+$/.test(graph.base64||"")){ const figure=node("figure",null,"mt-3"); const img=node("img"); img.className="img-fluid border rounded"; img.alt="Stored CausalRCA dependency graph"; img.src="data:image/png;base64,"+graph.base64; figure.append(img); figure.append(node("figcaption","Dependency graph produced by CausalRCA for this stored run.","small text-muted mt-1")); target.append(figure); } });
+    renderTechnicalRanking(result, rows, target);
+    const details=node("details",null,"mt-3"); details.append(node("summary","RCA provenance")); const pre=node("pre",JSON.stringify({method:summary.method_id,cycle_id:run.cycle_id,analysis_kind:run.analysis_kind,execution_attempt_number:run.execution_attempt_number,episode_attempt_budget:run.episode_attempt_budget,previous_run_id:run.previous_run_id,trigger_percentage:run.trigger_percentage,threshold_percentage:run.threshold_percentage,analysis_window:run.analysis_window,observation_count:run.observation_count,feature_count:run.feature_count,new_observation_count:run.new_observation_count,input_sha256:run.input_sha256,analysis_input_sha256:run.analysis_input_sha256,result_sha256:run.result_sha256,policy_version:run.policy_version,preprocessing:run.preprocessing,algorithm:run.algorithm,change_point_evidence:summary.change_point},null,2),"small mt-2 provenance-value"); details.append(pre); target.append(details);
+    target.append(node("p", "This result is diagnostic evidence, not proof of the actual root cause.", "alert alert-warning mt-3 mb-0"));
   }
 
   function rcaCacheKey(sessionId, run) {
@@ -218,7 +324,7 @@
       renderRcaDetail(cached, target);
       return;
     }
-    target.replaceChildren(node("p", "Loading stored CausalRCA result…", "text-muted"));
+    target.replaceChildren(node("p", "Loading stored RCA result…", "text-muted"));
     try {
       const url = root.dataset.rcaUrlTemplate.replace("SESSION_ID", encodeURIComponent(sessionId)).replace("RUN_ID", encodeURIComponent(runId));
       const payload = await json(url);
@@ -239,10 +345,10 @@
   function renderRca(session, payload, body) {
     const config = session.rca || {enabled:false, readiness:{status:"unavailable"}};
     const section = node("section", null, "border rounded p-3 mb-4");
-    section.append(node("h3", "Automatic CausalRCA", "h5"));
+    section.append(node("h3", "Automatic root-cause analysis", "h5"));
     const readiness = (config.readiness || {}).status || "unavailable";
     const summary = config.enabled
-      ? `Enabled · trigger strictly above ${config.threshold_percentage}% · ${Math.round((config.analysis_window_seconds||0)/60)} minute analysis window · ${Math.round((config.cooldown_seconds||0)/60)} minute cooldown`
+      ? `Enabled · ${rcaPresentation.methodName(config.method || rcaPresentation.CAUSAL)} · trigger strictly above ${config.threshold_percentage}% · ${Math.round((config.analysis_window_seconds||0)/60)} minute analysis window · ${Math.round((config.cooldown_seconds||0)/60)} minute cooldown`
       : "Disabled for this session.";
     section.append(node("p", summary));
     if (config.enabled && config.reanalyze_within_episode) {
@@ -264,7 +370,7 @@
       triggerEvents.slice(0,10).forEach((cycle)=>{ const event=cycle.rca_trigger; const line=node("div",null,"small text-muted mb-1"); line.append(document.createTextNode(`${time((cycle.prediction_window||{}).end)} · ${rcaDecision(event)}${event.reason ? " — "+event.reason : ""}`)); if(event.related_run_id||event.previous_run_id){ const link=node("a","View earlier analysis","ms-2"); const url=new URL(window.location.href); url.searchParams.set("session",session.session_id); url.searchParams.set("rca",event.related_run_id||event.previous_run_id); link.href=url.toString(); line.append(link); } events.append(line); });
       section.append(events);
     }
-    if (!runs.length) section.append(node("p", "No automatic CausalRCA run has been stored for this session.", "alert alert-secondary"));
+    if (!runs.length) section.append(node("p", "No automatic RCA run has been stored for this session.", "alert alert-secondary"));
     else {
       const list=node("div",null,"list-group mb-3"); const detail=node("div",null,"border rounded p-3");
       runs.forEach((run)=>{ const button=node("button",null,"list-group-item list-group-item-action"); button.type="button"; const top=node("div",null,"d-flex justify-content-between gap-2"); const kind=run.analysis_kind==="reanalysis" ? `Reanalysis ${run.execution_attempt_number||""}` : run.analysis_kind==="preflight_skip" ? "Preflight skip" : "First analysis"; top.append(node("span",`${kind} · ${time((run.analysis_window||{}).start)} – ${time((run.analysis_window||{}).end)}`)); top.append(badge(run.status)); button.append(top); button.append(node("small",`Triggered at ${run.trigger_percentage}% (threshold ${run.threshold_percentage}%)${run.new_observation_count!==undefined ? ` · ${run.new_observation_count} new observations` : ""}`,"text-muted")); button.addEventListener("click",()=>loadRcaDetail(session.session_id,run,detail)); list.append(button); });

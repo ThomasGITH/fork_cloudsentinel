@@ -13,6 +13,8 @@ WORKDIR /app
 
 # Copy the runtime requirements separately to retain Docker layer caching.
 COPY anomaly_detection/crca/requirements.txt /tmp/requirements.txt
+COPY anomaly_detection/crca/requirements-baro.txt /tmp/requirements-baro.txt
+COPY THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
 
 # Torch is installed explicitly from the CPU wheel index. Keeping it out of the
 # generic requirements file prevents pip from resolving CUDA/NVIDIA packages.
@@ -23,12 +25,13 @@ RUN python -m pip install --no-cache-dir --upgrade \
     && python -m pip install --no-cache-dir \
         --only-binary=:all: \
         "scikit-network==${SCIKIT_NETWORK_VERSION}" \
-    && python -m pip install --no-cache-dir --no-deps \
-        "fse-baro==${FSE_BARO_VERSION}" \
+    && test "${FSE_BARO_VERSION}" = "0.2.2" \
+    && python -m pip install --no-cache-dir --no-deps --only-binary=:all: \
+        --require-hashes -r /tmp/requirements-baro.txt \
     && python -m pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cpu \
         "torch==${PYTORCH_VERSION}+cpu" \
-    && rm -f /tmp/requirements.txt
+    && rm -f /tmp/requirements.txt /tmp/requirements-baro.txt
 
 # Copy the rest of the application code into the container
 COPY anomaly_detection/crca/ .
