@@ -337,10 +337,18 @@ class ComparisonRobustnessTests(unittest.TestCase):
             self.assertNotIn("comparison-old", one["related_comparison_ids"])
             self.assertNotIn("comparison-other-artifact", one["related_comparison_ids"])
             self.assertEqual(by_model["model-two"]["context_count"], 1)
+            self.assertEqual(one["insight"]["status"], "variation_available")
+            self.assertIn("F1 ranged from 0.600 to 0.800", one["insight"]["rationale"])
+            self.assertEqual(
+                one["insight"]["worst_labelled_context"]["comparison_id"],
+                "comparison-current",
+            )
             self.assertEqual(len(payload["shared_context_matrix"]), 1)
             self.assertEqual(len(payload["shared_context_matrix"][0]["models"]), 2)
             self.assertTrue(any("coverage differs" in warning for warning in payload["coverage_warnings"]))
             self.assertTrue(any("latest completed" in warning for warning in payload["coverage_warnings"]))
+            self.assertEqual(payload["shared_evidence"]["status"], "insufficient")
+            self.assertEqual(payload["shared_evidence"]["context_count"], 1)
 
             labelled = aggregate_robustness(store, current, filters={"labelled_only": True})
             self.assertEqual(
@@ -380,6 +388,84 @@ class ComparisonRobustnessTests(unittest.TestCase):
             self.assertIsNone(aggregate["statistics"]["recall"]["median"])
             self.assertEqual(aggregate["statistics"]["lead_time_seconds"]["count"], 0)
             self.assertFalse(aggregate["sufficient_contexts"])
+            self.assertEqual(aggregate["insight"]["status"], "insufficient_contexts")
+
+    def test_shared_evidence_uses_same_labelled_contexts_and_handles_ties(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = ComparisonStore(Path(temp) / "comparisons")
+            models = [model_record("model-one"), model_record("model-two")]
+            first = self._terminal_record(
+                "comparison-first", models=models, checksum="a" * 64,
+                completed_at="2026-10-01T10:00:00Z",
+                f1_values={"model-one": 0.9, "model-two": 0.8},
+            )
+            second = self._terminal_record(
+                "comparison-second", models=models, checksum="b" * 64,
+                completed_at="2026-10-02T10:00:00Z",
+                f1_values={"model-one": 0.7, "model-two": 0.8},
+            )
+            third = self._terminal_record(
+                "comparison-third", models=models, checksum="c" * 64,
+                completed_at="2026-10-03T10:00:00Z",
+                f1_values={"model-one": 0.8, "model-two": 0.8},
+            )
+            for record in (first, second, third):
+                store.create(record)
+            payload = aggregate_robustness(store, third)
+            evidence = payload["shared_evidence"]
+            self.assertEqual(evidence["status"], "sufficient")
+            self.assertEqual(evidence["context_count"], 3)
+            by_model = {item["model_id"]: item for item in evidence["models"]}
+            self.assertAlmostEqual(by_model["model-one"]["f1_score"]["range"], 0.2)
+            self.assertEqual(by_model["model-two"]["f1_score"]["range"], 0.0)
+            self.assertEqual(by_model["model-two"]["highest_f1_context_count"], 2)
+            self.assertEqual(by_model["model-two"]["tied_highest_f1_context_count"], 1)
+            self.assertEqual(evidence["lowest_variation_models"][0]["model_id"], "model-two")
+            self.assertFalse(evidence["tie"])
+
+    def test_empty_invalid_metrics_and_shared_variation_tie_are_honest(self):
+        with tempfile.TemporaryDirectory() as temp:
+            store = ComparisonStore(Path(temp) / "comparisons")
+            models = [model_record("model-one"), model_record("model-two")]
+            current = self._terminal_record(
+                "comparison-current", models=models, checksum="a" * 64,
+                completed_at="2026-10-02T10:00:00Z",
+                f1_values={"model-one": 0.8, "model-two": 0.8},
+            )
+            previous = self._terminal_record(
+                "comparison-previous", models=models, checksum="b" * 64,
+                completed_at="2026-10-01T10:00:00Z",
+                f1_values={"model-one": 0.7, "model-two": 0.7},
+            )
+            for record in (current, previous):
+                store.create(record)
+            evidence = aggregate_robustness(store, current)["shared_evidence"]
+            self.assertEqual(evidence["status"], "sufficient")
+            self.assertTrue(evidence["tie"])
+            self.assertEqual(len(evidence["lowest_variation_models"]), 2)
+            self.assertTrue(
+                all(model["tied_highest_f1_context_count"] == 2 for model in evidence["models"])
+            )
+
+            empty_store = ComparisonStore(Path(temp) / "empty")
+            empty = aggregate_robustness(empty_store, current)
+            self.assertTrue(
+                all(model["insight"]["status"] == "no_contexts" for model in empty["models"])
+            )
+
+            invalid = self._terminal_record(
+                "comparison-invalid", models=models, checksum="c" * 64,
+                completed_at="2026-10-03T10:00:00Z",
+            )
+            invalid["results"][0]["metrics"]["f1_score"] = "not-a-number"
+            invalid["results"][1]["metrics"]["f1_score"] = float("inf")
+            invalid_store = ComparisonStore(Path(temp) / "invalid")
+            invalid_store.create(invalid)
+            projected = aggregate_robustness(invalid_store, invalid)
+            self.assertTrue(
+                all(model["statistics"]["f1_score"]["count"] == 0 for model in projected["models"])
+            )
+            self.assertEqual(projected["shared_evidence"]["context_count"], 0)
 
     def test_robustness_has_no_detector_specific_branch(self):
         source = Path("learning_adaptation/comparison_robustness.py").read_text(
@@ -557,6 +643,13 @@ class ComparisonApiTests(unittest.TestCase):
             "/api/comparisons/comparison-robust/robustness?labelled_only=perhaps"
         )
         self.assertEqual(invalid.status_code, 400)
+        custom_scenario = self.client.get(
+            "/api/comparisons/comparison-robust/robustness?scenario=Other"
+        )
+        self.assertEqual(custom_scenario.status_code, 200)
+        self.assertTrue(
+            all(model["context_count"] == 0 for model in custom_scenario.get_json()["models"])
+        )
         self.assertEqual(
             self.client.get("/api/comparisons/comparison-missing/robustness").status_code,
             404,
@@ -592,9 +685,18 @@ class ComparisonTimelineAssetTests(unittest.TestCase):
             "No completed comparisons found for this exact saved model artefact",
             "Metrics are unavailable because the available contexts have no ground truth",
             "View related comparisons",
+            "Evaluate these models in another context",
+            "How stable are these models across different contexts?",
+            "Fair comparison on shared labelled contexts",
         ):
             self.assertIn(expected, source)
-        for forbidden in ("Root Cause Analysis", "View RCA", "robustness score"):
+        for forbidden in (
+            "Root Cause Analysis",
+            "View RCA",
+            "robustness score",
+            "most robust model overall",
+            "universally best model",
+        ):
             self.assertNotIn(forbidden, source)
 
 

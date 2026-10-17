@@ -19,7 +19,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: celery-worker
-        image: jojojochem/data_ingestion:expand-rca-hardening-1
+        image: jojojochem/data_ingestion:expansions-p2
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "app.celery", "worker", "--loglevel=info", "--concurrency=1"]
         securityContext:

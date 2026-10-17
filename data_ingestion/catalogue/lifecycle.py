@@ -19,6 +19,7 @@ from .repository import (
 )
 from .validation import (
     ANOMALY_SCENARIOS,
+    INCIDENT_SCENARIOS,
     CatalogueValidationError,
     partition_checksum,
     require_object,
@@ -292,9 +293,9 @@ def add_incident(
     if start < source_start or end > source_end:
         raise CatalogueValidationError("incident range must be inside the dataset time window")
     scenario = payload.get("scenario")
-    if scenario not in ANOMALY_SCENARIOS:
+    if scenario not in INCIDENT_SCENARIOS:
         raise CatalogueValidationError(
-            f"scenario must be one of: {', '.join(sorted(ANOMALY_SCENARIOS))}"
+            f"scenario must be one of: {', '.join(sorted(INCIDENT_SCENARIOS))}"
         )
     allow_overlap = payload.get("allow_overlap", False)
     if not isinstance(allow_overlap, bool):

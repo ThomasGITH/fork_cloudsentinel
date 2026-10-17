@@ -19,7 +19,11 @@ try:
         ComparisonNotFoundError,
         ComparisonStore,
     )
-    from learning_adaptation.comparison_robustness import aggregate_robustness
+    from learning_adaptation.comparison_robustness import (
+        ROBUSTNESS_SCENARIO_FILTERS,
+        ROBUSTNESS_WORKLOAD_FILTERS,
+        aggregate_robustness,
+    )
     from learning_adaptation.model_catalogue import ModelCatalogueStore, ModelNotFoundError
     from learning_adaptation.training_lifecycle import (
         safe_failure_summary,
@@ -29,7 +33,11 @@ try:
     from learning_adaptation.training_run_storage import validate_identifier
 except ModuleNotFoundError:
     from comparison_storage import ComparisonConflictError, ComparisonNotFoundError, ComparisonStore
-    from comparison_robustness import aggregate_robustness
+    from comparison_robustness import (
+        ROBUSTNESS_SCENARIO_FILTERS,
+        ROBUSTNESS_WORKLOAD_FILTERS,
+        aggregate_robustness,
+    )
     from model_catalogue import ModelCatalogueStore, ModelNotFoundError
     from training_lifecycle import safe_failure_summary, stored_evaluation_projection, utc_now
     from training_run_storage import validate_identifier
@@ -487,18 +495,13 @@ def create_comparisons_blueprint(comparison_task: Any) -> Blueprint:
                 ),
             }
             filters = {key: value for key, value in filters.items() if value}
-            if filters.get("workload") not in {
-                None, "Low", "Normal", "High", "Variable"
-            }:
+            if filters.get("workload") is not None and filters.get(
+                "workload"
+            ) not in ROBUSTNESS_WORKLOAD_FILTERS:
                 raise ComparisonValidationError("unsupported workload filter")
-            if filters.get("scenario") not in {
-                None,
-                "Normal operation",
-                "CPU stress",
-                "Memory stress",
-                "Network delay",
-                "Unknown",
-            }:
+            if filters.get("scenario") is not None and filters.get(
+                "scenario"
+            ) not in ROBUSTNESS_SCENARIO_FILTERS:
                 raise ComparisonValidationError("unsupported scenario filter")
             return jsonify(
                 aggregate_robustness(

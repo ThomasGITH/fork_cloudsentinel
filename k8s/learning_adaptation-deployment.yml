@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:generic-monitoring-history-1
+        image: jojojochem/learning_adaptation:expansions-p2
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false

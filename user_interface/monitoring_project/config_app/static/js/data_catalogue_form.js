@@ -33,6 +33,25 @@
     update();
   }
 
+  function setupCustomScenario(form) {
+    form.querySelectorAll("[data-custom-scenario-select]").forEach(function (selector) {
+      const wrapper = form.querySelector("#" + selector.dataset.customScenarioSelect);
+      if (!wrapper) return;
+      const input = wrapper.querySelector("input");
+      function update() {
+        const custom = selector.value === "Other";
+        wrapper.hidden = !custom;
+        selector.setAttribute("aria-expanded", custom ? "true" : "false");
+        if (input) {
+          input.disabled = !custom;
+          input.required = custom;
+        }
+      }
+      selector.addEventListener("change", update);
+      update();
+    });
+  }
+
   function queryValue(card, name) {
     const field = card.querySelector("[data-query-field='" + name + "']");
     if (!field) return "";
@@ -104,6 +123,7 @@
     document.querySelectorAll("form.catalogue-form").forEach(function (form) {
       initialiseUtcFields(form);
       setupPartition(form);
+      setupCustomScenario(form);
       setupQueries(form);
       if (!form.querySelector("[data-query-list]")) form.addEventListener("submit", function () { syncUtcFields(form); });
     });

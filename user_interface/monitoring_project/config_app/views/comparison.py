@@ -18,7 +18,8 @@ from ..comparison_labels import (
     humanize_robustness,
 )
 from ..comparison_decision import build_decision_support
-from ..comparison_flow import training_comparison_context
+from ..comparison_flow import comparison_source_context, training_comparison_context
+from ..workload_context import ANOMALY_SCENARIOS, WORKLOAD_INTENSITY_DEFINITIONS
 
 
 _SALT = "cloudsentinel.comparison-wizard.v1"
@@ -62,11 +63,33 @@ def _source_run_state(client, raw_run_id: str | None) -> tuple[dict | None, str 
     return source, None
 
 
+def _source_comparison_state(client, raw_id: str | None) -> tuple[dict | None, str | None]:
+    if not raw_id:
+        return None, None
+    if not isinstance(raw_id, str) or not raw_id.strip() or len(raw_id) > 128:
+        return None, "The requested source comparison is invalid. You can continue without preselection."
+    try:
+        comparison = client.get_comparison(raw_id.strip())
+    except LearningClientError:
+        return None, "The requested source comparison is unavailable. You can continue without preselection."
+    source = comparison_source_context(comparison)
+    if source is None or not source.get("successful_models"):
+        return None, "The source comparison has no usable immutable model artefacts. You can continue without preselection."
+    return source, None
+
+
+def _same_evaluation_context(source: dict, selected: dict) -> bool:
+    original = source.get("evaluation_context") or {}
+    required = ("dataset_id", "version", "partition_id", "partition_checksum")
+    return all(original.get(key) is not None and original.get(key) == selected.get(key) for key in required)
+
+
 def _prepare_model_selection(state: dict, payload: dict, checked_ids=None) -> dict:
     items = payload.get("items") if isinstance(payload, dict) else None
     items = items if isinstance(items, list) else []
     humanize_model_items(items)
-    source = state.get("source_run") if isinstance(state.get("source_run"), dict) else {}
+    source_kind = "training_run" if isinstance(state.get("source_run"), dict) else "comparison"
+    source = state.get("source_run") or state.get("source_comparison") or {}
     source_models = source.get("successful_models")
     source_models = source_models if isinstance(source_models, list) else []
     source_by_id = {
@@ -82,11 +105,29 @@ def _prepare_model_selection(state: dict, payload: dict, checked_ids=None) -> di
     for item in items:
         model_id = item.get("model_id")
         from_source = model_id in source_by_id
-        item["from_source_run"] = from_source
+        source_identity_matches = True
+        if from_source and source_kind == "comparison":
+            expected = source_by_id[model_id]
+            actual = item.get("artifact_identity") or {}
+            source_identity_matches = (
+                actual.get("artifact_id") == expected.get("artifact_id")
+                and actual.get("artifact_manifest_sha256")
+                == expected.get("artifact_manifest_sha256")
+            )
+            if not source_identity_matches:
+                item["source_preselection_reasons"] = [
+                    "Saved Model artifact identity no longer matches the source comparison"
+                ]
+        item["from_source_run"] = from_source and source_kind == "training_run"
+        item["from_source_comparison"] = from_source and source_kind == "comparison"
         item["preselected"] = bool(
-            model_id in requested and item.get("compatible") is True
+            model_id in requested
+            and item.get("compatible") is True
+            and source_identity_matches
         )
-        if from_source and item.get("compatible") is not True:
+        if from_source and (
+            item.get("compatible") is not True or not source_identity_matches
+        ):
             incompatible.append(item)
     missing = [source_by_id[model_id] for model_id in source_by_id if model_id not in available_ids]
     payload["items"] = items
@@ -133,9 +174,18 @@ def comparison_new(request: HttpRequest):
         state = _state(request.POST.get("wizard_state") if request.method == "POST" else None)
         source_notice = None
         if request.method == "GET":
-            source, source_notice = _source_run_state(client, request.GET.get("source_run"))
-            if source is not None:
-                state["source_run"] = source
+            raw_run = request.GET.get("source_run")
+            raw_comparison = request.GET.get("source_comparison")
+            if raw_run and raw_comparison:
+                source_notice = "Choose either a source training run or a source comparison, not both. Continue without preselection."
+            elif raw_run:
+                source, source_notice = _source_run_state(client, raw_run)
+                if source is not None:
+                    state["source_run"] = source
+            elif raw_comparison:
+                source, source_notice = _source_comparison_state(client, raw_comparison)
+                if source is not None:
+                    state["source_comparison"] = source
         step = int(request.POST.get("step", "1")) if request.method == "POST" else 1
         error = None
         if request.method == "POST":
@@ -154,6 +204,11 @@ def comparison_new(request: HttpRequest):
                 if selected is None:
                     raise ValueError("Select a valid evaluation dataset.")
                 state["dataset"] = selected
+                source_comparison = state.get("source_comparison")
+                state["repeated_source_context"] = bool(
+                    isinstance(source_comparison, dict)
+                    and _same_evaluation_context(source_comparison, selected)
+                )
                 step = 2
             elif step == 2:
                 selected_ids = request.POST.getlist("model_ids")
@@ -296,6 +351,8 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
                 "robustness": robustness,
                 "robustness_error": robustness_error,
                 "robustness_filters": robustness_filters,
+                "robustness_scenarios": ANOMALY_SCENARIOS,
+                "workload_intensity_definitions": WORKLOAD_INTENSITY_DEFINITIONS,
             },
         )
     except LearningClientError as exc:

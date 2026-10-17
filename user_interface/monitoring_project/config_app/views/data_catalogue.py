@@ -15,23 +15,18 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from ..catalogue_client import CatalogueClientError, get_catalogue_client
+from ..workload_context import (
+    ANOMALY_SCENARIOS,
+    ANOMALY_SCENARIO_DETAIL_MAX_LENGTH,
+    ANOMALY_SCENARIO_HELP,
+    DOMINANT_CHARACTERISTIC_HELP,
+    INCIDENT_SCENARIOS,
+    USER_SUPPLIED_HELP,
+    WORKLOAD_CHARACTERISTICS,
+    WORKLOAD_INTENSITIES,
+    WORKLOAD_INTENSITY_DEFINITIONS,
+)
 
-
-WORKLOAD_INTENSITIES = ["Low", "Normal", "High", "Variable"]
-WORKLOAD_CHARACTERISTICS = [
-    "CPU-intensive",
-    "Memory-intensive",
-    "High traffic",
-    "Latency-intensive",
-    "Mixed",
-]
-ANOMALY_SCENARIOS = [
-    "Normal operation",
-    "CPU stress",
-    "Memory stress",
-    "Network delay",
-    "Unknown",
-]
 DATASET_STATUSES = ["draft", "fetching", "validating", "available", "failed"]
 FILTER_FIELDS = {
     "search",
@@ -66,6 +61,12 @@ def _catalogue_context() -> dict[str, Any]:
         "workload_intensities": WORKLOAD_INTENSITIES,
         "workload_characteristics": WORKLOAD_CHARACTERISTICS,
         "anomaly_scenarios": ANOMALY_SCENARIOS,
+        "incident_scenarios": INCIDENT_SCENARIOS,
+        "workload_intensity_definitions": WORKLOAD_INTENSITY_DEFINITIONS,
+        "dominant_characteristic_help": DOMINANT_CHARACTERISTIC_HELP,
+        "anomaly_scenario_help": ANOMALY_SCENARIO_HELP,
+        "workload_user_supplied_help": USER_SUPPLIED_HELP,
+        "anomaly_scenario_detail_max_length": ANOMALY_SCENARIO_DETAIL_MAX_LENGTH,
         "dataset_statuses": DATASET_STATUSES,
     }
 
@@ -147,13 +148,31 @@ def _queries(post: Any) -> list[dict[str, Any]]:
 
 
 def _workload_context(post: Any, prefix: str = "") -> dict[str, str]:
-    return {
-        "workload_intensity": post.get(f"{prefix}workload_intensity", ""),
-        "dominant_workload_characteristic": post.get(
-            f"{prefix}dominant_workload_characteristic", ""
-        ),
-        "anomaly_scenario": post.get(f"{prefix}anomaly_scenario", ""),
+    intensity = post.get(f"{prefix}workload_intensity", "")
+    characteristic = post.get(f"{prefix}dominant_workload_characteristic", "")
+    scenario = post.get(f"{prefix}anomaly_scenario", "")
+    if intensity not in WORKLOAD_INTENSITIES:
+        raise ValueError("Select a valid workload intensity")
+    if characteristic not in WORKLOAD_CHARACTERISTICS:
+        raise ValueError("Select a valid dominant workload characteristic")
+    if scenario not in ANOMALY_SCENARIOS:
+        raise ValueError("Select a valid anomaly scenario")
+    result = {
+        "workload_intensity": intensity,
+        "dominant_workload_characteristic": characteristic,
+        "anomaly_scenario": scenario,
     }
+    if scenario == "Other":
+        detail = post.get(f"{prefix}anomaly_scenario_detail", "")
+        if not isinstance(detail, str) or not detail.strip():
+            raise ValueError("Custom scenario name is required when Other / custom is selected")
+        detail = detail.strip()
+        if len(detail) > ANOMALY_SCENARIO_DETAIL_MAX_LENGTH:
+            raise ValueError(
+                f"Custom scenario name must contain at most {ANOMALY_SCENARIO_DETAIL_MAX_LENGTH} characters"
+            )
+        result["anomaly_scenario_detail"] = detail
+    return result
 
 
 def _partition(post: Any, prefix: str = "") -> dict[str, Any]:
@@ -408,6 +427,9 @@ def data_catalogue_detail(request: HttpRequest, dataset_id: str):
                 "dataset": detail,
                 "version": detail["version"],
                 "selected_version": version_number,
+                "selected_workload_intensity_help": dict(
+                    WORKLOAD_INTENSITY_DEFINITIONS
+                ).get((detail.get("workload_context") or {}).get("workload_intensity")),
             },
         )
     except (CatalogueClientError, ValueError, KeyError, TypeError) as exc:
@@ -473,7 +495,7 @@ def data_catalogue_metadata(request: HttpRequest, dataset_id: str):
         }
         get_catalogue_client().update_metadata(dataset_id, payload)
         messages.success(request, "Dataset metadata updated.")
-    except CatalogueClientError as exc:
+    except (CatalogueClientError, ValueError) as exc:
         messages.error(request, _safe_error(exc))
     return redirect(_detail_url(dataset_id, request.POST.get("version")))
 

@@ -27,7 +27,10 @@ ANOMALY_SCENARIOS = {
     "Memory stress",
     "Network delay",
     "Unknown",
+    "Other",
 }
+INCIDENT_SCENARIOS = ANOMALY_SCENARIOS - {"Other"}
+ANOMALY_SCENARIO_DETAIL_MAX_LENGTH = 160
 
 
 class CatalogueValidationError(ValueError):
@@ -94,6 +97,19 @@ def validate_workload_context(value: Any, *, allow_unknown_legacy: bool = False)
                 f"workload_context.{field} must be one of: {', '.join(sorted(choices))}"
             )
         result[field] = submitted
+    detail = context.get("anomaly_scenario_detail")
+    if result.get("anomaly_scenario") == "Other":
+        if not isinstance(detail, str) or not detail.strip():
+            raise CatalogueValidationError(
+                "workload_context.anomaly_scenario_detail is required when anomaly_scenario is Other"
+            )
+        detail = detail.strip()
+        if len(detail) > ANOMALY_SCENARIO_DETAIL_MAX_LENGTH:
+            raise CatalogueValidationError(
+                "workload_context.anomaly_scenario_detail must contain at most "
+                f"{ANOMALY_SCENARIO_DETAIL_MAX_LENGTH} characters"
+            )
+        result["anomaly_scenario_detail"] = detail
     return result
 
 
@@ -353,10 +369,10 @@ def validate_incidents(value: Any | None) -> list[dict[str, Any]]:
                 f"ground_truth.known_incident_windows[{index}] start_time must be before end_time"
             )
         scenario = incident.get("scenario", "Unknown")
-        if scenario not in ANOMALY_SCENARIOS:
+        if scenario not in INCIDENT_SCENARIOS:
             raise CatalogueValidationError(
                 f"ground_truth.known_incident_windows[{index}].scenario must be one of: "
-                f"{', '.join(sorted(ANOMALY_SCENARIOS))}"
+                f"{', '.join(sorted(INCIDENT_SCENARIOS))}"
             )
         normalized = {
             "incident_id": validate_identifier(

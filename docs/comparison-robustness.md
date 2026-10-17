@@ -56,15 +56,16 @@ Optional filters are:
 
 ```text
 workload=Low|Normal|High|Variable
-scenario=Normal operation|CPU stress|Memory stress|Network delay|Unknown
+scenario=Normal operation|CPU stress|Memory stress|Network delay|Unknown|Other
 labelled_only=true|false
 shared_only=true|false
 ```
 
 The response uses aggregation contract
 `cloudsentinel.comparison-robustness/v1`. It contains safe artifact identity,
-per-model summaries, canonical context rows, a matrix for contexts shared by
-at least two currently selected artifacts, coverage warnings, deduplication
+per-model insights, canonical context rows, a matrix for contexts shared by
+at least two currently selected artifacts, a stricter fair-comparison summary
+over contexts shared by every selected artifact, coverage warnings, deduplication
 counts and source ComparisonRun IDs. It never contains raw matrices,
 predictions, scores, filesystem paths, internal URLs, task IDs, entry points or
 tracebacks. Responses are capped at 200 contexts per model by default through
@@ -77,11 +78,24 @@ artifact. Partial identity filters are rejected.
 ## UI behavior
 
 The Robustness tab focuses on artifacts selected by the current ComparisonRun.
-It shows aggregate coverage, accuracy and runtime summaries, a shared-context
-matrix for fair side-by-side evaluation, and historical context rows. Missing
+It shows measurable coverage, F1 variation, the lowest-F1 labelled context,
+runtime summaries, a shared-context matrix, and historical context rows. The
+fair comparison projection requires every selected model on at least two of
+the same labelled immutable partitions before it describes which model has the
+lowest observed variation. Ties remain ties. Missing
 values are shown as `Unavailable`. Coverage differences are stated explicitly;
 the UI does not declare a winner when artifacts were evaluated on different
 contexts.
+
+**Evaluate these models in another context** opens the existing Comparison
+wizard with server-resolved models from the source comparison. The signed
+wizard state and normal compatibility checks remain authoritative. Selecting
+the exact same dataset version and immutable partition produces a warning:
+the latest canonical result may change, but context coverage does not grow.
+
+Workload categories are user supplied. `Other / custom` remains grouped as
+`Other` and carries a separately validated descriptive label; it does not
+change incident-window semantics.
 
 The implementation is read-only and computes from immutable ComparisonRun
 files on request. It does not rerun inference or rewrite historical records.

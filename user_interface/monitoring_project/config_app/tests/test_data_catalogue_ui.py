@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+from pathlib import Path
 
 from django.test import Client, SimpleTestCase
 from django.urls import resolve, reverse
@@ -133,6 +134,86 @@ class DataCatalogueUiTests(SimpleTestCase):
         self.assertEqual(payload["source"]["queries"][0]["query_id"], "cpu")
         self.assertFalse(payload["ground_truth"]["labels_available"])
         self.assertNotIn("url", payload["source"])
+
+    def test_custom_scenario_help_and_server_side_validation(self):
+        page = self.client.get(reverse("data_catalogue_new"))
+        self.assertContains(page, "Other / custom")
+        self.assertContains(page, "CloudSentinel does not infer these categories")
+        self.assertContains(page, "Custom scenario name")
+
+        missing = self.valid_form()
+        missing.update(anomaly_scenario="Other", anomaly_scenario_detail="   ")
+        response = self.client.post(reverse("data_catalogue_new"), missing)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Custom scenario name is required")
+        self.client_api.create_dataset.assert_not_called()
+
+        valid = self.valid_form()
+        valid.update(
+            anomaly_scenario="Other",
+            anomaly_scenario_detail="  Black Friday checkout traffic  ",
+        )
+        self.client_api.create_dataset.return_value = detail_payload("draft")
+        response = self.client.post(reverse("data_catalogue_new"), valid)
+        self.assertEqual(response.status_code, 302)
+        context = self.client_api.create_dataset.call_args.args[0]["workload_context"]
+        self.assertEqual(context["anomaly_scenario"], "Other")
+        self.assertEqual(context["anomaly_scenario_detail"], "Black Friday checkout traffic")
+
+    def test_standard_scenario_discards_unexpected_detail_and_detail_renders_custom(self):
+        valid = self.valid_form()
+        valid["anomaly_scenario_detail"] = "unexpected"
+        self.client_api.create_dataset.return_value = detail_payload("draft")
+        self.client.post(reverse("data_catalogue_new"), valid)
+        context = self.client_api.create_dataset.call_args.args[0]["workload_context"]
+        self.assertNotIn("anomaly_scenario_detail", context)
+
+        detail = detail_payload()
+        detail["workload_context"] = {
+            **detail["workload_context"],
+            "anomaly_scenario": "Other",
+            "anomaly_scenario_detail": "Black Friday <script>alert(1)</script> traffic",
+        }
+        self.client_api.get_dataset.return_value = detail
+        rendered = self.client.get(reverse("data_catalogue_detail", args=["ds_demo"]))
+        self.assertContains(
+            rendered,
+            "Other — Black Friday &lt;script&gt;alert(1)&lt;/script&gt; traffic",
+            html=False,
+        )
+        self.assertNotContains(rendered, "<script>alert(1)</script>", html=False)
+
+    def test_custom_scenario_progressive_disclosure_script_and_metadata_update(self):
+        source = (Path(__file__).resolve().parents[1] / "static/js/data_catalogue_form.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("setupCustomScenario", source)
+        self.assertIn('selector.value === "Other"', source)
+        self.assertIn("input.required = custom", source)
+
+        response = self.client.post(
+            reverse("data_catalogue_metadata", args=["ds_demo"]),
+            {
+                "version": "1",
+                "display_name": "Checkout metrics",
+                "purpose_other": "training",
+                "metadata_workload_intensity": "High",
+                "metadata_dominant_workload_characteristic": "High traffic",
+                "metadata_anomaly_scenario": "Other",
+                "metadata_anomaly_scenario_detail": "  Black Friday checkout traffic  ",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        context = self.client_api.update_metadata.call_args.args[1]["workload_context"]
+        self.assertEqual(
+            context,
+            {
+                "workload_intensity": "High",
+                "dominant_workload_characteristic": "High traffic",
+                "anomaly_scenario": "Other",
+                "anomaly_scenario_detail": "Black Friday checkout traffic",
+            },
+        )
 
     def test_create_and_fetch_flow(self):
         self.client_api.create_dataset.return_value = detail_payload("draft")

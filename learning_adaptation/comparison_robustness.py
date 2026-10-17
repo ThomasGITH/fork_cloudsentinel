@@ -16,6 +16,15 @@ except ModuleNotFoundError:
 
 ROBUSTNESS_VERSION = "cloudsentinel.comparison-robustness/v1"
 TERMINAL_RUN_STATUSES = {"completed", "partial"}
+ROBUSTNESS_WORKLOAD_FILTERS = {"Low", "Normal", "High", "Variable"}
+ROBUSTNESS_SCENARIO_FILTERS = {
+    "Normal operation",
+    "CPU stress",
+    "Memory stress",
+    "Network delay",
+    "Unknown",
+    "Other",
+}
 
 
 def _finite_number(value: Any) -> float | None:
@@ -57,6 +66,11 @@ def _context(record: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(checksum, str) or not checksum:
         return None
     workload = dataset.get("workload_context") or {}
+    scenario_detail = workload.get("anomaly_scenario_detail")
+    if not isinstance(scenario_detail, str) or not scenario_detail.strip():
+        scenario_detail = None
+    else:
+        scenario_detail = scenario_detail.strip()[:160]
     incidents = record.get("known_incident_windows")
     if not isinstance(incidents, list):
         incident = record.get("known_incident_window")
@@ -78,15 +92,29 @@ def _context(record: dict[str, Any]) -> dict[str, Any] | None:
         "partition_checksum": checksum,
         "modality": record.get("modality") or dataset.get("modality"),
         "workload_context": {
-            key: workload.get(key)
-            for key in (
-                "workload_intensity",
-                "dominant_workload_characteristic",
-                "anomaly_scenario",
-            )
-            if workload.get(key) is not None
+            **{
+                key: workload.get(key)
+                for key in (
+                    "workload_intensity",
+                    "dominant_workload_characteristic",
+                    "anomaly_scenario",
+                )
+                if workload.get(key) is not None
+            },
+            **(
+                {"anomaly_scenario_detail": scenario_detail}
+                if scenario_detail is not None
+                else {}
+            ),
         },
         "scenario": workload.get("anomaly_scenario"),
+        "scenario_detail": scenario_detail,
+        "scenario_display": (
+            f"Other — {scenario_detail}"
+            if workload.get("anomaly_scenario") == "Other"
+            and scenario_detail
+            else workload.get("anomaly_scenario")
+        ),
         "dominant_characteristic": workload.get(
             "dominant_workload_characteristic"
         ),
@@ -142,11 +170,85 @@ def _series(values: list[float], *, standard_deviation: bool = False) -> dict[st
         "median": median(values),
         "minimum": min(values),
         "maximum": max(values),
+        "range": max(values) - min(values),
     }
     if standard_deviation:
-        summary["range"] = max(values) - min(values)
         summary["standard_deviation"] = pstdev(values) if len(values) >= 2 else None
     return summary
+
+
+def _context_description(context: dict[str, Any]) -> str:
+    workload = context.get("workload_context") or {}
+    parts = [
+        workload.get("workload_intensity"),
+        context.get("scenario_display") or context.get("scenario"),
+    ]
+    value = " / ".join(str(part) for part in parts if part)
+    return value or str(context.get("display_name") or "this evaluation context")
+
+
+def _model_insight(rows: list[dict[str, Any]], statistics: dict[str, Any]) -> dict[str, Any]:
+    ground_truth_count = sum(1 for row in rows if row.get("ground_truth_available"))
+    labelled_rows = [
+        row for row in rows if _finite_number(row.get("metrics", {}).get("f1_score")) is not None
+    ]
+    worst = min(
+        labelled_rows,
+        key=lambda row: (
+            float(row["metrics"]["f1_score"]),
+            str(row["context"].get("partition_checksum") or ""),
+            str(row.get("comparison_id") or ""),
+        ),
+        default=None,
+    )
+    context_count = len(rows)
+    usable_f1_count = len(labelled_rows)
+    f1 = statistics["f1_score"]
+    if context_count == 0:
+        status = "no_contexts"
+        rationale = "No completed comparisons were found for this exact saved model artefact."
+    elif context_count == 1:
+        status = "insufficient_contexts"
+        rationale = (
+            "One evaluation context is available. At least two distinct contexts are "
+            "needed to observe performance variation."
+        )
+    elif usable_f1_count == 0:
+        status = "metrics_unavailable"
+        rationale = (
+            f"Evaluated in {context_count} contexts, of which {ground_truth_count} have "
+            "ground truth, but none contains a usable F1 value."
+        )
+    elif usable_f1_count == 1:
+        status = "insufficient_labelled_contexts"
+        rationale = (
+            f"Evaluated in {context_count} contexts, of which {ground_truth_count} have "
+            "ground truth. Only one contains a usable F1 value; at least two are needed "
+            "to observe F1 variation."
+        )
+    else:
+        status = "variation_available"
+        rationale = (
+            f"Evaluated in {context_count} contexts, of which {ground_truth_count} have ground truth. "
+            f"F1 ranged from {f1['minimum']:.3f} to {f1['maximum']:.3f}. "
+            f"Performance was lowest under {_context_description(worst['context'])}."
+        )
+    return {
+        "status": status,
+        "context_count": context_count,
+        "labelled_context_count": ground_truth_count,
+        "usable_f1_context_count": usable_f1_count,
+        "rationale": rationale,
+        "worst_labelled_context": (
+            {
+                "comparison_id": worst.get("comparison_id"),
+                "context": deepcopy(worst.get("context")),
+                "f1_score": worst["metrics"]["f1_score"],
+            }
+            if worst is not None
+            else None
+        ),
+    }
 
 
 def _aggregate(
@@ -164,6 +266,13 @@ def _aggregate(
         for row in labelled
         if row["lead_time_seconds"] is not None
     ]
+    statistics = {
+        "f1_score": _series(f1, standard_deviation=True),
+        "precision": _series(precision),
+        "recall": _series(recall),
+        "runtime_ms": _series(runtimes),
+        "lead_time_seconds": _series(lead_times),
+    }
     return {
         "model_id": model.get("model_id"),
         "display_name": model.get("display_name") or model.get("model_id"),
@@ -173,17 +282,122 @@ def _aggregate(
         "context_count": len(rows),
         "labelled_context_count": len(labelled),
         "sufficient_contexts": len(rows) >= 2,
-        "statistics": {
-            "f1_score": _series(f1, standard_deviation=True),
-            "precision": _series(precision),
-            "recall": _series(recall),
-            "runtime_ms": _series(runtimes),
-            "lead_time_seconds": _series(lead_times),
-        },
+        "statistics": statistics,
+        "insight": _model_insight(rows, statistics),
         "contexts": visible_rows,
         "related_comparison_ids": sorted(
             {row["comparison_id"] for row in visible_rows if row.get("comparison_id")}
         ),
+    }
+
+
+def _shared_evidence(
+    identities: dict[tuple[str, str, str], dict[str, Any]],
+    rows_by_identity: dict[tuple[str, str, str], list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Compare all selected artifacts only on the exact same labelled contexts."""
+
+    ordered = list(identities)
+    if len(ordered) < 2:
+        return {
+            "status": "insufficient",
+            "context_count": 0,
+            "model_count": len(ordered),
+            "models": [],
+            "lowest_variation_models": [],
+            "tie": False,
+            "rationale": "At least two immutable model artefacts are required.",
+        }
+    indexed = {
+        identity: {
+            row["context"]["partition_checksum"]: row
+            for row in rows_by_identity.get(identity, [])
+        }
+        for identity in ordered
+    }
+    common = set(indexed[ordered[0]])
+    for identity in ordered[1:]:
+        common &= set(indexed[identity])
+    comparable = []
+    for checksum in sorted(common):
+        rows = [indexed[identity][checksum] for identity in ordered]
+        if all(
+            row.get("ground_truth_available")
+            and _finite_number(row.get("metrics", {}).get("f1_score")) is not None
+            for row in rows
+        ):
+            comparable.append((checksum, rows))
+
+    wins = {identity: 0 for identity in ordered}
+    outright = {identity: 0 for identity in ordered}
+    tied = {identity: 0 for identity in ordered}
+    for _checksum, rows in comparable:
+        values = [float(row["metrics"]["f1_score"]) for row in rows]
+        best = max(values)
+        winner_indexes = [index for index, value in enumerate(values) if value == best]
+        for index in winner_indexes:
+            identity = ordered[index]
+            wins[identity] += 1
+            if len(winner_indexes) == 1:
+                outright[identity] += 1
+            else:
+                tied[identity] += 1
+
+    models = []
+    for index, identity in enumerate(ordered):
+        values = [float(rows[index]["metrics"]["f1_score"]) for _checksum, rows in comparable]
+        model = identities[identity]
+        models.append(
+            {
+                "model_id": model.get("model_id"),
+                "display_name": model.get("display_name") or model.get("model_id"),
+                "detector_id": model.get("detector_id"),
+                "detector_version": model.get("detector_version"),
+                "artifact_identity": deepcopy(model.get("artifact_identity") or {}),
+                "context_count": len(values),
+                "f1_score": _series(values, standard_deviation=True),
+                "highest_f1_context_count": wins[identity],
+                "outright_highest_f1_context_count": outright[identity],
+                "tied_highest_f1_context_count": tied[identity],
+            }
+        )
+
+    sufficient = len(comparable) >= 2
+    lowest = []
+    tie = False
+    if sufficient:
+        ranges = [model["f1_score"]["range"] for model in models]
+        best_range = min(ranges)
+        lowest = [
+            {"model_id": model["model_id"], "display_name": model["display_name"]}
+            for model in models
+            if model["f1_score"]["range"] == best_range
+        ]
+        tie = len(lowest) > 1
+        if tie:
+            rationale = (
+                f"{len(lowest)} models share the lowest observed F1 variation across "
+                f"{len(comparable)} shared labelled contexts."
+            )
+        else:
+            rationale = (
+                f"{lowest[0]['display_name']} has the lowest observed F1 variation across "
+                f"{len(comparable)} shared labelled contexts."
+            )
+    else:
+        rationale = (
+            "The models have not yet been evaluated on at least two of the same labelled "
+            "contexts, so their performance stability cannot be compared fairly."
+        )
+    return {
+        "status": "sufficient" if sufficient else "insufficient",
+        "context_count": len(comparable),
+        "model_count": len(ordered),
+        "models": models,
+        "lowest_variation_models": lowest,
+        "tie": tie,
+        "rationale": rationale,
+        "contexts": [deepcopy(rows[0]["context"]) for _checksum, rows in comparable],
     }
 
 
@@ -374,6 +588,8 @@ def aggregate_robustness(
     if repeated_result_count:
         warnings.append("Showing the latest completed result per evaluation context.")
 
+    shared_evidence = _shared_evidence(identities, rows_by_identity)
+
     return {
         "comparison_id": current.get("comparison_id"),
         "aggregation_version": ROBUSTNESS_VERSION,
@@ -383,6 +599,16 @@ def aggregate_robustness(
         ),
         "filters": deepcopy(filters),
         "models": aggregates,
+        "model_insights": [
+            {
+                "model_id": model["model_id"],
+                "display_name": model["display_name"],
+                "artifact_identity": deepcopy(model["artifact_identity"]),
+                **deepcopy(model["insight"]),
+            }
+            for model in aggregates
+        ],
+        "shared_evidence": shared_evidence,
         "shared_context_matrix": shared_matrix,
         "coverage_warnings": warnings,
         "eligible_comparison_count": eligible_run_count,

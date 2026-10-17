@@ -22,8 +22,8 @@ def evaluation_dataset(labelled=True):
 def compatible_models():
     return {
         "items": [
-            {"model_id": "model-one", "display_name": "IF baseline", "detector_id": "isolation-forest", "detector_version": "1.0.0", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1, "partition_id": "part-train"}, "stored_evaluation": {"available": True, "context": {"dataset_id": "ds-train", "version": 1, "partition_id": "part-train"}, "metric_sets": [{"method": "stored evaluation", "metrics": {"precision": .8, "recall": .7, "f1_score": .746}}]}, "compatible": True, "compatibility_reasons": []},
-            {"model_id": "model-two", "display_name": "LOF baseline", "detector_id": "local-outlier-factor", "detector_version": "1.0.1", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "compatible": True, "compatibility_reasons": []},
+            {"model_id": "model-one", "display_name": "IF baseline", "detector_id": "isolation-forest", "detector_version": "1.0.0", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1, "partition_id": "part-train"}, "artifact_identity": {"artifact_id": "artifact-one", "artifact_manifest_sha256": "a" * 64}, "stored_evaluation": {"available": True, "context": {"dataset_id": "ds-train", "version": 1, "partition_id": "part-train"}, "metric_sets": [{"method": "stored evaluation", "metrics": {"precision": .8, "recall": .7, "f1_score": .746}}]}, "compatible": True, "compatibility_reasons": []},
+            {"model_id": "model-two", "display_name": "LOF baseline", "detector_id": "local-outlier-factor", "detector_version": "1.0.1", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "artifact_identity": {"artifact_id": "artifact-two", "artifact_manifest_sha256": "b" * 64}, "compatible": True, "compatibility_reasons": []},
             {"model_id": "model-bad", "display_name": "Wrong features", "detector_id": "future", "detector_version": "1", "model_created_at": "2026-10-01", "training_dataset": {}, "compatible": False, "compatibility_reasons": ["Feature identity does not match this evaluation dataset"]},
         ]
     }
@@ -93,11 +93,13 @@ def robustness_payload():
         "labelled_context_count": 1, "sufficient_contexts": False,
         "statistics": statistics, "contexts": [row],
         "related_comparison_ids": ["comparison-one"],
+        "insight": {"status": "insufficient_contexts", "rationale": "One evaluation context is available. At least two distinct contexts are needed to observe performance variation.", "worst_labelled_context": {"comparison_id": "comparison-one", "f1_score": .746, "context": context}},
     }
     return {
         "comparison_id": "comparison-one",
         "aggregation_version": "cloudsentinel.comparison-robustness/v1",
-        "models": [model], "shared_context_matrix": [],
+        "models": [model], "model_insights": [{"model_id": "model-one", "display_name": "IF baseline", **model["insight"]}], "shared_context_matrix": [],
+        "shared_evidence": {"status": "insufficient", "context_count": 0, "model_count": 1, "models": [], "lowest_variation_models": [], "tie": False, "rationale": "At least two immutable model artefacts are required."},
         "coverage_warnings": ["Showing the latest completed result per evaluation context."],
         "deduplicated_repeat_count": 1, "truncated": False,
     }
@@ -210,6 +212,49 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertContains(response, "source training run is invalid")
         self.learning.get_training_run.assert_not_called()
 
+    def test_source_comparison_preselects_server_resolved_models_and_warns_on_repeat(self):
+        first = self.client.get(
+            reverse("comparison_new"), {"source_comparison": "comparison-one", "model_ids": "model-bad"}
+        )
+        self.learning.get_comparison.assert_called_with("comparison-one")
+        self.assertContains(first, "These models were preselected from Comparison CPU comparison")
+        second = self.client.post(
+            reverse("comparison_new"),
+            {"step": 1, "wizard_state": first.context["state_token"], "dataset_selection": "ds-eval|2"},
+        )
+        self.assertContains(second, "This exact evaluation context was already used")
+        self.assertContains(second, 'value="model-one" checked', html=False)
+        self.assertContains(second, 'value="model-two" checked', html=False)
+        self.assertNotContains(second, 'value="model-bad" checked', html=False)
+        self.assertContains(second, "From comparison", count=2)
+
+    def test_source_types_cannot_be_combined_and_unknown_comparison_is_safe(self):
+        both = self.client.get(
+            reverse("comparison_new"),
+            {"source_run": "run-source", "source_comparison": "comparison-one"},
+        )
+        self.assertContains(both, "either a source training run or a source comparison")
+        self.learning.get_training_run.assert_not_called()
+        self.learning.get_comparison.assert_not_called()
+        self.learning.get_comparison.side_effect = LearningClientError("private failure", status_code=404)
+        unknown = self.client.get(reverse("comparison_new"), {"source_comparison": "unknown"})
+        self.assertEqual(unknown.status_code, 200)
+        self.assertContains(unknown, "source comparison is unavailable")
+
+    def test_source_comparison_artifact_identity_is_revalidated(self):
+        models = deepcopy(compatible_models())
+        models["items"][0]["artifact_identity"]["artifact_id"] = "artifact-replaced"
+        self.learning.list_compatible_models.return_value = models
+        first = self.client.get(
+            reverse("comparison_new"), {"source_comparison": "comparison-one"}
+        )
+        second = self.client.post(
+            reverse("comparison_new"),
+            {"step": 1, "wizard_state": first.context["state_token"], "dataset_selection": "ds-eval|2"},
+        )
+        self.assertContains(second, "artifact identity no longer matches")
+        self.assertNotContains(second, 'value="model-one" checked', html=False)
+
     def test_technical_saved_model_id_gets_readable_label_but_remains_visible(self):
         technical_id = "run_9db880e4243e49d8acdb405bdc60ff9e-cgnn-ac2846b2"
         self.learning.list_compatible_models.return_value = {
@@ -272,6 +317,9 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertContains(models, "/monitoring/?model_id=model-one")
         robustness = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "robustness"})
         self.assertContains(robustness, "Robustness across workload contexts")
+        self.assertContains(robustness, "How stable are these models across different contexts?")
+        self.assertContains(robustness, "Fair comparison on shared labelled contexts")
+        self.assertContains(robustness, "Evaluate these models in another context")
         self.assertContains(robustness, "same saved model artefact")
         self.assertContains(robustness, "One evaluation context found")
         self.assertContains(robustness, "View related comparisons")

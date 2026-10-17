@@ -60,3 +60,51 @@ def training_comparison_context(run: Any) -> dict[str, Any] | None:
         "successful_count": len(models),
         "can_compare": len(models) >= 2,
     }
+
+
+def comparison_source_context(comparison: Any) -> dict[str, Any] | None:
+    """Project a stored comparison into safe, server-resolved wizard seed state."""
+    if not isinstance(comparison, dict):
+        return None
+    models = []
+    seen = set()
+    for model in comparison.get("selected_models") or []:
+        if not isinstance(model, dict):
+            continue
+        model_id = model.get("model_id")
+        artifact = model.get("artifact_identity") or {}
+        if (
+            not isinstance(model_id, str)
+            or not model_id.strip()
+            or model_id in seen
+            or not isinstance(artifact, dict)
+            or not isinstance(artifact.get("artifact_id"), str)
+            or not artifact.get("artifact_id")
+            or not isinstance(artifact.get("artifact_manifest_sha256"), str)
+            or not artifact.get("artifact_manifest_sha256")
+        ):
+            continue
+        seen.add(model_id)
+        models.append(
+            {
+                "model_id": model_id,
+                "display_name": str(model.get("display_name") or model_id),
+                "detector_id": str(model.get("detector_id") or ""),
+                "artifact_id": artifact["artifact_id"],
+                "artifact_manifest_sha256": artifact["artifact_manifest_sha256"],
+            }
+        )
+    dataset = comparison.get("evaluation_dataset") or {}
+    return {
+        "source_comparison_id": comparison.get("comparison_id"),
+        "source_comparison_name": comparison.get("name")
+        or comparison.get("comparison_id")
+        or "Comparison",
+        "successful_models": models,
+        "successful_count": len(models),
+        "can_compare": len(models) >= 2,
+        "evaluation_context": {
+            key: dataset.get(key)
+            for key in ("dataset_id", "version", "partition_id", "partition_checksum")
+        },
+    }

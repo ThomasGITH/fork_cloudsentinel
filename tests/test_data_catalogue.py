@@ -175,6 +175,72 @@ class DataCatalogueApiTests(unittest.TestCase):
             self.assertEqual(invalid.status_code, 400)
             self.assertIn(field, invalid.get_json()["error"])
 
+    def test_custom_anomaly_scenario_is_normalized_and_validated(self):
+        custom = {
+            **self.payload()["workload_context"],
+            "anomaly_scenario": "Other",
+            "anomaly_scenario_detail": "  Black Friday checkout traffic  ",
+        }
+        response = self.post(dataset_id="custom-scenario", workload_context=custom)
+        self.assertEqual(response.status_code, 201, response.get_json())
+        self.assertEqual(
+            response.get_json()["workload_context"]["anomaly_scenario_detail"],
+            "Black Friday checkout traffic",
+        )
+        missing = self.post(
+            dataset_id="custom-missing",
+            workload_context={**custom, "anomaly_scenario_detail": "   "},
+        )
+        self.assertEqual(missing.status_code, 400)
+        self.assertIn("required", missing.get_json()["error"])
+        too_long = self.post(
+            dataset_id="custom-long",
+            workload_context={**custom, "anomaly_scenario_detail": "x" * 161},
+        )
+        self.assertEqual(too_long.status_code, 400)
+        standard = self.post(
+            dataset_id="standard-detail",
+            workload_context={
+                **self.payload()["workload_context"],
+                "anomaly_scenario_detail": "must be discarded",
+            },
+        )
+        self.assertEqual(standard.status_code, 201)
+        self.assertNotIn("anomaly_scenario_detail", standard.get_json()["workload_context"])
+        filtered = self.client.get("/datasets?anomaly_scenario=Other").get_json()
+        self.assertEqual(filtered["total"], 1)
+        self.assertEqual(filtered["items"][0]["dataset_id"], "custom-scenario")
+
+        updated = self.client.patch(
+            "/datasets/custom-scenario",
+            json={
+                "workload_context": {
+                    **self.payload()["workload_context"],
+                    "anomaly_scenario_detail": "discarded for a standard category",
+                }
+            },
+        )
+        self.assertEqual(updated.status_code, 200, updated.get_json())
+        self.assertNotIn(
+            "anomaly_scenario_detail", updated.get_json()["workload_context"]
+        )
+        versioned = self.client.post(
+            "/datasets/custom-scenario/versions",
+            json={
+                "copy_from_version": 1,
+                "workload_context": {
+                    **custom,
+                    "anomaly_scenario_detail": "  Seasonal checkout spike  ",
+                },
+                "partition": {"mode": "none"},
+            },
+        )
+        self.assertEqual(versioned.status_code, 201, versioned.get_json())
+        self.assertEqual(
+            versioned.get_json()["version"]["workload_context"]["anomaly_scenario_detail"],
+            "Seasonal checkout spike",
+        )
+
     def test_list_supports_search_filters_and_pagination(self):
         self.assertEqual(self.post(dataset_id="alpha").status_code, 201)
         second = self.payload(

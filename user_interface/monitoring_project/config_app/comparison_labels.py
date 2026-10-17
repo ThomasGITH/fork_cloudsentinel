@@ -133,3 +133,23 @@ def humanize_robustness(payload: dict[str, Any]) -> None:
             for row in rows:
                 if isinstance(row, dict) and row.get("model_id") in names:
                     row["display_name"] = names[row["model_id"]][1]
+    insights = payload.get("model_insights")
+    if isinstance(insights, list):
+        for insight in insights:
+            if isinstance(insight, dict) and insight.get("model_id") in names:
+                insight["display_name"] = names[insight["model_id"]][1]
+    evidence = payload.get("shared_evidence")
+    if isinstance(evidence, dict):
+        for model in evidence.get("models") or []:
+            if isinstance(model, dict) and model.get("model_id") in names:
+                model["display_name"] = names[model["model_id"]][1]
+        for model in evidence.get("lowest_variation_models") or []:
+            if isinstance(model, dict) and model.get("model_id") in names:
+                model["display_name"] = names[model["model_id"]][1]
+        if evidence.get("status") == "sufficient" and not evidence.get("tie"):
+            lowest = evidence.get("lowest_variation_models") or []
+            if lowest:
+                evidence["rationale"] = (
+                    f"{lowest[0]['display_name']} has the lowest observed F1 variation across "
+                    f"{evidence.get('context_count')} shared labelled contexts."
+                )
