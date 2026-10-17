@@ -1,0 +1,114 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Add a custom detector | Models | CloudSentinel{% endblock %}
+{% block extra_head %}<link href="{% static 'css/models.css' %}" rel="stylesheet">{% endblock %}
+{% block content %}
+<main class="models-page container-fluid py-3 detector-onboarding">
+  <a href="{% url 'models_overview' %}?tab=detectors" class="btn btn-link px-0">← Detector Library</a>
+
+  <div class="models-hero mb-4">
+    <div>
+      <h1>Add a custom detector</h1>
+      <p class="models-muted mb-0">Create a trusted external plugin, publish an immutable release, then use it in the existing training and comparison flow.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{% url 'models_overview' %}?tab=detectors">Back to Detector Library</a>
+  </div>
+
+  <section class="card models-card mb-4" aria-labelledby="custom-detector-roles">
+    <div class="card-body">
+      <h2 class="h4" id="custom-detector-roles">Who does what?</h2>
+      <p>Custom detectors are trusted server-side Python plugins. A developer implements the detector and a CloudSentinel operator validates, publishes and activates it. Python code cannot be uploaded directly through this browser.</p>
+      <div class="row g-3">
+        <div class="col-md-4"><div class="onboarding-role h-100"><h3 class="h6">1. Detector developer</h3><p class="mb-0">Creates the plugin package, manifest and adapter.</p></div></div>
+        <div class="col-md-4"><div class="onboarding-role h-100"><h3 class="h6">2. CloudSentinel operator</h3><p class="mb-0">Validates, publishes and explicitly activates an immutable release.</p></div></div>
+        <div class="col-md-4"><div class="onboarding-role h-100"><h3 class="h6">3. CloudSentinel user</h3><p class="mb-0">Selects the detector during training and compares the resulting Saved Model artefacts.</p></div></div>
+      </div>
+      <p class="models-muted mt-3 mb-0">Dependencies are not installed during publication. Every required dependency must already exist in the selected runtime profile. Changed plugin code must be published under a new version.</p>
+    </div>
+  </section>
+
+  <div class="onboarding-steps">
+    <section class="card models-card onboarding-step" aria-labelledby="detector-step-1">
+      <div class="card-body">
+        <div class="onboarding-step-number" aria-hidden="true">1</div>
+        <h2 class="h4" id="detector-step-1">Create the plugin package</h2>
+        <p>Start with the repository template at <code>{{ template_plugin_path }}</code>. It deliberately contains placeholders and rejects training until you complete it.</p>
+        <div class="row g-3">
+          <div class="col-lg-5"><h3 class="h6">Minimum package</h3><pre class="onboarding-code"><code>{{ package_layout }}</code></pre></div>
+          <div class="col-lg-7"><h3 class="h6">Copy the starter template</h3><div class="code-copy"><button type="button" class="btn btn-sm btn-outline-secondary" data-copy-target="copy-template-command" aria-label="Copy starter template command">Copy</button><pre class="onboarding-code"><code id="copy-template-command">{{ copy_template_command }}</code></pre><span class="copy-status" data-copy-status aria-live="polite"></span></div></div>
+        </div>
+        <dl class="models-definition mt-3 mb-0"><dt><code>manifest.yaml</code></dt><dd>Declares identity, capabilities, inputs, parameters and the adapter entry point.</dd><dt><code>adapter.py</code></dt><dd>Connects the algorithm to the CloudSentinel training and optional inference contracts.</dd><dt><code>requirements.lock</code></dt><dd>Declares exact dependency versions already present in the runtime. It never installs them.</dd></dl>
+      </div>
+    </section>
+
+    <section class="card models-card onboarding-step" aria-labelledby="detector-step-2">
+      <div class="card-body">
+        <div class="onboarding-step-number" aria-hidden="true">2</div>
+        <h2 class="h4" id="detector-step-2">Define the detector manifest</h2>
+        <p>The manifest uses schema version 1. The example below is valid for the current generic training flow and keeps inference disabled until its contract is implemented.</p>
+        <div class="code-copy"><button type="button" class="btn btn-sm btn-outline-secondary" data-copy-target="manifest-example" aria-label="Copy detector manifest example">Copy</button><pre class="onboarding-code onboarding-code-tall"><code id="manifest-example">{{ manifest_example }}</code></pre><span class="copy-status" data-copy-status aria-live="polite"></span></div>
+        <details class="mt-3"><summary class="fw-bold">Required fields and supported parameter metadata</summary><div class="mt-3"><p><strong>Required:</strong> {{ required_manifest_fields|join:", " }}.</p><p><code>runtime.profile</code> is optional and defaults to <code>python-ml-cpu/v1</code>. External <code>entry_point</code> values are plugin-relative, such as <code>adapter:MyDetectorAdapter</code>.</p><p><code>training_parameters</code> drives the training form automatically. Supported types are {{ parameter_types|join:", " }}. Definitions require <code>type</code>, <code>default</code> and <code>description</code>; supported constraints include numeric bounds, <code>allowed_values</code>, <code>excluded_values</code>, <code>nullable</code> and <code>advanced</code>.</p></div></details>
+        <div class="row g-3 mt-1"><div class="col-md-6"><div class="onboarding-capability h-100"><h3 class="h6">Training enabled</h3><p class="mb-0">Uses <code>cloudsentinel.training/v1</code> with <code>metrics-partition-v1</code>. The detector can train through the generic flow and its Saved Models can participate in comparisons.</p></div></div><div class="col-md-6"><div class="onboarding-capability h-100"><h3 class="h6">Inference enabled</h3><p class="mb-0">Requires <code>cloudsentinel.inference/v1</code>, <code>metrics-matrix/v1</code> and a stable artifact format. Training alone does not make a model live-monitoring ready; the trained model also needs a valid live-input recipe.</p></div></div></div>
+      </div>
+    </section>
+
+    <section class="card models-card onboarding-step" aria-labelledby="detector-step-3">
+      <div class="card-body">
+        <div class="onboarding-step-number" aria-hidden="true">3</div>
+        <h2 class="h4" id="detector-step-3">Implement the adapter</h2>
+        <p><code>validate_training</code> checks dataset-dependent requirements. <code>run_training</code> trains, evaluates and returns a <code>TrainingResult</code>. The adapter may write only inside the artifact workspace supplied by its training context.</p>
+        <div class="code-copy"><button type="button" class="btn btn-sm btn-outline-secondary" data-copy-target="training-adapter-example" aria-label="Copy training adapter interface">Copy</button><pre class="onboarding-code"><code id="training-adapter-example">{{ training_adapter_example }}</code></pre><span class="copy-status" data-copy-status aria-live="polite"></span></div>
+        <details class="mt-3"><summary class="fw-bold">Optional generic inference interface</summary><p class="mt-3"><code>load_model</code> reconstructs a published artifact. <code>predict_inference</code> returns binary predictions and anomaly scores without exposing model internals.</p><div class="code-copy"><button type="button" class="btn btn-sm btn-outline-secondary" data-copy-target="inference-adapter-example" aria-label="Copy inference adapter interface">Copy</button><pre class="onboarding-code"><code id="inference-adapter-example">{{ inference_adapter_example }}</code></pre><span class="copy-status" data-copy-status aria-live="polite"></span></div><p class="mt-3 mb-0">Prediction semantics are <strong>0 = normal</strong>, <strong>1 = anomaly</strong>, and a larger anomaly score means more anomalous. Loaded models remain opaque to the generic host.</p></details>
+        <p class="mt-3 mb-0">See <code>{{ template_plugin_path }}/adapter.py</code> for the complete skeleton and <code>{{ lof_example_path }}</code> for a working external scikit-learn example.</p>
+      </div>
+    </section>
+
+    <section class="card models-card onboarding-step" aria-labelledby="detector-step-4">
+      <div class="card-body">
+        <div class="onboarding-step-number" aria-hidden="true">4</div>
+        <h2 class="h4" id="detector-step-4">Validate, publish and activate</h2>
+        <p>A CloudSentinel operator runs the existing wrapper from a trusted repository checkout. The plugin directory must be absolute, and <code>--id</code> and <code>--version</code> must match the manifest.</p>
+        <div class="code-copy"><button type="button" class="btn btn-sm btn-outline-secondary" data-copy-target="publish-command" aria-label="Copy plugin publication command">Copy</button><pre class="onboarding-code"><code id="publish-command">{{ publish_command }}</code></pre><span class="copy-status" data-copy-status aria-live="polite"></span></div>
+        <p class="mt-3">The wrapper uses a temporary administration environment, validates package structure, manifest and dependency compatibility, checks the adapter contract, publishes an immutable release, and activates it only because <code>--activate</code> is present. Temporary staging and administration resources are cleaned up.</p>
+        <ul class="mb-0"><li><code>requirements.lock</code> never performs <code>pip install</code>.</li><li>External plugins cannot replace built-in detector IDs.</li><li>Publish changed code as a new version; releases are immutable.</li><li>Omit <code>--activate</code> when a release should be installed without changing the active version.</li></ul>
+      </div>
+    </section>
+
+    <section class="card models-card onboarding-step" aria-labelledby="detector-step-5">
+      <div class="card-body">
+        <div class="onboarding-step-number" aria-hidden="true">5</div>
+        <h2 class="h4" id="detector-step-5">Confirm and use</h2>
+        <ol><li>Refresh the Detector Library.</li><li>Confirm that the detector shows source <code>external</code>.</li><li>Open its details and inspect capabilities and input requirements.</li><li>Select it in Train models.</li><li>Train it beside one or more other detectors.</li><li>Compare the resulting immutable Saved Model artefacts on the same evaluation dataset.</li><li>Use goal-based comparison and robustness evidence across workload contexts to assess the result.</li></ol>
+        <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-primary" href="{% url 'models_overview' %}?tab=detectors">Detector Library</a><a class="btn btn-primary" href="{% url 'models_train' %}">Train models</a><a class="btn btn-outline-secondary" href="{% url 'comparison_overview' %}">Past comparisons</a></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card models-card mb-4" aria-labelledby="publication-checklist">
+    <div class="card-body">
+      <h2 class="h4" id="publication-checklist">Pre-publication checklist</h2>
+      <p class="models-muted">Use this local checklist as a reminder. Checking a box does not validate, publish or activate a plugin.</p>
+      <div class="onboarding-checklist">{% for item in checklist %}<div class="form-check"><input class="form-check-input" type="checkbox" id="plugin-check-{{ forloop.counter }}"><label class="form-check-label" for="plugin-check-{{ forloop.counter }}">{{ item }}</label></div>{% endfor %}</div>
+    </div>
+  </section>
+
+  <section class="card models-card mb-4" aria-labelledby="external-detectors-status">
+    <div class="card-body">
+      <h2 class="h4" id="external-detectors-status">Current external detectors</h2>
+      {% if discovery_unavailable %}<div class="alert alert-secondary"><p class="mb-1">Detector status is temporarily unavailable. The onboarding instructions above remain usable.</p><p class="safe-error mb-0">{{ discovery_unavailable }}</p></div>
+      {% elif external_detectors %}<div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Detector</th><th>ID and version</th><th>Source</th><th>Training</th><th>Inference / live monitoring</th><th>Modality</th><th></th></tr></thead><tbody>{% for detector in external_detectors %}<tr><td><strong>{{ detector.name }}</strong></td><td><span class="models-id">{{ detector.id }}</span><small class="d-block">v{{ detector.version }}</small></td><td>external</td><td>{% if detector.training.available %}Available{% else %}Unavailable <small class="d-block models-muted">{{ detector.training.runtime_status }}</small>{% endif %}</td><td>{% if detector.inference.available %}Inference available<small class="d-block models-muted">Live monitoring additionally requires a valid model recipe.</small>{% elif detector.inference.supported %}Unavailable <small class="d-block models-muted">{{ detector.inference.runtime_status }}</small>{% else %}Not implemented{% endif %}</td><td>{{ detector.supported_modalities|join:", " }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'models_detector_detail' detector.id %}">View detector</a></td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<div class="alert alert-secondary mb-0">No active external detectors are currently visible. Publish and activate a valid release, then refresh this page.</div>{% endif %}
+    </div>
+  </section>
+
+  {% if plugin_errors %}<section class="card models-card mb-4" aria-labelledby="plugins-need-attention"><div class="card-body"><h2 class="h4" id="plugins-need-attention">Plugins that need attention</h2><div class="vstack gap-3">{% for item in plugin_errors %}<article class="border rounded p-3"><h3 class="h6 mb-1">{{ item.plugin }}</h3><p class="mb-1"><strong>{{ item.category }}</strong>: {{ item.error }}</p><p class="models-muted mb-0">Next step: {{ item.action }}</p></article>{% endfor %}</div></div></section>{% endif %}
+
+  <section class="card models-card" aria-labelledby="detector-troubleshooting">
+    <div class="card-body">
+      <h2 class="h4" id="detector-troubleshooting">Detector not appearing?</h2>
+      <div class="row g-3"><div class="col-md-6"><ul class="mb-0"><li>The release may be published but not activated.</li><li>The ID may conflict with a built-in or another active detector.</li><li>The manifest may not satisfy schema version 1.</li><li>The entry point may not resolve to a valid adapter.</li></ul></div><div class="col-md-6"><ul class="mb-0"><li>The adapter may not satisfy its declared contract.</li><li>A pinned dependency version may be absent from the runtime profile.</li><li>The Detector Library may need to be refreshed.</li><li>Inference remains unavailable when only training is implemented.</li></ul></div></div>
+      <p class="mt-3 mb-0">Check the manifest, validate again, publish changed code under a new version, activate the intended release, and refresh the Detector Library.</p>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/detector_onboarding.js' %}"></script>{% endblock %}

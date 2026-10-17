@@ -23,4 +23,17 @@
 .parameter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; }
 .parameter-field { border:1px solid #e1e6ea; border-radius:.35rem; padding:1rem; }
 .safe-error { white-space:pre-wrap; overflow-wrap:anywhere; }
+.onboarding-steps { display:grid; gap:1.25rem; margin-bottom:1.5rem; }
+.onboarding-step { position:relative; overflow:hidden; }
+.onboarding-step .card-body { padding-left:4.5rem; }
+.onboarding-step-number { position:absolute; left:1.25rem; top:1.15rem; display:grid; place-items:center; width:2.25rem; height:2.25rem; border-radius:50%; background:#004080; color:#fff; font-weight:700; }
+.onboarding-role,.onboarding-capability { border:1px solid #dfe6ec; border-radius:.5rem; padding:1rem; background:#f8fafc; }
+.onboarding-code { position:relative; margin:0; padding:1rem; max-width:100%; overflow:auto; border-radius:.4rem; background:#17212b; color:#f2f6fa; white-space:pre; }
+.onboarding-code-tall { max-height:34rem; }
+.code-copy { position:relative; }
+.code-copy > button { position:absolute; z-index:1; top:.5rem; right:.5rem; background:#fff; }
+.code-copy .onboarding-code { padding-top:3rem; }
+.copy-status { display:block; min-height:1.5rem; margin-top:.25rem; color:#17602d; font-size:.875rem; }
+.onboarding-checklist { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:.75rem 1.5rem; }
 @media (max-width:767.98px) { .models-definition { grid-template-columns:1fr; gap:.1rem; } .models-definition dd { margin-bottom:.8rem; } .wizard-steps { grid-template-columns:1fr 1fr; } .models-table td,.models-table th { min-width:9rem; } }
+@media (max-width:575.98px) { .onboarding-step .card-body { padding:4.25rem 1rem 1rem; } .onboarding-step-number { left:1rem; } }

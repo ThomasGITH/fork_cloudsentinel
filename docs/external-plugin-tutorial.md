@@ -1,5 +1,11 @@
 # Publish an external detector plugin
 
+The in-application guide at **Models → Detector Library → Add custom
+detector** presents the normal developer/operator workflow and current external
+discovery status. It is documentation only: trusted Python packages are still
+validated, published and activated through the operator wrapper described
+below. The browser never uploads or installs plugin code.
+
 This tutorial is the normal operator workflow for adding a trusted detector to
 CloudSentinel. You create a plugin folder and run one repository script. The
 script handles the temporary Kubernetes administration pod, validation,

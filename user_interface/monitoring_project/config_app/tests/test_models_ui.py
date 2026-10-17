@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from django.test import Client, SimpleTestCase
@@ -103,8 +104,137 @@ class ModelsUiTests(SimpleTestCase):
         self.assertContains(response, 'href="/models/"', html=False)
         self.assertContains(response, 'aria-current="page"', html=False)
         self.assertEqual(resolve(reverse("models_train")).url_name, "models_train")
+        self.assertEqual(resolve(reverse("models_add_detector")).url_name, "models_add_detector")
+        self.assertContains(response, reverse("models_add_detector"))
         self.assertContains(self.client.get(reverse("home")), reverse("models_overview"))
         self.assertEqual(resolve(reverse("train_algorithms")).url_name, "train_algorithms")
+
+    def test_custom_detector_onboarding_renders_existing_operator_flow(self):
+        response = self.client.get(reverse("models_add_detector"))
+        self.assertEqual(response.status_code, 200)
+        for heading in (
+            "Create the plugin package",
+            "Define the detector manifest",
+            "Implement the adapter",
+            "Validate, publish and activate",
+            "Confirm and use",
+        ):
+            self.assertContains(response, heading)
+        self.assertContains(response, "examples/external_plugins/template_detector")
+        self.assertContains(response, "manifest.yaml")
+        self.assertContains(response, "adapter.py")
+        self.assertContains(response, "requirements.lock")
+        self.assertContains(response, "cloudsentinel.training/v1")
+        self.assertContains(response, "cloudsentinel.inference/v1")
+        self.assertContains(response, "./scripts/external_plugin.sh publish")
+        self.assertContains(response, "--activate")
+        self.assertContains(response, "Dependencies are not installed")
+        self.assertContains(response, "Python code cannot be uploaded directly through this browser")
+        self.assertContains(response, reverse("models_overview") + "?tab=detectors")
+        self.assertContains(response, reverse("models_train"))
+        self.assertContains(response, reverse("comparison_overview"))
+        self.assertContains(response, "data-copy-target", count=5)
+        self.assertContains(response, "data-copy-status", count=5)
+        self.assertContains(response, "detector_onboarding.js")
+        self.assertNotContains(response, 'type="file"')
+        self.learning.list_detectors.assert_called_once_with()
+
+    def test_custom_detector_copy_script_only_performs_local_clipboard_work(self):
+        script = (
+            Path(__file__).resolve().parents[1]
+            / "static"
+            / "js"
+            / "detector_onboarding.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("navigator.clipboard.writeText", script)
+        self.assertNotIn("innerHTML", script)
+        self.assertNotIn("fetch(", script)
+        self.assertNotIn("XMLHttpRequest", script)
+
+    def test_custom_detector_status_only_projects_external_plugins(self):
+        builtin = detector("builtin-private")
+        builtin.update(name="Built-in Private", source="builtin")
+        external = detector("external-density")
+        external.update(name="External Density", source="external")
+        external.update(
+            training_runtime_status="ready",
+            inference_runtime_status="ready",
+        )
+        external["capabilities"]["inference"] = {
+            "enabled": True,
+            "protocol": "cloudsentinel.inference/v1",
+            "input_profile": "metrics-matrix/v1",
+            "artifact_format": "example-joblib-v1",
+        }
+        self.learning.list_detectors.return_value = {
+            "detectors": [builtin, external],
+            "discovery_errors": [],
+        }
+        response = self.client.get(reverse("models_add_detector"))
+        self.assertContains(response, "External Density")
+        self.assertContains(response, "external-density")
+        self.assertContains(response, "Inference available")
+        self.assertContains(
+            response, reverse("models_detector_detail", args=["external-density"])
+        )
+        self.assertNotContains(response, "Built-in Private")
+        self.assertNotContains(response, "builtin-private")
+
+    def test_custom_detector_onboarding_is_read_only(self):
+        response = self.client.post(reverse("models_add_detector"), {"plugin": "code"})
+        self.assertEqual(response.status_code, 405)
+        self.learning.list_detectors.assert_not_called()
+
+    def test_custom_detector_discovery_errors_are_external_and_sanitized(self):
+        self.learning.list_detectors.return_value = {
+            "detectors": [],
+            "discovery_errors": [
+                {
+                    "plugin": "/app/private/external-density",
+                    "source": "external",
+                    "code": "invalid_manifest",
+                    "message": "invalid manifest at /home/operator/secret/manifest.yaml",
+                    "entry_point": "malicious.module:Code",
+                    "traceback": "secret stack trace",
+                },
+                {
+                    "plugin": "builtin-broken",
+                    "source": "builtin",
+                    "code": "invalid_manifest",
+                    "message": "built-in issue",
+                },
+            ],
+        }
+        response = self.client.get(reverse("models_add_detector"))
+        self.assertContains(response, "Plugins that need attention")
+        self.assertContains(response, "Invalid manifest")
+        self.assertContains(response, "[internal path]")
+        self.assertContains(response, "Correct the manifest fields")
+        self.assertNotContains(response, "/app/private")
+        self.assertNotContains(response, "/home/operator")
+        self.assertNotContains(response, "malicious.module:Code")
+        self.assertNotContains(response, "secret stack trace")
+        self.assertNotContains(response, "builtin-broken")
+
+    def test_custom_detector_page_survives_discovery_failure(self):
+        self.learning.list_detectors.side_effect = LearningClientError(
+            "Learning service is temporarily unavailable.", retryable=True
+        )
+        response = self.client.get(reverse("models_add_detector"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create the plugin package")
+        self.assertContains(response, "Detector status is temporarily unavailable")
+        self.assertContains(response, "Learning service is temporarily unavailable")
+
+    def test_detector_library_empty_state_links_to_onboarding(self):
+        self.learning.list_detectors.return_value = {
+            "detectors": [],
+            "discovery_errors": [],
+        }
+        response = self.client.get(reverse("models_overview"))
+        self.assertContains(response, "No valid detectors found")
+        self.assertContains(response, "Learn how to add a custom detector")
+        self.assertContains(response, reverse("models_add_detector"))
 
     def test_detector_list_detail_and_discovery_errors(self):
         self.learning.list_detectors.return_value["discovery_errors"] = [{"plugin": "broken", "error": "invalid manifest at /app/secret", "entry_point": "bad:Code"}]

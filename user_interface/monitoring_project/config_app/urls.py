@@ -24,6 +24,7 @@ from .views.data_catalogue import (
     data_catalogue_preview,
 )
 from .views.models_ui import (
+    add_custom_detector,
     detector_detail,
     models_overview,
     saved_model_detail,
@@ -54,6 +55,7 @@ urlpatterns = [
     path('data-catalogue/<str:dataset_id>/', data_catalogue_detail, name='data_catalogue_detail'),
 
     path('models/', models_overview, name='models_overview'),
+    path('models/detectors/add/', add_custom_detector, name='models_add_detector'),
     path('models/detectors/<str:detector_id>/', detector_detail, name='models_detector_detail'),
     path('models/train/', train_models, name='models_train'),
     path('models/training-runs/<str:run_id>/', training_run_detail, name='models_training_run_detail'),

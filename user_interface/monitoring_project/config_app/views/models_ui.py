@@ -16,6 +16,11 @@ from django.views.decorators.http import require_GET, require_http_methods
 from config_app.catalogue_client import CatalogueClientError, get_catalogue_client
 from config_app.comparison_labels import readable_model_name
 from config_app.comparison_flow import training_comparison_context
+from config_app.detector_onboarding import (
+    discovery_action,
+    discovery_label,
+    onboarding_context,
+)
 from config_app.learning_client import (
     LearningClientError,
     get_learning_client,
@@ -77,6 +82,10 @@ def _training_capability(detector: dict) -> dict:
     return detector.get("capabilities", {}).get("training", {})
 
 
+def _inference_capability(detector: dict) -> dict:
+    return detector.get("capabilities", {}).get("inference", {})
+
+
 def _detector_ui(detector: dict) -> dict:
     item = _safe(detector)
     training = _training_capability(detector)
@@ -89,8 +98,29 @@ def _detector_ui(detector: dict) -> dict:
     item["training"] = {
         "enabled": training.get("enabled") is True,
         "trainable": runtime_trainable,
+        "available": runtime_trainable
+        and detector.get("training_runtime_status", "ready") == "ready",
         "protocol": training.get("protocol"),
         "input_profile": training.get("input_profile"),
+        "runtime_status": detector.get("training_runtime_status", "unvalidated"),
+    }
+    inference = _inference_capability(detector)
+    inference_supported = (
+        inference.get("enabled") is True
+        and inference.get("protocol") == "cloudsentinel.inference/v1"
+        and inference.get("input_profile") == "metrics-matrix/v1"
+        and isinstance(inference.get("artifact_format"), str)
+        and bool(inference.get("artifact_format", "").strip())
+    )
+    item["inference"] = {
+        "enabled": inference.get("enabled") is True,
+        "supported": inference_supported,
+        "available": inference_supported
+        and detector.get("inference_runtime_status", "ready") == "ready",
+        "protocol": inference.get("protocol"),
+        "input_profile": inference.get("input_profile"),
+        "artifact_format": inference.get("artifact_format"),
+        "runtime_status": detector.get("inference_runtime_status", "not_supported"),
     }
     requirements = detector.get("input_requirements", {})
     training_requirements = requirements.get("training", requirements)
@@ -122,11 +152,20 @@ def _detector_map() -> tuple[list[dict], list[dict]]:
     for raw in payload.get("discovery_errors", []):
         if isinstance(raw, dict):
             errors.append({
-                "plugin": raw.get("plugin") or raw.get("name") or "Unknown plugin",
+                "plugin": safe_learning_message(
+                    raw.get("plugin") or raw.get("name"), "Unknown plugin"
+                ),
                 "error": safe_learning_message(raw.get("error") or raw.get("message"), "Invalid detector manifest."),
+                "source": raw.get("source") if raw.get("source") in {"builtin", "external"} else "unknown",
+                "code": raw.get("code") if isinstance(raw.get("code"), str) else "invalid_plugin",
             })
         else:
-            errors.append({"plugin": "Unknown plugin", "error": safe_learning_message(raw, "Invalid detector manifest.")})
+            errors.append({
+                "plugin": "Unknown plugin",
+                "error": safe_learning_message(raw, "Invalid detector manifest."),
+                "source": "unknown",
+                "code": "invalid_plugin",
+            })
     return detectors, errors
 
 
@@ -205,6 +244,33 @@ def models_overview(request: HttpRequest):
     except LearningClientError as exc:
         context.update(error=_error(exc), retryable=exc.retryable)
     return render(request, "config_app/models/overview.html", context)
+
+
+@require_GET
+def add_custom_detector(request: HttpRequest):
+    """Explain the existing trusted operator workflow without mutating it."""
+
+    context = {**onboarding_context(), "external_detectors": [], "plugin_errors": []}
+    try:
+        detectors, discovery_errors = _detector_map()
+        context["external_detectors"] = [
+            detector for detector in detectors if detector.get("source") == "external"
+        ]
+        context["plugin_errors"] = [
+            {
+                **error,
+                "category": discovery_label(error.get("code")),
+                "action": discovery_action(error.get("code")),
+            }
+            for error in discovery_errors
+            if error.get("source") == "external"
+        ]
+    except LearningClientError as exc:
+        context.update(
+            discovery_unavailable=_error(exc),
+            discovery_retryable=exc.retryable,
+        )
+    return render(request, "config_app/models/add_detector.html", context)
 
 
 @require_GET
