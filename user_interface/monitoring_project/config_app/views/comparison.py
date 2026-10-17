@@ -17,6 +17,8 @@ from ..comparison_labels import (
     humanize_model_items,
     humanize_robustness,
 )
+from ..comparison_decision import build_decision_support
+from ..comparison_flow import training_comparison_context
 
 
 _SALT = "cloudsentinel.comparison-wizard.v1"
@@ -42,6 +44,57 @@ def _state(raw: str | None) -> dict:
 
 def _token(value: dict) -> str:
     return signing.dumps(value, salt=_SALT, compress=True)
+
+
+def _source_run_state(client, raw_run_id: str | None) -> tuple[dict | None, str | None]:
+    """Resolve URL input through the Learning API and retain only safe model identities."""
+    if not raw_run_id:
+        return None, None
+    if not isinstance(raw_run_id, str) or not raw_run_id.strip() or len(raw_run_id) > 128:
+        return None, "The requested source training run is invalid. You can continue without preselection."
+    try:
+        run = client.get_training_run(raw_run_id.strip())
+    except LearningClientError:
+        return None, "The requested source training run is unavailable. You can continue without preselection."
+    source = training_comparison_context(run)
+    if source is None:
+        return None, "The source training run is not finished. You can continue without preselection."
+    return source, None
+
+
+def _prepare_model_selection(state: dict, payload: dict, checked_ids=None) -> dict:
+    items = payload.get("items") if isinstance(payload, dict) else None
+    items = items if isinstance(items, list) else []
+    humanize_model_items(items)
+    source = state.get("source_run") if isinstance(state.get("source_run"), dict) else {}
+    source_models = source.get("successful_models")
+    source_models = source_models if isinstance(source_models, list) else []
+    source_by_id = {
+        item.get("model_id"): item
+        for item in source_models
+        if isinstance(item, dict) and isinstance(item.get("model_id"), str)
+    }
+    available_ids = {
+        item.get("model_id") for item in items if isinstance(item, dict)
+    }
+    requested = set(checked_ids) if checked_ids is not None else set(source_by_id)
+    incompatible = []
+    for item in items:
+        model_id = item.get("model_id")
+        from_source = model_id in source_by_id
+        item["from_source_run"] = from_source
+        item["preselected"] = bool(
+            model_id in requested and item.get("compatible") is True
+        )
+        if from_source and item.get("compatible") is not True:
+            incompatible.append(item)
+    missing = [source_by_id[model_id] for model_id in source_by_id if model_id not in available_ids]
+    payload["items"] = items
+    return {
+        "models_payload": payload,
+        "source_incompatible_models": incompatible,
+        "source_missing_models": missing,
+    }
 
 
 def _page_links(payload: dict, filters: dict) -> tuple[dict | None, dict | None]:
@@ -78,6 +131,11 @@ def comparison_new(request: HttpRequest):
     status = 200
     try:
         state = _state(request.POST.get("wizard_state") if request.method == "POST" else None)
+        source_notice = None
+        if request.method == "GET":
+            source, source_notice = _source_run_state(client, request.GET.get("source_run"))
+            if source is not None:
+                state["source_run"] = source
         step = int(request.POST.get("step", "1")) if request.method == "POST" else 1
         error = None
         if request.method == "POST":
@@ -135,15 +193,21 @@ def comparison_new(request: HttpRequest):
                 return redirect("comparison_detail", comparison_id=result["comparison_id"])
             else:
                 raise ValueError("Unknown comparison wizard step.")
-        context = {"step": step, "state": state, "state_token": _token(state), "error": error}
+        context = {
+            "step": step,
+            "state": state,
+            "state_token": _token(state),
+            "error": error,
+            "source_notice": source_notice,
+        }
         if step == 1:
             context["datasets"] = client.list_evaluation_datasets().get("items", [])
         elif step == 2:
             dataset = state["dataset"]
-            context["models_payload"] = client.list_compatible_models(
+            models_payload = client.list_compatible_models(
                 dataset["dataset_id"], dataset["version"], dataset["partition_id"]
             )
-            humanize_model_items(context["models_payload"].get("items", []))
+            context.update(_prepare_model_selection(state, models_payload))
         return render(request, "config_app/comparison/new.html", context, status=status)
     except (ValueError, KeyError, TypeError, LearningClientError) as exc:
         status = 400 if isinstance(exc, (ValueError, KeyError, TypeError)) else 502
@@ -165,10 +229,16 @@ def comparison_new(request: HttpRequest):
         elif context["step"] == 2 and state_value.get("dataset"):
             try:
                 dataset = state_value["dataset"]
-                context["models_payload"] = client.list_compatible_models(
+                models_payload = client.list_compatible_models(
                     dataset["dataset_id"], dataset["version"], dataset["partition_id"]
                 )
-                humanize_model_items(context["models_payload"].get("items", []))
+                context.update(
+                    _prepare_model_selection(
+                        state_value,
+                        models_payload,
+                        locals().get("selected_ids"),
+                    )
+                )
             except LearningClientError:
                 context["models_payload"] = {"items": []}
         return render(request, "config_app/comparison/new.html", context, status=status)
@@ -197,6 +267,9 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
         }
         for model in comparison.get("selected_models", []):
             model["evaluation_result"] = results_by_model.get(model.get("model_id"), {})
+        comparison["decision_support"] = build_decision_support(
+            comparison, request.GET.get("goal")
+        )
         robustness = None
         robustness_error = None
         robustness_filters = {}

@@ -15,6 +15,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from config_app.catalogue_client import CatalogueClientError, get_catalogue_client
 from config_app.comparison_labels import readable_model_name
+from config_app.comparison_flow import training_comparison_context
 from config_app.learning_client import (
     LearningClientError,
     get_learning_client,
@@ -583,6 +584,7 @@ def training_run_detail(request: HttpRequest, run_id: str):
     try:
         run = _run_ui(get_learning_client().get_training_run(run_id))
         _add_dataset_display_names([run])
+        run["comparison_flow"] = training_comparison_context(run)
         return render(request, "config_app/models/run_detail.html", {"run": run})
     except LearningClientError as exc:
         if exc.status_code == 404:

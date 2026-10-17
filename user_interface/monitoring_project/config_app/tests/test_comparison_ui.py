@@ -1,3 +1,4 @@
+from copy import deepcopy
 from unittest.mock import Mock, patch
 
 from django.test import Client, SimpleTestCase
@@ -25,6 +26,19 @@ def compatible_models():
             {"model_id": "model-two", "display_name": "LOF baseline", "detector_id": "local-outlier-factor", "detector_version": "1.0.1", "model_created_at": "2026-10-01", "training_dataset": {"dataset_id": "ds-train", "version": 1}, "compatible": True, "compatibility_reasons": []},
             {"model_id": "model-bad", "display_name": "Wrong features", "detector_id": "future", "detector_version": "1", "model_created_at": "2026-10-01", "training_dataset": {}, "compatible": False, "compatibility_reasons": ["Feature identity does not match this evaluation dataset"]},
         ]
+    }
+
+
+def source_training_run():
+    return {
+        "run_id": "run-source",
+        "run_name": "Three detector training",
+        "status": "partial_success",
+        "children": [
+            {"model_id": "model-one", "model_display_name": "IF baseline", "detector_id": "isolation-forest", "status": "completed", "model_status": "available"},
+            {"model_id": "model-two", "model_display_name": "LOF baseline", "detector_id": "local-outlier-factor", "status": "completed", "model_status": "available"},
+            {"model_id": "model-bad", "detector_id": "future", "status": "failed", "model_status": "unavailable"},
+        ],
     }
 
 
@@ -99,6 +113,7 @@ class ComparisonUiTests(SimpleTestCase):
         self.learning.get_comparison.return_value = comparison()
         self.learning.get_comparison_status.return_value = {"comparison_id": "comparison-one", "status": "running", "results": []}
         self.learning.get_comparison_robustness.return_value = robustness_payload()
+        self.learning.get_training_run.return_value = source_training_run()
         patcher = patch("config_app.views.comparison.get_learning_client", return_value=self.learning)
         self.addCleanup(patcher.stop); patcher.start()
 
@@ -106,7 +121,7 @@ class ComparisonUiTests(SimpleTestCase):
         response = self.client.get(reverse("comparison_overview"), {"status": "completed", "workload": "High", "page": 1})
         self.assertContains(response, "Past comparisons")
         self.assertContains(response, "+ New comparison")
-        self.assertContains(response, "F1 winner")
+        self.assertContains(response, "Highest F1 in this evaluation")
         self.assertContains(response, 'aria-current="page"', html=False)
         self.assertNotContains(response, "Root Cause Analysis")
         self.assertNotContains(response, "View RCA")
@@ -156,6 +171,45 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertEqual(rejected.status_code, 400)
         self.learning.create_comparison.assert_not_called()
 
+    def test_source_run_preselects_only_successful_compatible_models(self):
+        first = self.client.get(reverse("comparison_new"), {"source_run": "run-source"})
+        self.learning.get_training_run.assert_called_once_with("run-source")
+        self.assertContains(first, "Starting from Three detector training")
+        second = self.client.post(
+            reverse("comparison_new"),
+            {"step": 1, "wizard_state": first.context["state_token"], "dataset_selection": "ds-eval|2"},
+        )
+        self.assertContains(second, 'value="model-one" checked', html=False)
+        self.assertContains(second, 'value="model-two" checked', html=False)
+        self.assertNotContains(second, 'value="model-bad" checked', html=False)
+        self.assertContains(second, "From training run", count=2)
+
+    def test_source_run_models_are_revalidated_for_selected_dataset(self):
+        models = deepcopy(compatible_models())
+        models["items"][1]["compatible"] = False
+        models["items"][1]["compatibility_reasons"] = ["Feature identity does not match this evaluation dataset"]
+        self.learning.list_compatible_models.return_value = models
+        first = self.client.get(reverse("comparison_new"), {"source_run": "run-source"})
+        second = self.client.post(
+            reverse("comparison_new"),
+            {"step": 1, "wizard_state": first.context["state_token"], "dataset_selection": "ds-eval|2"},
+        )
+        self.assertContains(second, "Some models from the training run are not compatible")
+        self.assertContains(second, 'value="model-two" disabled', html=False)
+        self.assertNotContains(second, 'value="model-two" checked', html=False)
+
+    def test_invalid_or_unavailable_source_run_fails_safely(self):
+        self.learning.get_training_run.side_effect = LearningClientError("not found", status_code=404)
+        response = self.client.get(reverse("comparison_new"), {"source_run": "unknown"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "source training run is unavailable")
+        self.assertNotContains(response, "Starting from")
+
+        self.learning.get_training_run.reset_mock(side_effect=True)
+        response = self.client.get(reverse("comparison_new"), {"source_run": "x" * 129})
+        self.assertContains(response, "source training run is invalid")
+        self.learning.get_training_run.assert_not_called()
+
     def test_technical_saved_model_id_gets_readable_label_but_remains_visible(self):
         technical_id = "run_9db880e4243e49d8acdb405bdc60ff9e-cgnn-ac2846b2"
         self.learning.list_compatible_models.return_value = {
@@ -195,7 +249,17 @@ class ComparisonUiTests(SimpleTestCase):
         overview = self.client.get(reverse("comparison_detail", args=["comparison-one"]))
         self.assertContains(overview, "0.746")
         self.assertContains(overview, "Detection lead time")
+        self.assertContains(overview, "Choose a model for your operational goal")
+        self.assertContains(overview, "Best fit for this goal in this evaluation")
+        self.assertContains(overview, "Use for live monitoring")
+        self.assertContains(overview, "This result applies to the selected evaluation dataset")
         self.assertNotContains(overview, "Suggested investigation")
+        runtime = self.client.get(
+            reverse("comparison_detail", args=["comparison-one"]),
+            {"goal": "minimize_compute_cost"},
+        )
+        self.assertContains(runtime, "Inference runtime")
+        self.assertContains(runtime, "12.5 ms")
         timeline = self.client.get(reverse("comparison_detail", args=["comparison-one"]), {"tab": "timeline"})
         self.assertContains(timeline, "comparison-timeline")
         self.assertContains(timeline, "data-timeline-error")
@@ -223,6 +287,25 @@ class ComparisonUiTests(SimpleTestCase):
         status = self.client.get(reverse("comparison_status", args=["comparison-one"]))
         self.assertEqual(status.json()["status"], "running")
         self.assertNotContains(status, "task_id")
+
+    def test_decision_support_renders_not_enough_data_honestly(self):
+        payload = comparison()
+        payload["results"] = [
+            {
+                "model_id": "model-one",
+                "display_name": "IF baseline",
+                "detector_id": "isolation-forest",
+                "status": "failed",
+                "runtime_ms": 1.0,
+                "ground_truth_available": True,
+                "metrics": {"f1_score": 1.0},
+            }
+        ]
+        self.learning.get_comparison.return_value = payload
+        response = self.client.get(reverse("comparison_detail", args=["comparison-one"]))
+        self.assertContains(response, "Not enough data")
+        self.assertContains(response, "No successful model result contains a valid F1-score")
+        self.assertNotContains(response, "Use for live monitoring")
 
     def test_mutating_wizard_requires_csrf(self):
         csrf = Client(enforce_csrf_checks=True)
