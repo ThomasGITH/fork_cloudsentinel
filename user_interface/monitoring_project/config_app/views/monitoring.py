@@ -70,7 +70,7 @@ def _choices(items):
     return [
         (
             item["model_id"],
-            f"{item['display_name']} — {item['model_id']}",
+            item["display_name"],
         )
         for item in items
         if _ready(item)

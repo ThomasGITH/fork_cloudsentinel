@@ -68,6 +68,26 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertContains(response, "Offline only")
         self.assertNotContains(response, "Containers")
 
+    def test_model_select_uses_readable_label_without_repeating_model_id(self):
+        model_id = "run_1ddefa4845484057ba7079946735c8db-local-outlier-factor-2426c165"
+        item = model(model_id)
+        item.update({
+            "detector_id": "local-outlier-factor",
+            "detector_version": "1.0.1",
+            "created_at": "2026-10-12T11:32:00Z",
+        })
+        self.learning.list_models.return_value = {"items": [item], "page": 1, "pages": 1}
+
+        response = self.client.get(reverse("monitoring"), {"model_id": model_id})
+
+        choices = dict(response.context["form"].fields["model_id"].choices)
+        self.assertEqual(
+            choices[model_id],
+            "Local Outlier Factor v1.0.1 · 12 Oct 2026, 11:32 UTC",
+        )
+        self.assertNotIn(model_id, choices[model_id])
+        self.assertEqual(response.context["form"]["model_id"].value(), model_id)
+
     @patch("config_app.views.monitoring.requests.post")
     def test_start_sends_only_explicit_model_and_safe_timing(self, post):
         post.return_value.status_code = 202

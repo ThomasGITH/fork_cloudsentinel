@@ -61,6 +61,22 @@ class UiReadableModelsAndDatesTests(unittest.TestCase):
         self.assertIn('timeZone: "UTC"', helper)
         self.assertNotIn("toLocaleString", monitoring)
 
+    def test_comparison_timeline_axis_uses_compact_utc_time_only(self):
+        comparison = (UI_ROOT / "static/js/comparison_detail.js").read_text()
+        self.assertIn('const timelineTickFormatter = new Intl.DateTimeFormat("en-GB"', comparison)
+        self.assertIn('hour: "2-digit"', comparison)
+        self.assertIn('minute: "2-digit"', comparison)
+        self.assertIn('hour12: false', comparison)
+        self.assertIn('timeZone: "UTC"', comparison)
+        self.assertIn(
+            "return formatTimelineTick(this.getLabelForValue(value));",
+            comparison,
+        )
+        self.assertIn(
+            "window.CloudSentinel.formatDateTime(items[0].label)",
+            comparison,
+        )
+
     def test_machine_datetime_inputs_keep_iso_values(self):
         source_fields = (UI_ROOT / "templates/config_app/data_catalogue/_source_fields.html").read_text()
         self.assertIn('type="datetime-local"', source_fields)

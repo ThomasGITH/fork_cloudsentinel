@@ -43,6 +43,20 @@
     if (chartError) chartError.hidden = false;
   }
 
+  const timelineTickFormatter = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC"
+  });
+
+  function formatTimelineTick(value) {
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp)
+      ? timelineTickFormatter.format(new Date(timestamp))
+      : "";
+  }
+
   if (typeof Chart === "undefined") {
     showChartError();
     return;
@@ -140,7 +154,7 @@
         },
         scales: {
           x: {ticks: {maxTicksLimit: 10, callback(value) {
-            return window.CloudSentinel.formatDateTime(this.getLabelForValue(value));
+            return formatTimelineTick(this.getLabelForValue(value));
           }}},
           y: {title: {display: true, text: "Anomaly score"}}
         }
