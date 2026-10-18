@@ -2,3 +2,9 @@ env
 thesis_v12_working
 .venv-ui/
 .python-managed/
+
+# Usability-access secrets
+ops/usability-access/*.htpasswd
+ops/usability-access/*.pem
+ops/usability-access/privkey*.pem
+ops/usability-access/fullchain*.pem

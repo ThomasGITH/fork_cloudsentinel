@@ -49,7 +49,30 @@ SECRET_KEY = "django-insecure-&egy-$lq%)&cr4-c4=efe7*3eozqo(ej^9hcic7%^p3(()hboo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['34.44.116.210', 'localhost', '127.0.0.1']
+def _csv_environment(name, default=""):
+    return [value.strip() for value in os.getenv(name, default).split(",") if value.strip()]
+
+
+def _boolean_environment(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+ALLOWED_HOSTS = _csv_environment(
+    "DJANGO_ALLOWED_HOSTS",
+    "34.44.116.210,localhost,127.0.0.1",
+)
+CSRF_TRUSTED_ORIGINS = _csv_environment("DJANGO_CSRF_TRUSTED_ORIGINS")
+
+# Only enable proxy trust in deployments where a controlled reverse proxy is
+# the sole external entry point. Direct development runs keep Django defaults.
+if _boolean_environment("DJANGO_TRUST_X_FORWARDED_PROTO"):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SESSION_COOKIE_SECURE = _boolean_environment("DJANGO_SESSION_COOKIE_SECURE")
+CSRF_COOKIE_SECURE = _boolean_environment("DJANGO_CSRF_COOKIE_SECURE")
 
 
 # Application definition

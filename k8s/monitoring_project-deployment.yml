@@ -15,13 +15,21 @@ spec:
     spec:
       containers:
       - name: monitoring-project
-        image: jojojochem/monitoring_project:expansions-p3
+        image: jojojochem/monitoring_project:usability-access-1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:
         - name: DJANGO_ALLOWED_HOSTS
-          value: "34.44.116.210,localhost,127.0.0.1"
+          value: "16.16.28.122,34.44.116.210,localhost,127.0.0.1"
+        - name: DJANGO_CSRF_TRUSTED_ORIGINS
+          value: "https://16.16.28.122"
+        - name: DJANGO_TRUST_X_FORWARDED_PROTO
+          value: "true"
+        - name: DJANGO_SESSION_COOKIE_SECURE
+          value: "true"
+        - name: DJANGO_CSRF_COOKIE_SECURE
+          value: "true"
         - name: API_DATA_INGESTION_URL
           value: "http://data-ingestion-service.cloudsentinel.svc.cluster.local:80"
         - name: API_DATA_PROCESSING_URL
@@ -63,5 +71,4 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8000
-      nodePort: 30000
-  type: NodePort
+  type: ClusterIP

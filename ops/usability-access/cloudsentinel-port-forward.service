@@ -1,0 +1,26 @@
+[Unit]
+Description=CloudSentinel localhost-only Kubernetes port-forward
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+Environment=KUBECONFIG=/home/ubuntu/.kube/config
+CacheDirectory=cloudsentinel-port-forward
+ExecStart=/usr/local/bin/kubectl --cache-dir=/var/cache/cloudsentinel-port-forward -n cloudsentinel port-forward --address=127.0.0.1 service/monitoring-project-service 18000:80
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
