@@ -3,6 +3,10 @@ thesis_v12_working
 thesis_v12_1_working
 .venv-ui/
 .python-managed/
+.local-tools/
+.venv-analysis/
+__pycache__/
+*.py[cod]
 
 # Usability-access secrets
 ops/usability-access/*.htpasswd
