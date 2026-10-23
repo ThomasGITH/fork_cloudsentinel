@@ -1,5 +1,5 @@
 from django.urls import path
-from .views.home import home
+from .views.home import home, workflow_status
 from .views.update_config import config, config_cgnn, config_crca, config_cgnn_train
 from .views.training import train_algorithms, train_cgnn, upload_cgnn_train_data, cgnn_train_data
 from .views.anomaly_detection import (home_anomaly_detection, perform_anomaly_detection_cgnn, perform_anomaly_detection_crca,
@@ -41,6 +41,7 @@ from .views.comparison import (
 
 urlpatterns = [
     path('', home, name='home'),
+    path('workflow-status/', workflow_status, name='workflow_status'),
 
     path('data-catalogue/', data_catalogue_overview, name='data_catalogue_overview'),
     path('data-catalogue/new/', data_catalogue_new, name='data_catalogue_new'),

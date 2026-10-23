@@ -1,38 +1,173 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load static %}
 
-{% block title %}Monitoring App Home{% endblock %}
+{% block title %}Workflow overview | CloudSentinel{% endblock %}
+{% block extra_head %}<link href="{% static 'css/home.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <h1 class="text-center mb-4">Monitoring Framework Interface</h1>
-                <p class="text-center">Select an option below:</p>
-                <div class="list-group mb-4">
-                    <a href="{% url 'data_catalogue_overview' %}" class="list-group-item list-group-item-action">Data Catalogue</a>
-                    <a href="{% url 'models_overview' %}" class="list-group-item list-group-item-action">Models</a>
-                    <a href="{% url 'comparison_overview' %}" class="list-group-item list-group-item-action">Comparison</a>
-                    <a href="{% url 'monitoring_home' %}" class="list-group-item list-group-item-action">Monitoring</a>
-                    <a href="{% url 'home_anomaly_detection' %}" class="list-group-item list-group-item-action">Anomaly Detection</a>
-                </div>
-
-                {% if config %}
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        Current System Configuration
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        {% for key, value in config.items %}
-                        <li class="list-group-item"><strong>{{ key }}:</strong> {{ value }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% else %}
-                <div class="alert alert-warning" role="alert">
-                    No configuration data available. Please set up your configuration.
-                </div>
-                {% endif %}
-            </div>
-        </div>
+<main class="workflow-home container-fluid py-4" data-workflow-status-url="{% url 'workflow_status' %}">
+  <section class="workflow-hero mb-4">
+    <div class="workflow-hero-copy">
+      <span class="workflow-eyebrow">CloudSentinel workflow</span>
+      <h1>From monitoring data to a traceable diagnosis</h1>
+      <p class="lead mb-0">Follow one guided path to collect metrics, train detectors, compare their behaviour across workload contexts, and validate a selected model through live monitoring and root cause analysis.</p>
     </div>
+    <div class="workflow-hero-actions">
+      <a class="btn btn-light btn-lg" href="{% url 'data_catalogue_overview' %}">Open Data Catalogue</a>
+      <a class="btn btn-outline-light btn-lg" href="{% url 'monitoring_overview' %}">Review monitoring history</a>
+    </div>
+  </section>
+
+  <section class="card workflow-next-card mb-4" aria-labelledby="recommended-next-step">
+    <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+      <div>
+        <span class="workflow-section-label">Recommended next step</span>
+        <h2 class="h4 mb-1" id="recommended-next-step" data-next-title>Checking workflow status…</h2>
+        <p class="mb-0 text-muted" data-next-detail>CloudSentinel is checking the configured source and existing experiment records.</p>
+      </div>
+      <a class="btn btn-primary disabled" href="#" aria-disabled="true" data-next-action>Checking…</a>
+    </div>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <section aria-labelledby="guided-workflow-title">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-2 mb-3">
+          <div>
+            <span class="workflow-section-label">Guided lifecycle</span>
+            <h2 class="h3 mb-1" id="guided-workflow-title">Complete the steps in order</h2>
+            <p class="text-muted mb-0">Earlier results remain available while you repeat the lifecycle for another dataset or workload context.</p>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-status-retry>Refresh status</button>
+        </div>
+
+        <ol class="workflow-steps list-unstyled">
+          <li class="workflow-step" data-workflow-step="source" data-state="loading">
+            <div class="workflow-step-number" aria-hidden="true">1</div>
+            <article class="card workflow-step-card">
+              <div class="card-body">
+                <div class="workflow-step-heading">
+                  <div><span class="workflow-phase">Input</span><h3 class="h4">Connect and verify the monitoring source</h3></div>
+                  <span class="workflow-status-badge" data-step-status>Checking…</span>
+                </div>
+                <p>CloudSentinel uses the deployment-managed Prometheus connection to collect the metrics used by every later step.</p>
+                <div class="workflow-step-feedback"><strong data-step-metric>Checking source</strong><span data-step-detail>The page remains usable while this check runs.</span></div>
+                <div class="workflow-step-actions"><span class="text-muted small">Configured source: {{ source_type }} · namespace: {{ cluster_namespace }}</span></div>
+              </div>
+            </article>
+          </li>
+
+          <li class="workflow-step" data-workflow-step="catalogue" data-state="loading">
+            <div class="workflow-step-number" aria-hidden="true">2</div>
+            <article class="card workflow-step-card">
+              <div class="card-body">
+                <div class="workflow-step-heading">
+                  <div><span class="workflow-phase">Prepare</span><h3 class="h4">Capture and describe a dataset</h3></div>
+                  <span class="workflow-status-badge" data-step-status>Checking…</span>
+                </div>
+                <p>Store the time range, Prometheus queries, workload context, known incident window, and train/test partition as one reusable dataset record.</p>
+                <div class="workflow-step-feedback"><strong data-step-metric>Checking catalogue</strong><span data-step-detail>Dataset readiness will appear here.</span></div>
+                <div class="workflow-step-actions"><a class="btn btn-sm btn-primary" href="{% url 'data_catalogue_new' %}">Add dataset</a><a class="btn btn-sm btn-link" href="{% url 'data_catalogue_overview' %}">Browse catalogue</a></div>
+              </div>
+            </article>
+          </li>
+
+          <li class="workflow-step" data-workflow-step="models" data-state="loading">
+            <div class="workflow-step-number" aria-hidden="true">3</div>
+            <article class="card workflow-step-card">
+              <div class="card-body">
+                <div class="workflow-step-heading">
+                  <div><span class="workflow-phase">Train</span><h3 class="h4">Train one or more detectors</h3></div>
+                  <span class="workflow-status-badge" data-step-status>Checking…</span>
+                </div>
+                <p>Select a prepared catalogue partition, configure compatible detectors, and save the resulting model artefacts with their training provenance.</p>
+                <div class="workflow-step-feedback"><strong data-step-metric>Checking models</strong><span data-step-detail>Saved-model readiness will appear here.</span></div>
+                <div class="workflow-step-actions"><a class="btn btn-sm btn-primary" href="{% url 'models_train' %}">Train models</a><a class="btn btn-sm btn-link" href="{% url 'models_overview' %}">Models and detectors</a></div>
+              </div>
+            </article>
+          </li>
+
+          <li class="workflow-step" data-workflow-step="comparisons" data-state="loading">
+            <div class="workflow-step-number" aria-hidden="true">4</div>
+            <article class="card workflow-step-card">
+              <div class="card-body">
+                <div class="workflow-step-heading">
+                  <div><span class="workflow-phase">Evaluate</span><h3 class="h4">Compare models in a shared context</h3></div>
+                  <span class="workflow-status-badge" data-step-status>Checking…</span>
+                </div>
+                <p>Run compatible models on the same evaluation data and inspect accuracy, lead-time, and robustness evidence without treating one score as a universal winner.</p>
+                <div class="workflow-step-feedback"><strong data-step-metric>Checking comparisons</strong><span data-step-detail>Completed-comparison evidence will appear here.</span></div>
+                <div class="workflow-step-actions"><a class="btn btn-sm btn-primary" href="{% url 'comparison_new' %}">New comparison</a><a class="btn btn-sm btn-link" href="{% url 'comparison_overview' %}">Past comparisons</a></div>
+              </div>
+            </article>
+          </li>
+
+          <li class="workflow-step" data-workflow-step="monitoring" data-state="loading">
+            <div class="workflow-step-number" aria-hidden="true">5</div>
+            <article class="card workflow-step-card">
+              <div class="card-body">
+                <div class="workflow-step-heading">
+                  <div><span class="workflow-phase">Validate live</span><h3 class="h4">Run a selected model against live metrics</h3></div>
+                  <span class="workflow-status-badge" data-step-status>Checking…</span>
+                </div>
+                <p>Choose an inference-ready saved model, set the observation window, and optionally enable automatic root cause analysis after a sustained anomaly episode.</p>
+                <div class="workflow-step-feedback"><strong data-step-metric>Checking monitoring</strong><span data-step-detail>Monitoring readiness will appear here.</span></div>
+                <div class="workflow-step-actions"><a class="btn btn-sm btn-primary" href="{% url 'monitoring' %}">Set up monitoring</a><a class="btn btn-sm btn-link" href="{% url 'models_overview' %}?tab=saved">Review model readiness</a></div>
+              </div>
+            </article>
+          </li>
+
+          <li class="workflow-step" data-workflow-step="review" data-state="loading">
+            <div class="workflow-step-number" aria-hidden="true">6</div>
+            <article class="card workflow-step-card">
+              <div class="card-body">
+                <div class="workflow-step-heading">
+                  <div><span class="workflow-phase">Interpret</span><h3 class="h4">Review detections and RCA evidence</h3></div>
+                  <span class="workflow-status-badge" data-step-status>Checking…</span>
+                </div>
+                <p>Inspect the monitoring timeline, anomaly episodes, detector evidence, and stored RCA rankings while keeping model output separate from confirmed incident truth.</p>
+                <div class="workflow-step-feedback"><strong data-step-metric>Checking history</strong><span data-step-detail>Stored-session evidence will appear here.</span></div>
+                <div class="workflow-step-actions"><a class="btn btn-sm btn-primary" href="{% url 'monitoring_overview' %}">Open monitoring history</a></div>
+              </div>
+            </article>
+          </li>
+        </ol>
+      </section>
+    </div>
+
+    <aside class="col-xl-4">
+      <section class="card workflow-value-card mb-4" aria-labelledby="workflow-value-title">
+        <div class="card-body">
+          <span class="workflow-section-label">What this workflow adds</span>
+          <h2 class="h4" id="workflow-value-title">One traceable experimental lifecycle</h2>
+          <p>CloudSentinel connects dataset preparation, detector training, model comparison, live validation, and RCA evidence. Each stage keeps links to the inputs and artefacts used to produce its result.</p>
+          <p class="mb-0 text-muted">It is a research and integration prototype. A completed workflow does not by itself prove that a model is accurate in every environment.</p>
+        </div>
+      </section>
+
+      <section class="card workflow-help-card mb-4" aria-labelledby="workflow-help-title">
+        <div class="card-body">
+          <span class="workflow-section-label">Choose the right route</span>
+          <h2 class="h4" id="workflow-help-title">Common starting points</h2>
+          <div class="list-group list-group-flush">
+            <a class="list-group-item list-group-item-action" href="{% url 'data_catalogue_new' %}"><strong>I have a Prometheus time range</strong><span>Capture it as a described dataset.</span></a>
+            <a class="list-group-item list-group-item-action" href="{% url 'models_train' %}"><strong>I already prepared data</strong><span>Train compatible detectors.</span></a>
+            <a class="list-group-item list-group-item-action" href="{% url 'comparison_new' %}"><strong>I have saved models</strong><span>Compare them in one context.</span></a>
+            <a class="list-group-item list-group-item-action" href="{% url 'monitoring' %}"><strong>I selected a model</strong><span>Validate it on live metrics.</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="card workflow-extension-card" aria-labelledby="workflow-extension-title">
+        <div class="card-body">
+          <span class="workflow-section-label">Extend the framework</span>
+          <h2 class="h4" id="workflow-extension-title">Bring an existing detector</h2>
+          <p>Developers can implement the shared adapter contract and publish a trusted external detector. Operators then use it through the same training and comparison flow as built-in methods.</p>
+          <a class="btn btn-outline-primary" href="{% url 'models_add_detector' %}">Open detector onboarding</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
 {% endblock %}
+
+{% block extra_scripts %}<script src="{% static 'js/home_workflow.js' %}"></script>{% endblock %}

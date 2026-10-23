@@ -30,31 +30,21 @@
                         Menu
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMain">
-                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'home' %} active{% endif %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %} href="{% url 'home' %}">Home</a></li>
-                        <li><a class="dropdown-item{% if request.path|slice:':15' == '/data-catalogue' %} active{% endif %}"{% if request.path|slice:':15' == '/data-catalogue' %} aria-current="page"{% endif %} href="{% url 'data_catalogue_overview' %}">Data Catalogue</a></li>
-                        <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}"{% if request.path|slice:':8' == '/models/' %} aria-current="page"{% endif %} href="{% url 'models_overview' %}">Models</a></li>
-                        <li><a class="dropdown-item{% if request.path|slice:':12' == '/comparison/' %} active{% endif %}"{% if request.path|slice:':12' == '/comparison/' %} aria-current="page"{% endif %} href="{% url 'comparison_overview' %}">Comparison</a></li>
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="#">Monitoring</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'monitoring_overview' %}">Monitoring Dashboard</a></li>
-                                <li><a class="dropdown-item" href="{% url 'task_manager' %}">Manage Monitoring Tasks</a></li>
-                                <li><a class="dropdown-item" href="{% url 'monitoring' %}">Setup Monitoring</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="#">Anomaly Detection</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'perform_anomaly_detection_cgnn' %}">CGNN Anomaly Detection</a></li>
-                                <li><a class="dropdown-item" href="{% url 'perform_anomaly_detection_crca' %}">CRCA Anomaly Detection</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="#">Configuration</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'config' %}">Update Configuration</a></li>
-                            </ul>
-                        </li>
+                        <li><h6 class="dropdown-header">Guided workflow</h6></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'home' %} active{% endif %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %} href="{% url 'home' %}">Workflow overview</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':15' == '/data-catalogue' %} active{% endif %}"{% if request.path|slice:':15' == '/data-catalogue' %} aria-current="page"{% endif %} href="{% url 'data_catalogue_overview' %}">1. Data Catalogue</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}"{% if request.path|slice:':8' == '/models/' %} aria-current="page"{% endif %} href="{% url 'models_overview' %}">2. Models and training</a></li>
+                        <li><a class="dropdown-item{% if request.path|slice:':12' == '/comparison/' %} active{% endif %}"{% if request.path|slice:':12' == '/comparison/' %} aria-current="page"{% endif %} href="{% url 'comparison_overview' %}">3. Model comparison</a></li>
+                        <li><a class="dropdown-item" href="{% url 'monitoring' %}">4. Set up live monitoring</a></li>
+                        <li><a class="dropdown-item" href="{% url 'monitoring_overview' %}">5. Monitoring and RCA history</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Administration and extension</h6></li>
+                        <li><a class="dropdown-item" href="{% url 'models_add_detector' %}">Detector onboarding</a></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'config' %} active{% endif %}"{% if request.resolver_match.url_name == 'config' %} aria-current="page"{% endif %} href="{% url 'config' %}">System connections</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Legacy component screens</h6></li>
+                        <li><a class="dropdown-item" href="{% url 'perform_anomaly_detection_cgnn' %}">CGNN anomaly detection</a></li>
+                        <li><a class="dropdown-item" href="{% url 'perform_anomaly_detection_crca' %}">CRCA anomaly detection</a></li>
                     </ul>
                 </li>
             </ul>
