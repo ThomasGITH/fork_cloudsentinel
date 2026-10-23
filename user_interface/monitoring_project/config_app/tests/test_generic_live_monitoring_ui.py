@@ -82,7 +82,7 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
             reverse("monitoring"), {"model_id": "model-ready", "flow": flow}
         )
 
-        self.assertContains(response, "Guided experiment")
+        self.assertContains(response, "Experiment guide")
         self.assertEqual(response.context["form"]["model_id"].value(), "model-ready")
         carried = decode_context(response.context["workflow_token"])
         self.assertEqual(carried["model_id"], "model-ready")

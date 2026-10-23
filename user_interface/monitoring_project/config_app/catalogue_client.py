@@ -167,6 +167,22 @@ class DataCatalogueClient:
             json=payload,
         )
 
+    def get_monitored_environment(self) -> dict[str, Any]:
+        return self._request("GET", "/catalogue/settings/monitored-environment")
+
+    def update_monitored_environment(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request(
+            "PUT", "/catalogue/settings/monitored-environment", json=payload
+        )
+
+    def test_monitored_environment(
+        self, prometheus_url: str | None = None
+    ) -> dict[str, Any]:
+        payload = {"prometheus_url": prometheus_url} if prometheus_url else {}
+        return self._request(
+            "POST", "/catalogue/settings/monitored-environment/test", json=payload
+        )
+
 
 def get_catalogue_client() -> DataCatalogueClient:
     return DataCatalogueClient()

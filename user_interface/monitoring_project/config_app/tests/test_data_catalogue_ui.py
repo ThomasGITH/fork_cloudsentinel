@@ -78,6 +78,9 @@ class DataCatalogueUiTests(SimpleTestCase):
         self.client_api = Mock()
         self.client_api.get_dataset.return_value = detail_payload()
         self.client_api.get_version.return_value = version_payload()
+        self.client_api.get_monitored_environment.return_value = {
+            "default_namespace": "online-boutique"
+        }
         patcher = patch("config_app.views.data_catalogue.get_catalogue_client", return_value=self.client_api)
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -114,7 +117,7 @@ class DataCatalogueUiTests(SimpleTestCase):
 
         response = self.client.get(reverse("data_catalogue_detail", args=["ds_demo"]))
 
-        self.assertContains(response, "Guided experiment")
+        self.assertContains(response, "Experiment guide")
         self.assertContains(response, "Continue: train detectors")
         self.assertContains(response, "dataset=ds_demo", html=False)
         self.assertContains(response, "flow=", html=False)

@@ -58,7 +58,9 @@ def training_comparison_context(run: Any) -> dict[str, Any] | None:
         "source_run_name": run.get("run_name") or run.get("run_id") or "Training run",
         "successful_models": models,
         "successful_count": len(models),
-        "can_compare": len(models) >= 2,
+        # One model is enough to enter the wizard; a second compatible saved
+        # model can be selected there before the comparison is submitted.
+        "can_compare": len(models) >= 1,
     }
 
 

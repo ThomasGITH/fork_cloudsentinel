@@ -281,8 +281,7 @@ class ModelsUiTests(SimpleTestCase):
         self.assertContains(run, "F1 0.900")
         self.assertNotContains(run, "celery-secret")
         self.assertContains(run, "1 model successfully trained")
-        self.assertContains(run, "At least two successful, available models are required")
-        self.assertNotContains(run, "Compare trained models")
+        self.assertContains(run, "Continue to comparison")
 
     def test_completed_run_links_to_comparison_with_two_available_models(self):
         payload = run_payload("completed")
@@ -296,7 +295,7 @@ class ModelsUiTests(SimpleTestCase):
         self.learning.get_training_run.return_value = payload
         response = self.client.get(reverse("models_training_run_detail", args=["run_demo"]))
         self.assertContains(response, "2 models successfully trained")
-        self.assertContains(response, "Compare trained models")
+        self.assertContains(response, "Continue to comparison")
         self.assertContains(response, reverse("comparison_new") + "?source_run=run_demo")
 
     def test_terminal_run_with_no_available_models_has_no_comparison_action(self):
@@ -310,8 +309,9 @@ class ModelsUiTests(SimpleTestCase):
         }]
         self.learning.get_training_run.return_value = payload
         response = self.client.get(reverse("models_training_run_detail", args=["run_demo"]))
-        self.assertContains(response, "No successful, available models")
-        self.assertNotContains(response, "Compare trained models")
+        self.assertContains(response, "No successful, available model")
+        self.assertContains(response, 'data-comparison-link href="', html=False)
+        self.assertContains(response, 'hidden>Continue to comparison', html=False)
 
     def test_safe_upstream_error_translation(self):
         self.learning.list_models.side_effect = LearningClientError("http://secret.internal failed at /app/models", retryable=True)
@@ -382,8 +382,12 @@ class ModelsUiTests(SimpleTestCase):
         response = self.client.get(reverse("models_training_run_status", args=["run_demo"]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "partial_success")
+        self.assertTrue(response.json()["comparison_flow"]["can_compare"])
+        self.assertIn("/comparison/new/", response.json()["guided_comparison_url"])
         self.assertNotIn("task_id", response.content.decode())
-        self.assertContains(self.client.get(reverse("models_training_run_detail", args=["run_demo"])), "models_run.js")
+        detail = self.client.get(reverse("models_training_run_detail", args=["run_demo"]))
+        self.assertContains(detail, "models_run.js")
+        self.assertContains(detail, "Continue to comparison")
 
     def test_structured_cgnn_progress_is_rendered_as_epoch_feedback(self):
         running = run_payload("running")

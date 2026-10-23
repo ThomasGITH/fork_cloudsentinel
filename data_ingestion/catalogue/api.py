@@ -49,6 +49,11 @@ from .validation import (
     validate_identifier,
     validate_version,
 )
+from .environment import (
+    read_environment,
+    test_prometheus_connection,
+    write_environment,
+)
 
 
 def _positive_integer(value: str | None, field: str, default: int, maximum: int | None = None) -> int:
@@ -122,6 +127,38 @@ def create_catalogue_blueprint() -> Blueprint:
             current_app.config["LEGACY_DATASETS_ROOT"], repository
         )
         return repository, projector
+
+    @blueprint.get("/catalogue/settings/monitored-environment")
+    def get_monitored_environment():
+        return jsonify(read_environment(dict(current_app.config))), 200
+
+    @blueprint.put("/catalogue/settings/monitored-environment")
+    def update_monitored_environment():
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            value = write_environment(
+                dict(current_app.config), request.get_json(silent=False)
+            )
+            return jsonify(value), 200
+        except (BadRequest, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except OSError:
+            return jsonify({"error": "Monitored environment settings could not be saved"}), 503
+
+    @blueprint.post("/catalogue/settings/monitored-environment/test")
+    def test_monitored_environment():
+        if request.data and not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            payload = request.get_json(silent=True) or {}
+            return jsonify(
+                test_prometheus_connection(
+                    dict(current_app.config), payload.get("prometheus_url")
+                )
+            ), 200
+        except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
 
     @blueprint.get("/datasets")
     def list_datasets():
@@ -521,6 +558,10 @@ def configure_catalogue_defaults(app: Any) -> None:
                 "http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090",
             )
         },
+    )
+    app.config.setdefault(
+        "CATALOGUE_DEFAULT_NAMESPACE",
+        os.getenv("CATALOGUE_DEFAULT_NAMESPACE", "default"),
     )
     defaults = {
         "CATALOGUE_MAX_QUERY_COUNT": 25,

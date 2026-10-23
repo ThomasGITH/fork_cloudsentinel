@@ -187,7 +187,7 @@ class ComparisonUiTests(SimpleTestCase):
 
         response = self.client.get(reverse("comparison_new"), {"flow": flow})
 
-        self.assertContains(response, "Guided experiment")
+        self.assertContains(response, "Experiment guide")
         self.assertContains(
             response,
             'value="ds-eval|2" checked',
@@ -206,6 +206,10 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertContains(second, 'value="model-two" checked', html=False)
         self.assertNotContains(second, 'value="model-bad" checked', html=False)
         self.assertContains(second, "From training run", count=2)
+        self.assertContains(second, "Created from")
+        self.assertContains(second, "Selected models only")
+        self.assertContains(second, "data-model-filter-root", html=False)
+        self.assertContains(second, ">Continue</button>", count=2, html=False)
 
     def test_source_run_models_are_revalidated_for_selected_dataset(self):
         models = deepcopy(compatible_models())

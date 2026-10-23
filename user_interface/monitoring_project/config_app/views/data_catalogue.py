@@ -363,12 +363,19 @@ def data_catalogue_new(request: HttpRequest):
         initial_queries = json.loads(request.POST.get("queries_json", "[]")) if request.POST else []
     except json.JSONDecodeError:
         initial_queries = []
+    default_namespace = ""
+    try:
+        default_namespace = get_catalogue_client().get_monitored_environment().get(
+            "default_namespace", ""
+        )
+    except CatalogueClientError:
+        pass
     context = {
         **_catalogue_context(),
         "submitted": request.POST,
         "source": {
             "application": "",
-            "namespace": "",
+            "namespace": default_namespace,
             "services": "",
             "pods": "",
             "label_selectors": "",

@@ -35,6 +35,20 @@
         if (!terminal.has(child.status)) active = true;
         if (child.model_id && child.model_status === "available") { const wrap = card.querySelector("[data-child-model]"); if (wrap && !wrap.querySelector("a")) { const link = document.createElement("a"); link.className = "btn btn-sm btn-outline-primary"; link.href = root.dataset.modelUrl.replace("__MODEL__", encodeURIComponent(child.model_id)); link.textContent = child.model_display_name || "View saved model"; wrap.appendChild(link); } }
       });
+      const next = root.querySelector("[data-comparison-next]");
+      if (next && data.comparison_flow) {
+        const count = Number(data.comparison_flow.successful_count || 0);
+        next.hidden = false;
+        const summary = next.querySelector("[data-comparison-summary]");
+        if (summary) summary.textContent = count + " model" + (count === 1 ? "" : "s") + " successfully trained. The next screen preselects these models and lets you add another compatible saved model if needed.";
+        const link = next.querySelector("[data-comparison-link]");
+        const unavailable = next.querySelector("[data-comparison-unavailable]");
+        if (link) {
+          link.hidden = !data.comparison_flow.can_compare;
+          if (data.guided_comparison_url) link.href = data.guided_comparison_url;
+        }
+        if (unavailable) unavailable.hidden = Boolean(data.comparison_flow.can_compare);
+      }
       return active;
     }
     async function poll() {

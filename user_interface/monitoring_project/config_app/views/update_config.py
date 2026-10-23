@@ -1,25 +1,47 @@
 from django.conf import settings
-from django.shortcuts import render
-from django.views.decorators.http import require_GET
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_http_methods
+
+from config_app.catalogue_client import CatalogueClientError, get_catalogue_client
 
 from .utils import update_config
 
 
-@require_GET
+@require_http_methods(["GET", "POST"])
 def config(request):
-    """Show the effective deployment-managed service connections.
+    """Edit the actual catalogue source and show deployment wiring separately."""
+    client = get_catalogue_client()
+    error = None
+    submitted = None
+    if request.method == "POST":
+        submitted = {
+            "prometheus_url": request.POST.get("prometheus_url", "").strip(),
+            "default_namespace": request.POST.get("default_namespace", "").strip(),
+            "source_id": "cluster-default",
+        }
+        try:
+            if request.POST.get("action") == "test":
+                result = client.test_monitored_environment(submitted["prometheus_url"])
+                messages.success(request, result.get("message", "Connection succeeded."))
+            else:
+                client.update_monitored_environment(submitted)
+                messages.success(request, "Monitored environment settings saved.")
+                return redirect("config")
+        except CatalogueClientError as exc:
+            error = str(exc)
 
-    The retired form wrote a local config.json that Django no longer loaded and
-    that could not update the Data Catalogue or other service deployments. A
-    read-only view is intentionally honest about that deployment boundary.
-    """
-    connections = [
-        {
-            "name": "Prometheus",
-            "purpose": "Direct source check from the user interface",
-            "environment": "PROMETHEUS_URL",
-            "value": settings.PROMETHEUS_URL,
-        },
+    try:
+        environment = submitted or client.get_monitored_environment()
+    except CatalogueClientError as exc:
+        environment = submitted or {
+            "prometheus_url": settings.PROMETHEUS_URL,
+            "default_namespace": settings.CLUSTER_NAMESPACE,
+            "source_id": "cluster-default",
+        }
+        error = error or str(exc)
+
+    diagnostics = [
         {
             "name": "Data Ingestion and Catalogue",
             "purpose": "Dataset capture, monitoring sessions, and RCA orchestration",
@@ -33,19 +55,17 @@ def config(request):
             "value": settings.API_LEARNING_ADAPTATION_URL,
         },
         {
-            "name": "Data Processing",
-            "purpose": "Metrics preprocessing used by legacy flows",
+            "name": "Data Processing (legacy)",
+            "purpose": "Metrics preprocessing used only by legacy flows",
             "environment": "API_DATA_PROCESSING_URL",
             "value": settings.API_DATA_PROCESSING_URL,
         },
-        {
-            "name": "Cluster namespace",
-            "purpose": "Default namespace used by legacy discovery flows",
-            "environment": "CLUSTER_NAMESPACE",
-            "value": settings.CLUSTER_NAMESPACE,
-        },
     ]
-    return render(request, "config_app/update_config.html", {"connections": connections})
+    return render(
+        request,
+        "config_app/update_config.html",
+        {"environment": environment, "diagnostics": diagnostics, "error": error},
+    )
 
 
 def config_cgnn(request):

@@ -118,6 +118,32 @@ class CatalogueFetchTests(unittest.TestCase):
     def start_fetch(self):
         return self.client.post("/datasets/fetch-dataset/versions/1/fetch")
 
+    def test_monitored_environment_settings_are_persisted_and_used(self):
+        response = self.client.put(
+            "/catalogue/settings/monitored-environment",
+            json={
+                "prometheus_url": "http://runtime-prometheus:9090/",
+                "default_namespace": "online-boutique",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()["prometheus_url"], "http://runtime-prometheus:9090")
+        self.assertEqual(
+            self.client.get("/catalogue/settings/monitored-environment").get_json()["default_namespace"],
+            "online-boutique",
+        )
+
+        self.create_dataset()
+        response = self.start_fetch()
+        self.assertEqual(response.status_code, 202, response.get_json())
+
+    def test_monitored_environment_rejects_invalid_values(self):
+        response = self.client.put(
+            "/catalogue/settings/monitored-environment",
+            json={"prometheus_url": "file:///etc/passwd", "default_namespace": "BAD VALUE"},
+        )
+        self.assertEqual(response.status_code, 400)
+
     def fake_get(self, payload):
         return Mock(return_value=FakeResponse(payload))
 

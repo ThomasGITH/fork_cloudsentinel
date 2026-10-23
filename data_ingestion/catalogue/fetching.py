@@ -25,6 +25,7 @@ from .validation import (
     validate_timestamp,
     validate_version,
 )
+from .environment import effective_prometheus_sources
 
 
 class CatalogueFetchError(RuntimeError):
@@ -107,7 +108,7 @@ def _render_template(template: str, context: dict[str, str]) -> str:
 
 def resolve_prometheus_source(source_id: str, config: dict[str, Any]) -> str:
     source_id = validate_identifier(source_id, "prometheus_source_id")
-    sources = config.get("CATALOGUE_PROMETHEUS_SOURCES", {})
+    sources = effective_prometheus_sources(config)
     if not isinstance(sources, dict) or source_id not in sources:
         raise CatalogueValidationError(f"unknown Prometheus source: {source_id!r}")
     base_url = sources[source_id]

@@ -30,29 +30,20 @@ def _total(payload: dict[str, Any]) -> int:
 
 def _prometheus_status() -> dict[str, Any]:
     try:
-        response = requests.get(
-            f"{settings.PROMETHEUS_URL.rstrip('/')}/api/v1/query",
-            params={"query": "up"},
-            timeout=_TIMEOUT,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        if not isinstance(payload, dict) or payload.get("status") != "success":
-            raise ValueError("invalid Prometheus response")
-        result = ((payload.get("data") or {}).get("result") or [])
-        target_count = len(result) if isinstance(result, list) else 0
+        payload = DataCatalogueClient(timeout=_TIMEOUT).test_monitored_environment()
+        target_count = payload.get("target_count", 0)
         return {
             "state": "ready",
             "label": "Connected",
             "metric": f"{target_count} active series" if target_count else "Source responded",
-            "detail": "Prometheus accepted a live query from CloudSentinel.",
+            "detail": "The configured catalogue source accepted a live query.",
         }
-    except (requests.RequestException, ValueError, TypeError):
+    except CatalogueClientError:
         return {
             "state": "unavailable",
             "label": "Needs attention",
             "metric": "No response",
-            "detail": "CloudSentinel could not verify the deployment-managed Prometheus connection.",
+            "detail": "CloudSentinel could not verify the configured Prometheus source.",
         }
 
 
@@ -244,7 +235,6 @@ def home(request):
         "config_app/home.html",
         {
             "source_type": "Prometheus",
-            "cluster_namespace": settings.CLUSTER_NAMESPACE,
         },
     )
 

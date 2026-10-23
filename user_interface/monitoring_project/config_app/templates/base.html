@@ -30,7 +30,7 @@
                         Menu
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMain">
-                        <li><h6 class="dropdown-header">Guided workflow</h6></li>
+                        <li><h6 class="dropdown-header">Experiment workflow</h6></li>
                         <li><a class="dropdown-item{% if request.resolver_match.url_name == 'home' %} active{% endif %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %} href="{% url 'home' %}">Workflow overview</a></li>
                         <li><a class="dropdown-item{% if request.path|slice:':15' == '/data-catalogue' %} active{% endif %}"{% if request.path|slice:':15' == '/data-catalogue' %} aria-current="page"{% endif %} href="{% url 'data_catalogue_overview' %}">1. Data Catalogue</a></li>
                         <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}"{% if request.path|slice:':8' == '/models/' %} aria-current="page"{% endif %} href="{% url 'models_overview' %}">2. Models and training</a></li>
@@ -40,7 +40,7 @@
                         <li><hr class="dropdown-divider"></li>
                         <li><h6 class="dropdown-header">Administration and extension</h6></li>
                         <li><a class="dropdown-item" href="{% url 'models_add_detector' %}">Detector onboarding</a></li>
-                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'config' %} active{% endif %}"{% if request.resolver_match.url_name == 'config' %} aria-current="page"{% endif %} href="{% url 'config' %}">System connections</a></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'config' %} active{% endif %}"{% if request.resolver_match.url_name == 'config' %} aria-current="page"{% endif %} href="{% url 'config' %}">Monitored environment</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><h6 class="dropdown-header">Legacy component screens</h6></li>
                         <li><a class="dropdown-item" href="{% url 'perform_anomaly_detection_cgnn' %}">CGNN anomaly detection</a></li>

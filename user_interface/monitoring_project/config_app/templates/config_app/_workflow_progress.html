@@ -1,8 +1,8 @@
 {% if workflow_progress %}
-<section class="guided-flow mb-4" aria-label="Guided experiment progress">
+<section class="guided-flow mb-4" aria-label="Experiment progress">
   <div class="guided-flow-heading">
     <div>
-      <span class="guided-flow-eyebrow">Guided experiment</span>
+      <span class="guided-flow-eyebrow">Experiment guide</span>
       <strong>{% if workflow_progress.dataset_name %}{{ workflow_progress.dataset_name }}{% if workflow_progress.dataset_version %} · v{{ workflow_progress.dataset_version }}{% endif %}{% else %}Current experiment{% endif %}</strong>
     </div>
     <a href="{% url 'home' %}" class="small">Workflow overview</a>

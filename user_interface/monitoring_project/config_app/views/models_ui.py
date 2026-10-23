@@ -689,7 +689,23 @@ def training_run_detail(request: HttpRequest, run_id: str):
 @require_GET
 def training_run_status(request: HttpRequest, run_id: str):
     try:
-        return JsonResponse(_run_ui(get_learning_client().get_training_run(run_id)))
+        run = _run_ui(get_learning_client().get_training_run(run_id))
+        _add_dataset_display_names([run])
+        run["comparison_flow"] = training_comparison_context(run)
+        dataset = run.get("dataset") or {}
+        workflow = update_context(
+            context_from_request(request) or new_context(),
+            dataset_id=dataset.get("dataset_id"),
+            dataset_version=dataset.get("version"),
+            dataset_name=dataset.get("display_name"),
+            partition_id=dataset.get("partition_id"),
+            training_run_id=run_id,
+        )
+        run["guided_comparison_url"] = (
+            f'{reverse("comparison_new")}?'
+            f'{urlencode({"source_run": run_id, "flow": encode_context(workflow)})}'
+        )
+        return JsonResponse(run)
     except LearningClientError as exc:
         return JsonResponse({"error": _error(exc), "retryable": exc.retryable}, status=exc.status_code)
 

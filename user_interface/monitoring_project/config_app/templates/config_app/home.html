@@ -49,9 +49,9 @@
                   <div><span class="workflow-phase">Input</span><h3 class="h4">Connect and verify the monitoring source</h3></div>
                   <span class="workflow-status-badge" data-step-status>Checking…</span>
                 </div>
-                <p>CloudSentinel uses the deployment-managed Prometheus connection to collect the metrics used by every later step.</p>
+                <p>CloudSentinel uses the configured Prometheus source to collect the metrics used by every later step.</p>
                 <div class="workflow-step-feedback"><strong data-step-metric>Checking source</strong><span data-step-detail>The page remains usable while this check runs.</span></div>
-                <div class="workflow-step-actions"><span class="text-muted small">Configured source: {{ source_type }} · namespace: {{ cluster_namespace }}</span></div>
+                <div class="workflow-step-actions"><span class="text-muted small">Configured source: {{ source_type }}</span><a class="btn btn-sm btn-link" href="{% url 'config' %}">Configure source</a></div>
               </div>
             </article>
           </li>

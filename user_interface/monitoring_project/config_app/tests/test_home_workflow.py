@@ -62,15 +62,33 @@ class GuidedWorkflowHomeTests(SimpleTestCase):
         self.assertEqual(payload["next_step"]["url"], reverse("comparison_new"))
         self.assertNotIn("PROMETHEUS_URL", str(payload))
 
-    def test_system_connections_is_truthful_read_only_deployment_view(self):
+    @patch("config_app.views.update_config.get_catalogue_client")
+    def test_monitored_environment_is_editable_and_separates_diagnostics(self, get_client):
+        get_client.return_value.get_monitored_environment.return_value = {
+            "source_id": "cluster-default",
+            "prometheus_url": "http://prometheus.example:9090",
+            "default_namespace": "online-boutique",
+        }
         response = self.client.get(reverse("config"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "System connections")
-        self.assertContains(response, "Why these fields are read-only")
-        self.assertContains(response, "CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL")
-        self.assertNotContains(response, "Update Config")
-        self.assertEqual(self.client.post(reverse("config"), {}).status_code, 405)
+        self.assertContains(response, "Monitored environment")
+        self.assertContains(response, "Test connection")
+        self.assertContains(response, "Deployment diagnostics")
+        self.assertContains(response, "online-boutique")
+        self.assertNotContains(response, "Why these fields are read-only")
+
+        saved = self.client.post(reverse("config"), {
+            "prometheus_url": "http://prometheus.example:9090",
+            "default_namespace": "production",
+            "action": "save",
+        })
+        self.assertEqual(saved.status_code, 302)
+        get_client.return_value.update_monitored_environment.assert_called_once_with({
+            "prometheus_url": "http://prometheus.example:9090",
+            "default_namespace": "production",
+            "source_id": "cluster-default",
+        })
 
     def test_status_script_uses_text_content_for_service_data(self):
         script = (
