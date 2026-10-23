@@ -1,0 +1,19 @@
+{% if workflow_progress %}
+<section class="guided-flow mb-4" aria-label="Guided experiment progress">
+  <div class="guided-flow-heading">
+    <div>
+      <span class="guided-flow-eyebrow">Guided experiment</span>
+      <strong>{% if workflow_progress.dataset_name %}{{ workflow_progress.dataset_name }}{% if workflow_progress.dataset_version %} · v{{ workflow_progress.dataset_version }}{% endif %}{% else %}Current experiment{% endif %}</strong>
+    </div>
+    <a href="{% url 'home' %}" class="small">Workflow overview</a>
+  </div>
+  <ol class="guided-flow-steps">
+    {% for step in workflow_progress.steps %}
+    <li class="guided-flow-step is-{{ step.state }}"{% if step.state == 'current' %} aria-current="step"{% endif %}>
+      <span class="guided-flow-number">{% if step.state == 'complete' %}✓{% else %}{{ step.number }}{% endif %}</span>
+      <span>{{ step.label }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}

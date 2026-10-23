@@ -4,6 +4,8 @@ from django.test import SimpleTestCase
 from django.test import Client
 from django.urls import reverse
 
+from config_app.workflow_context import decode_context, encode_context, new_context
+
 
 def model(model_id="model-ready", ready=True):
     return {
@@ -68,6 +70,23 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertContains(response, "Offline only")
         self.assertNotContains(response, "Containers")
 
+    def test_guided_flow_keeps_selected_model_visible(self):
+        flow = encode_context(
+            new_context(
+                dataset_id="ds-eval",
+                dataset_version=2,
+                comparison_id="comparison-one",
+            )
+        )
+        response = self.client.get(
+            reverse("monitoring"), {"model_id": "model-ready", "flow": flow}
+        )
+
+        self.assertContains(response, "Guided experiment")
+        self.assertEqual(response.context["form"]["model_id"].value(), "model-ready")
+        carried = decode_context(response.context["workflow_token"])
+        self.assertEqual(carried["model_id"], "model-ready")
+
     def test_model_select_uses_readable_label_without_repeating_model_id(self):
         model_id = "run_1ddefa4845484057ba7079946735c8db-local-outlier-factor-2426c165"
         item = model(model_id)
@@ -120,6 +139,29 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertEqual(payload["automatic_rca"]["reanalysis_min_interval_seconds"], 900)
         self.assertEqual(payload["automatic_rca"]["reanalysis_min_new_observations"], 20)
         self.assertEqual(payload["automatic_rca"]["max_attempts_per_episode"], 3)
+
+    @patch("config_app.views.monitoring.requests.post")
+    def test_started_session_is_added_to_guided_context(self, post):
+        post.return_value.status_code = 202
+        post.return_value.json.return_value = {
+            "status": "monitoring_started",
+            "session": {"session_id": "monitor-one"},
+        }
+        flow = encode_context(new_context(comparison_id="comparison-one"))
+
+        response = self.client.post(
+            f'{reverse("monitoring")}?flow={flow}',
+            {
+                "display_name": "Production checkout",
+                "model_id": "model-ready",
+                "window_minutes": 10,
+                "poll_interval_seconds": 30,
+            },
+        )
+
+        carried = decode_context(response.json()["workflow_token"])
+        self.assertEqual(carried["model_id"], "model-ready")
+        self.assertEqual(carried["monitoring_session_id"], "monitor-one")
 
     @patch("config_app.views.monitoring.requests.post")
     def test_start_sends_explicit_rca_configuration(self, post):

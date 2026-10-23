@@ -25,7 +25,7 @@
             retry.textContent = "Checking…";
         }
         nextTitle.textContent = "Checking workflow status…";
-        nextDetail.textContent = "CloudSentinel is checking the configured source and existing experiment records.";
+        nextDetail.textContent = "Based on service availability and the number of existing datasets, models, comparisons, and monitoring sessions.";
         nextAction.textContent = "Checking…";
         nextAction.classList.add("disabled");
         nextAction.setAttribute("aria-disabled", "true");

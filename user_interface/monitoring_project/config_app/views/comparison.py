@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core import signing
@@ -20,6 +21,13 @@ from ..comparison_labels import (
 from ..comparison_decision import build_decision_support
 from ..comparison_flow import comparison_source_context, training_comparison_context
 from ..workload_context import ANOMALY_SCENARIOS, WORKLOAD_INTENSITY_DEFINITIONS
+from ..workflow_context import (
+    context_from_request,
+    encode_context,
+    new_context,
+    progress_context,
+    update_context,
+)
 
 
 _SALT = "cloudsentinel.comparison-wizard.v1"
@@ -174,6 +182,7 @@ def comparison_new(request: HttpRequest):
         state = _state(request.POST.get("wizard_state") if request.method == "POST" else None)
         source_notice = None
         if request.method == "GET":
+            state["workflow"] = context_from_request(request)
             raw_run = request.GET.get("source_run")
             raw_comparison = request.GET.get("source_comparison")
             if raw_run and raw_comparison:
@@ -204,6 +213,13 @@ def comparison_new(request: HttpRequest):
                 if selected is None:
                     raise ValueError("Select a valid evaluation dataset.")
                 state["dataset"] = selected
+                state["workflow"] = update_context(
+                    state.get("workflow") or new_context(),
+                    dataset_id=selected.get("dataset_id"),
+                    dataset_version=selected.get("version"),
+                    dataset_name=selected.get("display_name"),
+                    partition_id=selected.get("partition_id"),
+                )
                 source_comparison = state.get("source_comparison")
                 state["repeated_source_context"] = bool(
                     isinstance(source_comparison, dict)
@@ -245,7 +261,12 @@ def comparison_new(request: HttpRequest):
                     "client_request_id": state["nonce"],
                 }
                 result = client.create_comparison(payload)
-                return redirect("comparison_detail", comparison_id=result["comparison_id"])
+                comparison_id = result["comparison_id"]
+                workflow = update_context(
+                    state.get("workflow") or new_context(), comparison_id=comparison_id
+                )
+                target = reverse("comparison_detail", args=[comparison_id])
+                return redirect(f"{target}?{urlencode({'flow': encode_context(workflow)})}")
             else:
                 raise ValueError("Unknown comparison wizard step.")
         context = {
@@ -254,9 +275,17 @@ def comparison_new(request: HttpRequest):
             "state_token": _token(state),
             "error": error,
             "source_notice": source_notice,
+            "workflow_progress": progress_context(state.get("workflow"), "comparison"),
         }
         if step == 1:
-            context["datasets"] = client.list_evaluation_datasets().get("items", [])
+            datasets = client.list_evaluation_datasets().get("items", [])
+            workflow = state.get("workflow") or {}
+            for item in datasets:
+                item["workflow_preselected"] = (
+                    item.get("dataset_id") == workflow.get("dataset_id")
+                    and item.get("version") == workflow.get("dataset_version")
+                )
+            context["datasets"] = datasets
         elif step == 2:
             dataset = state["dataset"]
             models_payload = client.list_compatible_models(
@@ -325,6 +354,16 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
         comparison["decision_support"] = build_decision_support(
             comparison, request.GET.get("goal")
         )
+        evaluation = comparison.get("evaluation_dataset") or {}
+        workflow = update_context(
+            context_from_request(request) or new_context(),
+            dataset_id=evaluation.get("dataset_id"),
+            dataset_version=evaluation.get("version"),
+            dataset_name=evaluation.get("display_name"),
+            partition_id=evaluation.get("partition_id"),
+            comparison_id=comparison_id,
+        )
+        workflow_token = encode_context(workflow)
         robustness = None
         robustness_error = None
         robustness_filters = {}
@@ -353,6 +392,8 @@ def comparison_detail(request: HttpRequest, comparison_id: str):
                 "robustness_filters": robustness_filters,
                 "robustness_scenarios": ANOMALY_SCENARIOS,
                 "workload_intensity_definitions": WORKLOAD_INTENSITY_DEFINITIONS,
+                "workflow_progress": progress_context(workflow, "comparison"),
+                "workflow_token": workflow_token,
             },
         )
     except LearningClientError as exc:

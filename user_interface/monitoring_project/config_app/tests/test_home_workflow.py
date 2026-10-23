@@ -11,7 +11,7 @@ class GuidedWorkflowHomeTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "From monitoring data to a traceable diagnosis")
-        self.assertContains(response, "Complete the steps in order")
+        self.assertContains(response, "Start a connected experiment")
         for heading in (
             "Connect and verify the monitoring source",
             "Capture and describe a dataset",
@@ -82,4 +82,3 @@ class GuidedWorkflowHomeTests(SimpleTestCase):
 
         self.assertIn("textContent", script)
         self.assertNotIn("innerHTML", script)
-

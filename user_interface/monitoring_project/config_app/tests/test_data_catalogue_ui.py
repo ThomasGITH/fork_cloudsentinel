@@ -99,6 +99,26 @@ class DataCatalogueUiTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.client_api.list_datasets.assert_called_once_with({"search": "cpu", "status": "available", "page": "2", "page_size": "10"})
 
+    def test_ready_dataset_starts_connected_training_flow(self):
+        detail = detail_payload()
+        detail["version"]["partition"] = {
+            "mode": "time_range",
+            "partition_id": "partition-demo",
+            "checksum": "partition-checksum",
+        }
+        detail["version"]["usages"]["labeled_evaluation"] = {
+            "supported": True,
+            "reasons": [],
+        }
+        self.client_api.get_dataset.return_value = detail
+
+        response = self.client.get(reverse("data_catalogue_detail", args=["ds_demo"]))
+
+        self.assertContains(response, "Guided experiment")
+        self.assertContains(response, "Continue: train detectors")
+        self.assertContains(response, "dataset=ds_demo", html=False)
+        self.assertContains(response, "flow=", html=False)
+
     def test_safe_backend_error_translation(self):
         self.client_api.list_datasets.side_effect = CatalogueClientError("Service at http://secret.internal failed", retryable=True)
         response = self.client.get(reverse("data_catalogue_overview"))

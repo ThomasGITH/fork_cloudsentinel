@@ -126,3 +126,60 @@ body {
     margin-right: 10px;
 }
 
+.guided-flow {
+    padding: 1rem 1.25rem;
+    border: 1px solid #cbdbe8;
+    border-left: .35rem solid #0b7a75;
+    border-radius: .65rem;
+    background: #fff;
+}
+.guided-flow-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .85rem;
+}
+.guided-flow-eyebrow {
+    display: block;
+    color: #0b7a75;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.guided-flow-steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+.guided-flow-step {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    min-width: 0;
+    color: #6c7884;
+    font-size: .84rem;
+}
+.guided-flow-number {
+    display: inline-grid;
+    flex: 0 0 1.7rem;
+    width: 1.7rem;
+    height: 1.7rem;
+    place-items: center;
+    border: 2px solid #c7d2dc;
+    border-radius: 50%;
+    background: #fff;
+    font-weight: 700;
+}
+.guided-flow-step.is-complete { color: #176b57; }
+.guided-flow-step.is-complete .guided-flow-number { border-color: #198754; color: #fff; background: #198754; }
+.guided-flow-step.is-current { color: #07365e; font-weight: 700; }
+.guided-flow-step.is-current .guided-flow-number { border-color: #0b4f87; color: #fff; background: #0b4f87; }
+@media (max-width: 800px) {
+    .guided-flow-steps { grid-template-columns: 1fr; }
+    .guided-flow-step.is-upcoming { display: none; }
+}

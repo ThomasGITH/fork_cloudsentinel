@@ -11,6 +11,7 @@ from django.core import signing
 from django.core.cache import cache
 from django.http import Http404, HttpRequest, JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from config_app.catalogue_client import CatalogueClientError, get_catalogue_client
@@ -25,6 +26,13 @@ from config_app.learning_client import (
     LearningClientError,
     get_learning_client,
     safe_learning_message,
+)
+from config_app.workflow_context import (
+    context_from_request,
+    encode_context,
+    new_context,
+    progress_context,
+    update_context,
 )
 
 
@@ -461,7 +469,7 @@ def _manifest_by_id() -> tuple[dict[str, dict], list[dict]]:
 
 
 def _wizard_context(step: int, state: dict, *, error: str | None = None) -> dict:
-    context = {"step": step, "state_token": _encode_state(state), "error": error, "selected_dataset": state.get("dataset"), "selected_ids": state.get("detector_ids", []), "parameters": state.get("parameters", {})}
+    context = {"step": step, "state_token": _encode_state(state), "error": error, "selected_dataset": state.get("dataset"), "selected_ids": state.get("detector_ids", []), "parameters": state.get("parameters", {}), "workflow_progress": progress_context(state.get("workflow"), "training")}
     if step == 1:
         context["datasets"] = _catalogue_choices()
         context["preselected_dataset"] = state.get("preselected_dataset")
@@ -499,6 +507,7 @@ def train_models(request: HttpRequest):
             state["preselected_detector"] = request.GET.get("detector")
             state["preselected_dataset"] = request.GET.get("dataset")
             state["preselected_version"] = request.GET.get("version")
+            state["workflow"] = context_from_request(request)
             return render(request, "config_app/models/train.html", _wizard_context(1, state))
 
         state = _decode_state(request.POST.get("wizard_state"))
@@ -592,7 +601,16 @@ def train_models(request: HttpRequest):
                 cache.delete(cache_key)
                 raise
             messages.success(request, "Training run started.")
-            return redirect("models_training_run_detail", run_id=run_id)
+            workflow = update_context(
+                state.get("workflow") or new_context(),
+                dataset_id=dataset["dataset_id"],
+                dataset_version=dataset["version"],
+                dataset_name=dataset.get("display_name"),
+                partition_id=dataset.get("partition_id"),
+                training_run_id=run_id,
+            )
+            target = reverse("models_training_run_detail", args=[run_id])
+            return redirect(f"{target}?{urlencode({'flow': encode_context(workflow)})}")
         raise ValueError("Invalid wizard step.")
     except (ValueError, KeyError, TypeError, CatalogueClientError, LearningClientError) as exc:
         try:
@@ -651,7 +669,17 @@ def training_run_detail(request: HttpRequest, run_id: str):
         run = _run_ui(get_learning_client().get_training_run(run_id))
         _add_dataset_display_names([run])
         run["comparison_flow"] = training_comparison_context(run)
-        return render(request, "config_app/models/run_detail.html", {"run": run})
+        dataset = run.get("dataset") or {}
+        workflow = update_context(
+            context_from_request(request) or new_context(),
+            dataset_id=dataset.get("dataset_id"),
+            dataset_version=dataset.get("version"),
+            dataset_name=dataset.get("display_name"),
+            partition_id=dataset.get("partition_id"),
+            training_run_id=run_id,
+        )
+        comparison_url = f'{reverse("comparison_new")}?{urlencode({"source_run": run_id, "flow": encode_context(workflow)})}'
+        return render(request, "config_app/models/run_detail.html", {"run": run, "workflow_progress": progress_context(workflow, "training"), "guided_comparison_url": comparison_url, "workflow_token": encode_context(workflow)})
     except LearningClientError as exc:
         if exc.status_code == 404:
             raise Http404("Training run not found") from exc

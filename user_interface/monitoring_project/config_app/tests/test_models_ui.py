@@ -1,10 +1,12 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
+from urllib.parse import parse_qs, urlsplit
 
 from django.test import Client, SimpleTestCase
 from django.urls import resolve, reverse
 
 from config_app.learning_client import LearningAdaptationClient, LearningClientError
+from config_app.workflow_context import decode_context
 
 
 def detector(detector_id="isolation-forest"):
@@ -357,7 +359,11 @@ class ModelsUiTests(SimpleTestCase):
         review = self.client.post(reverse("models_train"), {"step": 3, "wizard_state": step3.context["state_token"], "param__isolation-forest__n_estimators": "55", "param__isolation-forest__advanced_flag": "true", "param__isolation-forest__unknown": "leak"})
         self.assertContains(review, "partition-sha")
         result = self.client.post(reverse("models_train"), {"step": 4, "wizard_state": review.context["state_token"], "run_name": "Baseline"})
-        self.assertRedirects(result, "/models/training-runs/run_created/", fetch_redirect_response=False)
+        redirect = urlsplit(result["Location"])
+        self.assertEqual(redirect.path, "/models/training-runs/run_created/")
+        flow = decode_context(parse_qs(redirect.query)["flow"][0])
+        self.assertEqual(flow["training_run_id"], "run_created")
+        self.assertEqual(flow["dataset_id"], "ds_demo")
         payload = self.learning.create_training_run.call_args.args[0]
         self.assertEqual(payload["dataset"], {"source": "catalogue", "dataset_id": "ds_demo", "version": 3, "partition_id": "partition_demo"})
         self.assertEqual(payload["detectors"][0]["parameters"], {"n_estimators": 55, "advanced_flag": True})

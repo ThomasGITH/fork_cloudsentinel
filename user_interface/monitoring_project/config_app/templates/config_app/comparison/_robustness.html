@@ -8,10 +8,11 @@
 
     <form method="get" class="row g-3 mb-4">
       <input type="hidden" name="tab" value="robustness">
+      <input type="hidden" name="flow" value="{{ workflow_token }}">
       <div class="col-md-3"><label class="form-label" for="robustness-workload">Workload intensity</label><select class="form-select" id="robustness-workload" name="workload"><option value="">All</option>{% for label, explanation in workload_intensity_definitions %}<option value="{{ label }}"{% if robustness_filters.workload == label %} selected{% endif %}>{{ label }}</option>{% endfor %}</select><small class="comparison-muted">User-supplied category; not inferred by CloudSentinel.</small></div>
       <div class="col-md-3"><label class="form-label" for="robustness-scenario">Anomaly scenario</label><select class="form-select" id="robustness-scenario" name="scenario"><option value="">All</option>{% for item in robustness_scenarios %}<option value="{{ item }}"{% if robustness_filters.scenario == item %} selected{% endif %}>{% if item == 'Other' %}Other / custom{% else %}{{ item }}{% endif %}</option>{% endfor %}</select><small class="comparison-muted">Filters by the user-supplied standardized category.</small></div>
       <div class="col-md-4 d-flex flex-column justify-content-end gap-2"><label><input type="checkbox" name="labelled_only" value="true"{% if robustness_filters.labelled_only %} checked{% endif %}> Labelled contexts only</label><small class="comparison-muted">Only evaluation contexts with stored ground-truth labels. Precision, recall and F1 are available only for these contexts.</small><label><input type="checkbox" name="shared_only" value="true"{% if robustness_filters.shared_only %} checked{% endif %}> Shared contexts only</label></div>
-      <div class="col-md-2 d-flex align-items-end gap-2"><button class="btn btn-primary">Apply</button><a class="btn btn-outline-secondary" href="?tab=robustness">Reset</a></div>
+      <div class="col-md-2 d-flex align-items-end gap-2"><button class="btn btn-primary">Apply</button><a class="btn btn-outline-secondary" href="?tab=robustness&amp;flow={{ workflow_token|urlencode }}">Reset</a></div>
     </form>
 
     {% if robustness_error %}<div class="alert alert-danger">{{ robustness_error }}</div>

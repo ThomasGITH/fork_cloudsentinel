@@ -2,6 +2,7 @@
 {% block title %}Train Models | CloudSentinel{% endblock %}
 {% block extra_head %}<link href="{% static 'css/models.css' %}" rel="stylesheet">{% endblock %}
 {% block content %}<main class="models-page container-fluid py-3">
+  {% include "config_app/_workflow_progress.html" %}
   <div class="models-hero mb-3"><div><h1>Train models</h1><p class="models-muted mb-0">Start independent detector training tasks from one immutable catalogue partition.</p></div><a href="{% url 'models_overview' %}" class="btn btn-outline-secondary">Cancel</a></div>
   <div class="wizard-steps mb-4" aria-label="Training steps"><div class="wizard-step{% if step == 1 %} active{% elif step > 1 %} complete{% endif %}">1. Dataset</div><div class="wizard-step{% if step == 2 %} active{% elif step > 2 %} complete{% endif %}">2. Detectors</div><div class="wizard-step{% if step == 3 %} active{% elif step > 3 %} complete{% endif %}">3. Configure</div><div class="wizard-step{% if step == 4 %} active{% endif %}">4. Review</div></div>
   {% if error %}<div class="alert alert-danger safe-error" role="alert">{{ error }}</div>{% endif %}

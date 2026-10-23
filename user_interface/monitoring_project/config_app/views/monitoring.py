@@ -10,6 +10,13 @@ from django.shortcuts import render
 from ..forms import MonitoringForm
 from ..comparison_labels import readable_model_name
 from ..learning_client import LearningClientError, get_learning_client
+from ..workflow_context import (
+    context_from_request,
+    encode_context,
+    new_context,
+    progress_context,
+    update_context,
+)
 
 
 DEFAULT_RCA_METHOD = "cloudsentinel.causal-rca/legacy-v1"
@@ -165,6 +172,9 @@ def monitoring_home(request):
 
 
 def monitoring(request):
+    workflow = context_from_request(request)
+    if workflow and request.GET.get("model_id"):
+        workflow = update_context(workflow, model_id=request.GET["model_id"])
     try:
         models = _add_rca_readiness(_models())
         upstream_error = None
@@ -227,6 +237,13 @@ def monitoring(request):
                     {"status": "error", "message": str(payload.get("error") or "The model could not be started.")[:500]},
                     status=response.status_code,
                 )
+            session_id = (payload.get("session") or {}).get("session_id") if isinstance(payload, dict) else None
+            workflow = update_context(
+                workflow or new_context(),
+                model_id=selected["model_id"],
+                monitoring_session_id=session_id,
+            )
+            payload["workflow_token"] = encode_context(workflow)
             return JsonResponse(payload, status=202)
     return render(
         request,
@@ -237,12 +254,27 @@ def monitoring(request):
             "upstream_error": upstream_error,
             "ready_count": len(_choices(models)),
             "rca_methods": _rca_method_catalog(models),
+            "workflow_progress": progress_context(workflow, "monitoring"),
+            "workflow_token": encode_context(workflow) if workflow else "",
         },
     )
 
 
 def monitoring_overview(request):
-    return render(request, "config_app/monitoring/monitoring_dashboard.html")
+    workflow = context_from_request(request)
+    session_id = request.GET.get("session")
+    if workflow and session_id:
+        workflow = update_context(workflow, monitoring_session_id=session_id)
+    return render(
+        request,
+        "config_app/monitoring/monitoring_dashboard.html",
+        {
+            "workflow_progress": progress_context(
+                workflow, "evidence" if session_id else "monitoring"
+            ),
+            "workflow_token": encode_context(workflow) if workflow else "",
+        },
+    )
 
 
 def load_kube_config():

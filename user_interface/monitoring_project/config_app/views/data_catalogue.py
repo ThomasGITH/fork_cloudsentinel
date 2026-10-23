@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import json
 import re
 from typing import Any
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.http import HttpRequest, JsonResponse
@@ -15,6 +16,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from ..catalogue_client import CatalogueClientError, get_catalogue_client
+from ..workflow_context import encode_context, new_context, progress_context
 from ..workload_context import (
     ANOMALY_SCENARIOS,
     ANOMALY_SCENARIO_DETAIL_MAX_LENGTH,
@@ -419,6 +421,14 @@ def data_catalogue_detail(request: HttpRequest, dataset_id: str):
             raw_version = {**raw_version, "usages": raw_detail.get("usages", {})}
         detail = _redact(raw_detail)
         detail["version"] = _version_for_ui(raw_version)
+        guided_context = new_context(
+            dataset_id=dataset_id,
+            dataset_version=version_number,
+            dataset_name=detail.get("display_name"),
+            partition_id=(raw_version.get("partition") or {}).get("partition_id"),
+        )
+        training_url = f'{reverse("models_train")}?{urlencode({"dataset": dataset_id, "version": version_number, "flow": encode_context(guided_context)})}'
+        training_usage = (raw_version.get("usages") or {}).get("labeled_evaluation") or {}
         return render(
             request,
             "config_app/data_catalogue/detail.html",
@@ -430,6 +440,9 @@ def data_catalogue_detail(request: HttpRequest, dataset_id: str):
                 "selected_workload_intensity_help": dict(
                     WORKLOAD_INTENSITY_DEFINITIONS
                 ).get((detail.get("workload_context") or {}).get("workload_intensity")),
+                "workflow_progress": progress_context(guided_context, "dataset"),
+                "guided_training_url": training_url,
+                "guided_training_ready": bool(training_usage.get("supported")),
             },
         )
     except (CatalogueClientError, ValueError, KeyError, TypeError) as exc:

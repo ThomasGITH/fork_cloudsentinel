@@ -1,10 +1,12 @@
 from copy import deepcopy
 from unittest.mock import Mock, patch
+from urllib.parse import parse_qs, urlsplit
 
 from django.test import Client, SimpleTestCase
 from django.urls import resolve, reverse
 
 from config_app.learning_client import LearningAdaptationClient, LearningClientError
+from config_app.workflow_context import decode_context, encode_context, new_context
 
 
 def evaluation_dataset(labelled=True):
@@ -173,6 +175,25 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertEqual(rejected.status_code, 400)
         self.learning.create_comparison.assert_not_called()
 
+    def test_guided_flow_preselects_the_carried_evaluation_dataset(self):
+        flow = encode_context(
+            new_context(
+                dataset_id="ds-eval",
+                dataset_version=2,
+                dataset_name="CPU incident",
+                training_run_id="run-source",
+            )
+        )
+
+        response = self.client.get(reverse("comparison_new"), {"flow": flow})
+
+        self.assertContains(response, "Guided experiment")
+        self.assertContains(
+            response,
+            'value="ds-eval|2" checked',
+            html=False,
+        )
+
     def test_source_run_preselects_only_successful_compatible_models(self):
         first = self.client.get(reverse("comparison_new"), {"source_run": "run-source"})
         self.learning.get_training_run.assert_called_once_with("run-source")
@@ -284,7 +305,11 @@ class ComparisonUiTests(SimpleTestCase):
         self.assertEqual(too_few.status_code, 400)
         review = self._step(3)
         response = self.client.post(reverse("comparison_new"), {"step": 3, "wizard_state": review.context["state_token"], "name": "CPU comparison"})
-        self.assertRedirects(response, "/comparison/comparison-created/", fetch_redirect_response=False)
+        redirect = urlsplit(response["Location"])
+        self.assertEqual(redirect.path, "/comparison/comparison-created/")
+        flow = decode_context(parse_qs(redirect.query)["flow"][0])
+        self.assertEqual(flow["comparison_id"], "comparison-created")
+        self.assertEqual(flow["dataset_id"], "ds-eval")
         payload = self.learning.create_comparison.call_args.args[0]
         self.assertEqual(payload["model_ids"], ["model-one", "model-two"])
         self.assertEqual(payload["evaluation_dataset"], {"dataset_id": "ds-eval", "version": 2, "partition_id": "part-eval"})
