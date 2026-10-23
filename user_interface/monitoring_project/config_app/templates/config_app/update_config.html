@@ -15,7 +15,7 @@
       <div class="col-lg-4"><label class="form-label" for="default-namespace">Default Kubernetes namespace</label><input class="form-control" id="default-namespace" name="default_namespace" required pattern="[a-z0-9]([-a-z0-9]*[a-z0-9])?" value="{{ environment.default_namespace }}" placeholder="online-boutique"><div class="form-text">Pre-fills new dataset captures; it can still be changed per dataset.</div></div>
     </div><div class="d-flex flex-wrap justify-content-end gap-2 mt-4"><button class="btn btn-outline-primary" name="action" value="test" type="submit">Test connection</button><button class="btn btn-primary" name="action" value="save" type="submit">Save settings</button></div></form>
   </div></section>
-  <details class="card shadow-sm"><summary class="card-header p-4 h5 mb-0" style="cursor: pointer;">Deployment diagnostics</summary><div class="card-body p-0">
+  <details class="card shadow-sm"><summary class="card-header p-4 h5 mb-0 text-white" style="cursor: pointer;">Deployment diagnostics</summary><div class="card-body p-0">
     <div class="p-4 border-bottom"><p class="text-muted mb-0">These internal service addresses are deployment wiring. Application users should not edit them here.</p></div>
     <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th class="ps-4">Service</th><th>Purpose</th><th>Deployment variable</th><th class="pe-4">Current value</th></tr></thead><tbody>{% for connection in diagnostics %}<tr><td class="ps-4"><strong>{{ connection.name }}</strong></td><td>{{ connection.purpose }}</td><td><code>{{ connection.environment }}</code></td><td class="pe-4"><code class="text-break">{{ connection.value }}</code></td></tr>{% endfor %}</tbody></table></div>
   </div></details>
