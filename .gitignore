@@ -13,3 +13,6 @@ ops/usability-access/*.htpasswd
 ops/usability-access/*.pem
 ops/usability-access/privkey*.pem
 ops/usability-access/fullchain*.pem
+thesis_evaluation_update.zip
+thesis_evaluation_update/
+docs/user-evaluation-session-protocol-2026-10-21.md
