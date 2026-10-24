@@ -10,6 +10,7 @@ from django.shortcuts import render
 from ..forms import MonitoringForm
 from ..comparison_labels import readable_model_name
 from ..learning_client import LearningClientError, get_learning_client
+from ..catalogue_client import CatalogueClientError, get_catalogue_client
 from ..workflow_context import (
     context_from_request,
     encode_context,
@@ -245,6 +246,10 @@ def monitoring(request):
             )
             payload["workflow_token"] = encode_context(workflow)
             return JsonResponse(payload, status=202)
+    try:
+        observability = get_catalogue_client().get_monitored_environment()
+    except CatalogueClientError:
+        observability = {}
     return render(
         request,
         "config_app/monitoring/monitoring_setup.html",
@@ -256,6 +261,7 @@ def monitoring(request):
             "rca_methods": _rca_method_catalog(models),
             "workflow_progress": progress_context(workflow, "monitoring"),
             "workflow_token": encode_context(workflow) if workflow else "",
+            "observability": observability,
         },
     )
 

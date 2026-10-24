@@ -183,6 +183,9 @@ class DataCatalogueClient:
             "POST", "/catalogue/settings/monitored-environment/test", json=payload
         )
 
+    def query_telemetry(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", "/catalogue/telemetry/query-range", json=payload)
+
 
 def get_catalogue_client() -> DataCatalogueClient:
     return DataCatalogueClient()

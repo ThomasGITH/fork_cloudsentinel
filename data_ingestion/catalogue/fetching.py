@@ -25,7 +25,7 @@ from .validation import (
     validate_timestamp,
     validate_version,
 )
-from .environment import effective_prometheus_sources
+from .environment import effective_prometheus_sources, prometheus_request_options
 
 
 class CatalogueFetchError(RuntimeError):
@@ -213,10 +213,12 @@ class PrometheusRangeClient:
         base_url: str,
         limits: FetchLimits,
         request_get: Callable[..., Any] = requests.get,
+        request_options: dict[str, Any] | None = None,
     ):
         self.endpoint = f"{base_url}/api/v1/query_range"
         self.limits = limits
         self.request_get = request_get
+        self.request_options = dict(request_options or {})
 
     def query_range(self, query: str, start: str, end: str, step: int) -> dict[str, Any]:
         last_error: Exception | None = None
@@ -230,6 +232,7 @@ class PrometheusRangeClient:
                         self.limits.read_timeout_seconds,
                     ),
                     stream=True,
+                    **self.request_options,
                 )
                 try:
                     if response.status_code < 200 or response.status_code >= 300:
@@ -597,7 +600,12 @@ def execute_catalogue_fetch(
     base_url = resolve_prometheus_source(
         version["source"]["prometheus_source_id"], config
     )
-    client = PrometheusRangeClient(base_url, limits, request_get=request_get)
+    client = PrometheusRangeClient(
+        base_url,
+        limits,
+        request_get=request_get,
+        request_options=prometheus_request_options(config),
+    )
     staging = repository.staging_directory(dataset_id, version_number, attempt_id)
     if staging.exists():
         shutil.rmtree(staging)

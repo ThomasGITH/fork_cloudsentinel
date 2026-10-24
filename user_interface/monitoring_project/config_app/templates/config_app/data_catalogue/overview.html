@@ -3,7 +3,7 @@
 {% block extra_head %}<link href="{% static 'css/data_catalogue.css' %}" rel="stylesheet">{% endblock %}
 {% block content %}
 <main class="catalogue-page container-fluid py-3">
-  <div class="catalogue-hero mb-4"><div><h1>Data Catalogue</h1><p class="catalogue-muted mb-0">Find reproducible metrics datasets and inspect their readiness for training and evaluation.</p></div><a class="btn btn-primary" href="{% url 'data_catalogue_new' %}">Add dataset</a></div>
+  <div class="catalogue-hero mb-4"><div><h1>Data Catalogue</h1><p class="catalogue-muted mb-0">Find reproducible metrics datasets and inspect their readiness for training and evaluation.</p></div><div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{% url 'telemetry_explorer' %}">Explore live telemetry</a><a class="btn btn-primary" href="{% url 'data_catalogue_new' %}">Add dataset</a></div></div>
   <form method="get" class="card catalogue-card filter-panel mb-4" aria-label="Dataset filters" data-overview-filter><div class="card-body"><div class="row g-3">
     <div class="col-lg-4"><label for="search" class="form-label">Search</label><input id="search" name="search" class="form-control" value="{{ filters.search|default:'' }}" placeholder="Name, ID, application or namespace"></div>
     <div class="col-sm-6 col-lg-2"><label for="status" class="form-label">Status</label><select id="status" name="status" class="form-select"><option value="">All</option>{% for item in dataset_statuses %}<option value="{{ item }}"{% if filters.status == item %} selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></div>

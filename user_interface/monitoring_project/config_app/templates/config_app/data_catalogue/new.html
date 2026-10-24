@@ -3,7 +3,7 @@
 {% block extra_head %}<link href="{% static 'css/data_catalogue.css' %}" rel="stylesheet">{% endblock %}
 {% block content %}
 <main class="catalogue-page container-fluid py-3">
-  <div class="catalogue-hero mb-4"><div><h1>Add dataset</h1><p class="catalogue-muted mb-0">Describe a reproducible Prometheus dataset, then save it as a draft or fetch it.</p></div></div>
+  <div class="catalogue-hero mb-4"><div><h1>Add dataset</h1><p class="catalogue-muted mb-0">Describe a reproducible Prometheus dataset, then save it as a draft or fetch it.</p></div><a class="btn btn-outline-primary" href="{% url 'telemetry_explorer' %}">Explore telemetry first</a></div>
   {% if error %}<div class="alert alert-danger" role="alert"><strong>Dataset was not saved.</strong> {{ error }}</div>{% endif %}
   <form method="post" class="catalogue-form" id="dataset-form">{% csrf_token %}
     <div class="card catalogue-card mb-4"><div class="card-body">

@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from ..catalogue_client import CatalogueClientError, get_catalogue_client
 from ..workflow_context import encode_context, new_context, progress_context
+from ..observability_links import links_for
 from ..workload_context import (
     ANOMALY_SCENARIOS,
     ANOMALY_SCENARIO_DETAIL_MAX_LENGTH,
@@ -370,18 +371,32 @@ def data_catalogue_new(request: HttpRequest):
         )
     except CatalogueClientError:
         pass
+    explorer_query = request.GET.get("query", "").strip() if not request.POST else ""
+    explorer_start = request.GET.get("start_time", "").strip() if not request.POST else ""
+    explorer_end = request.GET.get("end_time", "").strip() if not request.POST else ""
+    explorer_step = request.GET.get("step", "60").strip() if not request.POST else "60"
+    explorer_namespace = request.GET.get("namespace", "").strip() if not request.POST else ""
+    if explorer_query and not initial_queries:
+        initial_queries = [{
+            "query_id": "observed_metric",
+            "display_name": "Observed metric",
+            "feature_name": "observed_metric",
+            "promql_template": explorer_query,
+            "required": True,
+            "execution_mode": "single",
+        }]
     context = {
         **_catalogue_context(),
         "submitted": request.POST,
         "source": {
             "application": "",
-            "namespace": default_namespace,
+            "namespace": explorer_namespace or default_namespace,
             "services": "",
             "pods": "",
             "label_selectors": "",
-            "start_time": "",
-            "end_time": "",
-            "sampling_interval_seconds": 60,
+            "start_time": explorer_start,
+            "end_time": explorer_end,
+            "sampling_interval_seconds": explorer_step or 60,
         },
         "partition": {
             "mode": "none",
@@ -436,6 +451,18 @@ def data_catalogue_detail(request: HttpRequest, dataset_id: str):
         )
         training_url = f'{reverse("models_train")}?{urlencode({"dataset": dataset_id, "version": version_number, "flow": encode_context(guided_context)})}'
         training_usage = (raw_version.get("usages") or {}).get("labeled_evaluation") or {}
+        try:
+            environment = get_catalogue_client().get_monitored_environment()
+        except CatalogueClientError:
+            environment = {}
+        source = raw_version.get("source") or {}
+        query_links = []
+        for query in source.get("queries") or []:
+            expression = query.get("promql_template") or query.get("promql") or ""
+            query_links.append({
+                "name": query.get("display_name") or query.get("query_id") or "Query",
+                **links_for(environment, expression, source.get("start_time", ""), source.get("end_time", "")),
+            })
         return render(
             request,
             "config_app/data_catalogue/detail.html",
@@ -450,6 +477,7 @@ def data_catalogue_detail(request: HttpRequest, dataset_id: str):
                 "workflow_progress": progress_context(guided_context, "dataset"),
                 "guided_training_url": training_url,
                 "guided_training_ready": bool(training_usage.get("supported")),
+                "query_links": query_links,
             },
         )
     except (CatalogueClientError, ValueError, KeyError, TypeError) as exc:

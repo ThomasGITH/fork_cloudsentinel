@@ -15,8 +15,10 @@ from .legacy import LegacyDatasetProjector
 from .fetching import (
     CatalogueFetchError,
     FetchLimits,
+    PrometheusRangeClient,
     fail_fetch_attempt,
     read_preview,
+    resolve_prometheus_source,
     start_fetch_attempt,
     validate_fetch_request,
 )
@@ -47,9 +49,11 @@ from .validation import (
     WORKLOAD_CHARACTERISTICS,
     WORKLOAD_INTENSITIES,
     validate_identifier,
+    validate_timestamp,
     validate_version,
 )
 from .environment import (
+    prometheus_request_options,
     read_environment,
     test_prometheus_connection,
     write_environment,
@@ -158,6 +162,55 @@ def create_catalogue_blueprint() -> Blueprint:
                 )
             ), 200
         except CatalogueValidationError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @blueprint.post("/catalogue/telemetry/query-range")
+    def query_telemetry_range():
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+        try:
+            payload = request.get_json(silent=False)
+            if not isinstance(payload, dict):
+                raise CatalogueValidationError("A JSON query object is required")
+            query = str(payload.get("query") or "").strip()
+            if not query:
+                raise CatalogueValidationError("A PromQL query is required")
+            limits = FetchLimits.from_config(dict(current_app.config))
+            if len(query) > limits.maximum_query_length:
+                raise CatalogueValidationError("PromQL query exceeds the configured maximum")
+            start_value, start = validate_timestamp(payload.get("start_time"), "start_time")
+            end_value, end = validate_timestamp(payload.get("end_time"), "end_time")
+            step = _positive_integer(
+                str(payload.get("step")) if payload.get("step") is not None else None,
+                "step",
+                60,
+            )
+            if step < limits.minimum_sampling_interval_seconds:
+                raise CatalogueValidationError("step is below the configured minimum")
+            if end <= start or (end - start).total_seconds() > limits.maximum_window_seconds:
+                raise CatalogueValidationError("query time window is invalid or too large")
+            config = dict(current_app.config)
+            client = PrometheusRangeClient(
+                resolve_prometheus_source("cluster-default", config),
+                limits,
+                request_options=prometheus_request_options(config),
+            )
+            response = client.query_range(query, start_value, end_value, step)
+            series = []
+            for item in response["payload"].get("data", {}).get("result", []):
+                series.append({
+                    "metric": item.get("metric", {}),
+                    "values": item.get("values", []),
+                })
+            return jsonify({
+                "query": query,
+                "start_time": start_value,
+                "end_time": end_value,
+                "step": step,
+                "series": series,
+                "warnings": response.get("warnings", []),
+            }), 200
+        except (BadRequest, CatalogueValidationError, CatalogueFetchError) as exc:
             return jsonify({"error": str(exc)}), 400
 
     @blueprint.get("/datasets")

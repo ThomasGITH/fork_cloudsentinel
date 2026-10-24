@@ -20,6 +20,19 @@ def config(request):
             "default_namespace": request.POST.get("default_namespace", "").strip(),
             "source_id": "cluster-default",
         }
+        if "auth_type" in request.POST:
+            submitted.update({
+                "auth_type": request.POST.get("auth_type", "none"),
+                "username": request.POST.get("username", "").strip(),
+                "password": request.POST.get("password", ""),
+                "bearer_token": request.POST.get("bearer_token", ""),
+                "ca_certificate": request.POST.get("ca_certificate", ""),
+                "tls_verify": request.POST.get("tls_verify") == "on",
+                "clear_credentials": request.POST.get("clear_credentials") == "on",
+                "prometheus_browser_url": request.POST.get("prometheus_browser_url", "").strip(),
+                "grafana_browser_url": request.POST.get("grafana_browser_url", "").strip(),
+                "grafana_datasource_uid": request.POST.get("grafana_datasource_uid", "prometheus").strip(),
+            })
         try:
             if request.POST.get("action") == "test":
                 result = client.test_monitored_environment(submitted["prometheus_url"])
@@ -38,6 +51,11 @@ def config(request):
             "prometheus_url": settings.PROMETHEUS_URL,
             "default_namespace": settings.CLUSTER_NAMESPACE,
             "source_id": "cluster-default",
+            "auth_type": "none",
+            "tls_verify": True,
+            "prometheus_browser_url": "",
+            "grafana_browser_url": "",
+            "grafana_datasource_uid": "prometheus",
         }
         error = error or str(exc)
 

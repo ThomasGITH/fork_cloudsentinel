@@ -57,6 +57,21 @@
       fetch(preview.dataset.url, {headers: {Accept: "application/json"}}).then(async function (response) {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Preview is unavailable.");
+        const chartCanvas = document.querySelector("[data-dataset-chart]");
+        if (chartCanvas && window.Chart) {
+          const colors = ["#0d6efd", "#dc3545", "#198754", "#fd7e14", "#6f42c1", "#20c997", "#d63384", "#6c757d"];
+          const chartRows = data.rows || [];
+          new window.Chart(chartCanvas, {
+            type: "line",
+            data: {
+              labels: chartRows.map(function (item) { return window.CloudSentinel.formatDateTime(item.timestamp, "missing"); }),
+              datasets: (data.feature_names || []).slice(0, 12).map(function (featureName, index) {
+                return {label: featureName, data: chartRows.map(function (item) { const value = (item.values || {})[featureName]; return value == null ? null : Number(value); }), borderColor: colors[index % colors.length], pointRadius: 0, borderWidth: 2, tension: 0.15, spanGaps: false};
+              })
+            },
+            options: {responsive: true, maintainAspectRatio: false, interaction: {mode: "nearest", intersect: false}}
+          });
+        }
         const table = document.createElement("table");
         table.className = "table table-sm table-striped mb-0";
         const head = document.createElement("thead");

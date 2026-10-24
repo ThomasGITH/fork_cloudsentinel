@@ -38,12 +38,14 @@ from .views.comparison import (
     comparison_overview,
     comparison_status,
 )
+from .views.telemetry import telemetry_explorer
 
 urlpatterns = [
     path('', home, name='home'),
     path('workflow-status/', workflow_status, name='workflow_status'),
 
     path('data-catalogue/', data_catalogue_overview, name='data_catalogue_overview'),
+    path('telemetry/', telemetry_explorer, name='telemetry_explorer'),
     path('data-catalogue/new/', data_catalogue_new, name='data_catalogue_new'),
     path('data-catalogue/<str:dataset_id>/fetch-status/', data_catalogue_fetch_status, name='data_catalogue_fetch_status'),
     path('data-catalogue/<str:dataset_id>/preview/', data_catalogue_preview, name='data_catalogue_preview'),

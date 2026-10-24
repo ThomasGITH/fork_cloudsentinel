@@ -34,6 +34,12 @@ spec:
           value: "/app/storage/monitoring_history"
         - name: CATALOGUE_CLUSTER_DEFAULT_PROMETHEUS_URL
           value: "http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090"
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PROMETHEUS_CREDENTIALS_SECRET
+          value: "cloudsentinel-prometheus-credentials"
         - name: CELERY_BROKER_URL
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
         - name: CELERY_RESULT_BACKEND

@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Telemetry explorer | CloudSentinel{% endblock %}
+{% block content %}<main class="container-fluid py-4" style="max-width: 1280px;">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4"><div><p class="text-uppercase fw-bold text-primary small mb-1">Observe before capture</p><h1 class="mb-2">Telemetry explorer</h1><p class="text-muted mb-0">Inspect Prometheus data, choose a useful window, then carry that exact query and window into the Data Catalogue.</p></div><a class="btn btn-outline-secondary" href="{% url 'config' %}">Monitored environment</a></div>
+  <section class="card shadow-sm mb-4"><div class="card-body p-4"><form id="telemetry-form">{% csrf_token %}<div class="row g-3">
+    <div class="col-12"><label class="form-label" for="telemetry-query">PromQL query</label><textarea class="form-control font-monospace" id="telemetry-query" rows="3" required>{{ default_query }}</textarea></div>
+    <div class="col-md-4"><label class="form-label" for="telemetry-namespace">Namespace</label><input class="form-control" id="telemetry-namespace" value="{{ environment.default_namespace|default:'default' }}"><div class="form-text">Used when creating the dataset; edit the PromQL query itself if needed.</div></div>
+    <div class="col-md-3"><label class="form-label" for="telemetry-start">Start (UTC)</label><input class="form-control" id="telemetry-start" type="datetime-local" data-initial="{{ default_start }}" required></div>
+    <div class="col-md-3"><label class="form-label" for="telemetry-end">End (UTC)</label><input class="form-control" id="telemetry-end" type="datetime-local" data-initial="{{ default_end }}" required></div>
+    <div class="col-md-2"><label class="form-label" for="telemetry-step">Interval (seconds)</label><input class="form-control" id="telemetry-step" type="number" min="5" value="60" required></div>
+    <div class="col-12 d-flex flex-wrap justify-content-end gap-2"><button class="btn btn-primary" type="submit">Run query</button><a class="btn btn-success disabled" aria-disabled="true" id="telemetry-dataset-link">Use this window for a dataset</a></div>
+  </div></form></div></section>
+  <div id="telemetry-error" class="alert alert-danger" hidden></div>
+  <section class="card shadow-sm"><div class="card-body p-4"><div class="d-flex flex-wrap justify-content-between gap-3 mb-3"><div><h2 class="h4 mb-1">Observed series</h2><p class="text-muted mb-0" id="telemetry-summary">Run a query to display data.</p></div><div class="d-flex gap-2"><a class="btn btn-sm btn-outline-primary disabled" aria-disabled="true" target="_blank" rel="noopener noreferrer" id="telemetry-grafana">Open in Grafana</a><a class="btn btn-sm btn-outline-primary disabled" aria-disabled="true" target="_blank" rel="noopener noreferrer" id="telemetry-prometheus">Open in Prometheus</a></div></div><div style="height: 430px;"><canvas id="telemetry-chart"></canvas></div></div></section>
+</main>{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/telemetry_explorer.js' %}"></script>{% endblock %}

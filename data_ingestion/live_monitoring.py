@@ -18,6 +18,7 @@ try:
         assemble_time_series,
         resolve_prometheus_source,
     )
+    from data_ingestion.catalogue.environment import prometheus_request_options
     from data_ingestion.catalogue.live_input import validate_live_input_recipe
 except ModuleNotFoundError:
     from catalogue.fetching import (
@@ -27,6 +28,7 @@ except ModuleNotFoundError:
         assemble_time_series,
         resolve_prometheus_source,
     )
+    from catalogue.environment import prometheus_request_options
     from catalogue.live_input import validate_live_input_recipe
 
 
@@ -92,7 +94,12 @@ def collect_recipe_window(
     }
     limits = FetchLimits.from_config(config)
     base_url = resolve_prometheus_source(recipe["prometheus_source_id"], config)
-    client = PrometheusRangeClient(base_url, limits, request_get=request_get)
+    client = PrometheusRangeClient(
+        base_url,
+        limits,
+        request_get=request_get,
+        request_options=prometheus_request_options(config),
+    )
     results = []
     try:
         for execution in recipe["query_executions"]:
