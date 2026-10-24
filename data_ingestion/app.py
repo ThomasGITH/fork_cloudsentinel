@@ -33,6 +33,17 @@ except ModuleNotFoundError as exc:  # The service image copies catalogue beside 
     from catalogue.fetching import execute_catalogue_fetch
 
 try:
+    from data_ingestion.workload_experiments import (
+        configure_workload_experiment_defaults,
+        create_workload_experiments_blueprint,
+    )
+except ModuleNotFoundError:
+    from workload_experiments import (
+        configure_workload_experiment_defaults,
+        create_workload_experiments_blueprint,
+    )
+
+try:
     from data_ingestion.live_monitoring import (
         LiveMonitoringError,
         collect_recipe_window,
@@ -128,6 +139,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 configure_catalogue_defaults(app)
 app.register_blueprint(create_catalogue_blueprint())
+configure_workload_experiment_defaults(app)
+app.register_blueprint(create_workload_experiments_blueprint())
 
 # Configure and initialize Celery
 app.config['broker_url'] = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')

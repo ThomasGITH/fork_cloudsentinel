@@ -23,6 +23,7 @@ from .fetching import (
     validate_fetch_request,
 )
 from .models import build_draft_dataset
+from .csv_import import MAX_UPLOAD_BYTES, import_csv_dataset
 from .materialization import (
     CatalogueMaterializationError,
     materialize_evaluation_bundle,
@@ -318,6 +319,30 @@ def create_catalogue_blueprint() -> Blueprint:
             return jsonify({"error": str(exc)}), 400
         except DatasetAlreadyExistsError as exc:
             return jsonify({"error": str(exc)}), 409
+
+    @blueprint.post("/datasets/import/csv")
+    def import_dataset_csv():
+        upload = request.files.get("file")
+        raw_metadata = request.form.get("metadata")
+        if upload is None or raw_metadata is None:
+            return jsonify({"error": "CSV file and metadata are required"}), 400
+        try:
+            import json
+
+            metadata = json.loads(raw_metadata)
+            content = upload.read(MAX_UPLOAD_BYTES + 1)
+            repository, projector = components()
+            projector.project_all()
+            result = import_csv_dataset(
+                repository, metadata, content, upload.filename or "dataset.csv"
+            )
+            return jsonify(_detail_with_usability(result)), 201
+        except (json.JSONDecodeError, CatalogueValidationError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        except DatasetAlreadyExistsError as exc:
+            return jsonify({"error": str(exc)}), 409
+        except OSError:
+            return jsonify({"error": "CSV dataset could not be stored"}), 503
 
     @blueprint.get("/datasets/<dataset_id>/versions/<int:version>")
     def get_dataset_version(dataset_id: str, version: int):

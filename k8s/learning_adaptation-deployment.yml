@@ -18,7 +18,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: learning-adaptation
-        image: jojojochem/learning_adaptation:expansions-p2
+        image: jojojochem/learning_adaptation:research-workflow-20261024
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -48,6 +48,13 @@ spec:
           value: "200"
         - name: DETECTOR_PLUGIN_ROOTS
           value: "/opt/cloudsentinel/detectors/active"
+        - name: DETECTOR_PLUGIN_REPOSITORY_ROOT
+          value: "/opt/cloudsentinel/detectors"
+        - name: PLUGIN_OPERATOR_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudsentinel-plugin-operator
+              key: operator-key
         - name: CELERY_BROKER_URL
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/2"
         - name: CELERY_RESULT_BACKEND
@@ -57,7 +64,7 @@ spec:
           mountPath: /app/storage
         - name: detector-plugins
           mountPath: /opt/cloudsentinel/detectors
-          readOnly: true
+          readOnly: false
         readinessProbe:
           httpGet:
             path: /healthz

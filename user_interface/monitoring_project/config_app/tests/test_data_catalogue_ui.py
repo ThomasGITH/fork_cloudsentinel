@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 from pathlib import Path
 
 from django.test import Client, SimpleTestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import resolve, reverse
 
 from config_app.catalogue_client import CatalogueClientError, DataCatalogueClient
@@ -91,10 +92,43 @@ class DataCatalogueUiTests(SimpleTestCase):
         self.assertContains(response, "Data Catalogue")
         self.assertContains(response, 'class="dropdown-item active"', html=False)
         self.assertEqual(self.client.get(reverse("data_catalogue_new")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("data_catalogue_import")).status_code, 200)
         self.assertEqual(self.client.get(reverse("data_catalogue_detail", args=["ds_demo"])).status_code, 200)
         self.assertEqual(self.client.get(reverse("data_catalogue_new_version", args=["ds_demo"])).status_code, 200)
         home = self.client.get(reverse("home"))
         self.assertContains(home, reverse("data_catalogue_overview"))
+
+    def test_csv_import_forwards_metadata_and_file_then_opens_dataset(self):
+        self.client_api.import_csv_dataset.return_value = {
+            "dataset_id": "ds_imported",
+            "latest_version": 1,
+        }
+        response = self.client.post(
+            reverse("data_catalogue_import"),
+            {
+                "display_name": "Imported latency",
+                "description": "External context",
+                "purpose": ["training", "evaluation"],
+                "application": "RCAEval",
+                "namespace": "benchmark",
+                "timestamp_column": "timestamp",
+                "label_column": "label",
+                "train_split_percent": "70",
+                "workload_intensity": "High",
+                "dominant_workload_characteristic": "High traffic",
+                "anomaly_scenario": "Other",
+                "anomaly_scenario_detail": "Latency injection",
+                "csv_file": SimpleUploadedFile(
+                    "latency.csv", b"timestamp,latency,label\n2026-10-24T10:00:00Z,1,0\n"
+                ),
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("ds_imported", response["Location"])
+        metadata, upload = self.client_api.import_csv_dataset.call_args.args
+        self.assertEqual(metadata["label_column"], "label")
+        self.assertEqual(metadata["workload_context"]["anomaly_scenario_detail"], "Latency injection")
+        self.assertEqual(upload.name, "latency.csv")
 
     def test_overview_forwards_filters_and_pagination(self):
         self.client_api.list_datasets.return_value = {"items": [], "page": 2, "page_size": 10, "total": 0, "pages": 0}

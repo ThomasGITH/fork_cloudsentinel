@@ -36,6 +36,7 @@ API_LEARNING_ADAPTATION_URL = os.getenv('API_LEARNING_ADAPTATION_URL', 'http://l
 PROMETHEUS_URL = os.getenv('PROMETHEUS_URL', 'http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090')
 
 CLUSTER_NAMESPACE = os.getenv('CLUSTER_NAMESPACE', 'kube-system')
+EXPERIMENT_OPERATOR_KEY = os.getenv('EXPERIMENT_OPERATOR_KEY', '')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

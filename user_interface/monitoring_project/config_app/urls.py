@@ -16,6 +16,7 @@ from .views.data_catalogue import (
     data_catalogue_fetch,
     data_catalogue_fetch_status,
     data_catalogue_incident,
+    data_catalogue_import,
     data_catalogue_metadata,
     data_catalogue_new,
     data_catalogue_new_version,
@@ -39,6 +40,7 @@ from .views.comparison import (
     comparison_status,
 )
 from .views.telemetry import telemetry_explorer
+from .views.workload_experiments import workload_experiments
 
 urlpatterns = [
     path('', home, name='home'),
@@ -46,7 +48,9 @@ urlpatterns = [
 
     path('data-catalogue/', data_catalogue_overview, name='data_catalogue_overview'),
     path('telemetry/', telemetry_explorer, name='telemetry_explorer'),
+    path('experiments/workload/', workload_experiments, name='workload_experiments'),
     path('data-catalogue/new/', data_catalogue_new, name='data_catalogue_new'),
+    path('data-catalogue/import/', data_catalogue_import, name='data_catalogue_import'),
     path('data-catalogue/<str:dataset_id>/fetch-status/', data_catalogue_fetch_status, name='data_catalogue_fetch_status'),
     path('data-catalogue/<str:dataset_id>/preview/', data_catalogue_preview, name='data_catalogue_preview'),
     path('data-catalogue/<str:dataset_id>/metadata/', data_catalogue_metadata, name='data_catalogue_metadata'),

@@ -385,9 +385,21 @@ def data_catalogue_new(request: HttpRequest):
             "required": True,
             "execution_mode": "single",
         }]
+    submitted = request.POST if request.POST else {
+        key: request.GET.get(key, "")
+        for key in (
+            "workload_intensity",
+            "dominant_workload_characteristic",
+            "anomaly_scenario",
+            "anomaly_scenario_detail",
+            "incident_start_time_utc",
+            "incident_end_time_utc",
+        )
+        if request.GET.get(key)
+    }
     context = {
         **_catalogue_context(),
-        "submitted": request.POST,
+        "submitted": submitted,
         "source": {
             "application": "",
             "namespace": explorer_namespace or default_namespace,
@@ -426,6 +438,45 @@ def data_catalogue_new(request: HttpRequest):
         except (CatalogueClientError, ValueError, KeyError, TypeError) as exc:
             context["error"] = _safe_error(exc)
     return render(request, "config_app/data_catalogue/new.html", context)
+
+
+def data_catalogue_import(request: HttpRequest):
+    context = {**_catalogue_context(), "submitted": request.POST}
+    if request.method == "POST":
+        try:
+            purpose = request.POST.getlist("purpose")
+            purpose.extend(_split_values(request.POST.get("purpose_other")))
+            metadata = {
+                "display_name": request.POST.get("display_name", "").strip(),
+                "description": request.POST.get("description", ""),
+                "purpose": list(dict.fromkeys(item for item in purpose if item)),
+                "application": request.POST.get("application", "").strip(),
+                "namespace": request.POST.get("namespace", "").strip(),
+                "timestamp_column": request.POST.get("timestamp_column", "timestamp").strip(),
+                "label_column": request.POST.get("label_column", "").strip(),
+                "train_split_percent": _integer(
+                    request.POST.get("train_split_percent", "70"),
+                    "Training split",
+                    minimum=20,
+                ),
+                "workload_context": _workload_context(request.POST),
+            }
+            upload = request.FILES.get("csv_file")
+            if upload is None:
+                raise ValueError("Select a CSV file")
+            if not metadata["label_column"]:
+                raise ValueError(
+                    "A 0/1 ground-truth label column is required for the current training and comparison workflow"
+                )
+            created = get_catalogue_client().import_csv_dataset(metadata, upload)
+            messages.success(
+                request,
+                "CSV imported, validated and partitioned. The immutable dataset is ready for training and comparison.",
+            )
+            return redirect(_detail_url(created["dataset_id"], int(created["latest_version"])))
+        except (CatalogueClientError, ValueError, KeyError, TypeError) as exc:
+            context["error"] = _safe_error(exc)
+    return render(request, "config_app/data_catalogue/import.html", context)
 
 
 @require_GET

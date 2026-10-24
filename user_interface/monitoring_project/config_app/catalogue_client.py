@@ -47,6 +47,9 @@ class DataCatalogueClient:
         *,
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        data: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         try:
             response = self.transport.request(
@@ -54,6 +57,9 @@ class DataCatalogueClient:
                 f"{self.base_url}{path}",
                 params=params,
                 json=json,
+                headers=headers,
+                data=data,
+                files=files,
                 timeout=self.timeout,
             )
         except requests.Timeout as exc:
@@ -111,6 +117,16 @@ class DataCatalogueClient:
 
     def create_dataset(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/datasets", json=payload)
+
+    def import_csv_dataset(self, metadata: dict[str, Any], upload: Any) -> dict[str, Any]:
+        import json as json_module
+
+        return self._request(
+            "POST",
+            "/datasets/import/csv",
+            data={"metadata": json_module.dumps(metadata)},
+            files={"file": (upload.name, upload, "text/csv")},
+        )
 
     def update_metadata(self, dataset_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request(
@@ -185,6 +201,21 @@ class DataCatalogueClient:
 
     def query_telemetry(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/catalogue/telemetry/query-range", json=payload)
+
+    def get_workload_experiments(self) -> dict[str, Any]:
+        return self._request(
+            "GET",
+            "/experiments/workload",
+            headers={"X-Experiment-Operator-Key": settings.EXPERIMENT_OPERATOR_KEY},
+        )
+
+    def update_workload_experiment(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            "/experiments/workload",
+            json=payload,
+            headers={"X-Experiment-Operator-Key": settings.EXPERIMENT_OPERATOR_KEY},
+        )
 
 
 def get_catalogue_client() -> DataCatalogueClient:

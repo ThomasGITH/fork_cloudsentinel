@@ -29,6 +29,10 @@ except ImportError:
     execute_comparison_task = _UnavailableComparisonTask()
 
 from detectors.api import create_detectors_blueprint
+try:
+    from learning_adaptation.plugin_upload_api import create_plugin_upload_blueprint
+except ModuleNotFoundError:
+    from plugin_upload_api import create_plugin_upload_blueprint
 from detectors.isolation_forest.training_request import (
     IsolationForestRequestError,
     validate_model_id,
@@ -68,6 +72,7 @@ except ModuleNotFoundError as exc:
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.register_blueprint(create_detectors_blueprint())
+app.register_blueprint(create_plugin_upload_blueprint())
 configure_training_run_defaults(app)
 configure_comparison_defaults(app)
 

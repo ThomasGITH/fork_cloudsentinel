@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from urllib.parse import urlencode
@@ -254,11 +255,103 @@ def models_overview(request: HttpRequest):
     return render(request, "config_app/models/overview.html", context)
 
 
-@require_GET
+def _uploaded_bytes(upload: Any, label: str, maximum: int = 1_000_000) -> bytes:
+    if upload is None:
+        raise ValueError(f"{label} is required")
+    data = upload.read(maximum + 1)
+    if not data or len(data) > maximum:
+        raise ValueError(f"{label} must be a non-empty file smaller than 1 MB")
+    return data
+
+
+def _builder_manifest(post: Any) -> bytes:
+    try:
+        parameters = json.loads(post.get("training_parameters_json", "{}"))
+    except json.JSONDecodeError as exc:
+        raise ValueError("Training parameters are not valid JSON") from exc
+    if not isinstance(parameters, dict):
+        raise ValueError("Training parameters must be an object")
+    inference_enabled = post.get("inference_enabled") == "on"
+    manifest = {
+        "schema_version": 1,
+        "id": post.get("detector_id", "").strip(),
+        "name": post.get("detector_name", "").strip(),
+        "version": post.get("detector_version", "").strip(),
+        "description": post.get("detector_description", "").strip(),
+        "supported_modalities": ["metrics"],
+        "runtime": {"profile": "python-ml-cpu/v1"},
+        "capabilities": {
+            "training": {
+                "enabled": True,
+                "protocol": "cloudsentinel.training/v1",
+                "input_profile": "metrics-partition-v1",
+            },
+            "inference": {
+                "enabled": inference_enabled,
+                **(
+                    {
+                        "protocol": "cloudsentinel.inference/v1",
+                        "input_profile": "metrics-matrix/v1",
+                        "artifact_format": post.get("artifact_format", "").strip(),
+                    }
+                    if inference_enabled
+                    else {}
+                ),
+            },
+        },
+        "input_requirements": {
+            "training": {
+                "format": "Numeric two-dimensional matrix",
+                "shape": ["n_samples", "n_features"],
+                "feature_identity": "Stable positional feature order",
+                "finite_values_required": True,
+            },
+            "evaluation": {
+                "format": "Numeric two-dimensional matrix",
+                "feature_order_must_match_training": True,
+                "labels_required": True,
+                "labels": {"normal": 0, "anomaly": 1},
+            },
+        },
+        "training_parameters": parameters,
+        "entry_point": post.get("entry_point", "adapter:CustomDetectorAdapter").strip(),
+    }
+    return json.dumps(manifest, indent=2).encode("utf-8")
+
+
+@require_http_methods(["GET", "POST"])
 def add_custom_detector(request: HttpRequest):
-    """Explain the existing trusted operator workflow without mutating it."""
+    """Guide and execute trusted external detector publication."""
 
     context = {**onboarding_context(), "external_detectors": [], "plugin_errors": []}
+    if request.method == "POST":
+        try:
+            manifest = (
+                _uploaded_bytes(request.FILES.get("manifest_file"), "manifest.yaml")
+                if request.POST.get("manifest_mode") == "upload"
+                else _builder_manifest(request.POST)
+            )
+            result = get_learning_client().upload_detector_plugin(
+                operator_key=request.POST.get("operator_key", ""),
+                action=request.POST.get("action", "validate"),
+                activate=request.POST.get("activate") == "on",
+                manifest=manifest,
+                adapter=_uploaded_bytes(request.FILES.get("adapter_file"), "adapter.py"),
+                requirements=_uploaded_bytes(
+                    request.FILES.get("requirements_file"), "requirements.lock"
+                ),
+                support_files=request.FILES.getlist("support_files"),
+            )
+            context["upload_result"] = _safe(result)
+            if result.get("status") == "published":
+                messages.success(
+                    request,
+                    f"Detector {result.get('detector_id')} {result.get('detector_version')} was published"
+                    + (" and activated." if result.get("active") else "."),
+                )
+        except (LearningClientError, ValueError) as exc:
+            context["upload_error"] = _error(exc)
+        context["submitted"] = request.POST
     try:
         detectors, discovery_errors = _detector_map()
         context["external_detectors"] = [

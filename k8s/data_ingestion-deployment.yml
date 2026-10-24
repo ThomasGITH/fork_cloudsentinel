@@ -19,7 +19,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: data-ingestion
-        image: jojojochem/data_ingestion:expansions-p2
+        image: jojojochem/data_ingestion:research-workflow-20261024
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -42,6 +42,17 @@ spec:
               fieldPath: metadata.namespace
         - name: PROMETHEUS_CREDENTIALS_SECRET
           value: "cloudsentinel-prometheus-credentials"
+        - name: EXPERIMENT_OPERATOR_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudsentinel-experiment-operator
+              key: operator-key
+        - name: WORKLOAD_EXPERIMENT_NAMESPACE
+          value: "default"
+        - name: WORKLOAD_EXPERIMENT_DEPLOYMENT
+          value: "loadgenerator"
+        - name: WORKLOAD_EXPERIMENT_CONTAINER
+          value: "main"
         - name: CELERY_BROKER_URL
           value: "redis://redis.cloudsentinel.svc.cluster.local:6379/0"
         - name: CELERY_RESULT_BACKEND
@@ -141,4 +152,29 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cloudsentinel-loadgenerator-controller
+  namespace: default
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  resourceNames: ["loadgenerator"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cloudsentinel-loadgenerator-controller
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: data-ingestion-sa
+  namespace: cloudsentinel
+roleRef:
+  kind: Role
+  name: cloudsentinel-loadgenerator-controller
   apiGroup: rbac.authorization.k8s.io

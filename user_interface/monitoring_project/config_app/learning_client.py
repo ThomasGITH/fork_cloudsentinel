@@ -150,6 +150,40 @@ class LearningAdaptationClient:
     def list_evaluation_datasets(self) -> dict[str, Any]:
         return self._request("GET", "/api/comparisons/evaluation-datasets")
 
+    def upload_detector_plugin(
+        self,
+        *,
+        operator_key: str,
+        action: str,
+        activate: bool,
+        manifest: bytes,
+        adapter: Any,
+        requirements: Any,
+        support_files: list[Any],
+    ) -> dict[str, Any]:
+        files: list[tuple[str, tuple[str, Any, str]]] = [
+            ("manifest", ("manifest.yaml", manifest, "application/yaml")),
+            ("adapter", ("adapter.py", adapter, "text/x-python")),
+            ("requirements", ("requirements.lock", requirements, "text/plain")),
+        ]
+        for upload in support_files:
+            files.append(
+                (
+                    "support_files",
+                    (upload.name, upload, "text/x-python"),
+                )
+            )
+        return self._request(
+            "POST",
+            "/detectors/plugins/upload",
+            headers={"X-Plugin-Operator-Key": operator_key},
+            data={
+                "action": action,
+                "activate": "true" if activate else "false",
+            },
+            files=files,
+        )
+
     def list_compatible_models(
         self, dataset_id: str, version: int, partition_id: str
     ) -> dict[str, Any]:

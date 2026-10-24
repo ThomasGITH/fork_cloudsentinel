@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlsplit
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, SimpleTestCase
 from django.urls import resolve, reverse
 
@@ -111,7 +112,7 @@ class ModelsUiTests(SimpleTestCase):
         self.assertContains(self.client.get(reverse("home")), reverse("models_overview"))
         self.assertEqual(resolve(reverse("train_algorithms")).url_name, "train_algorithms")
 
-    def test_custom_detector_onboarding_renders_existing_operator_flow(self):
+    def test_custom_detector_onboarding_renders_browser_and_operator_flows(self):
         response = self.client.get(reverse("models_add_detector"))
         self.assertEqual(response.status_code, 200)
         for heading in (
@@ -131,14 +132,17 @@ class ModelsUiTests(SimpleTestCase):
         self.assertContains(response, "./scripts/external_plugin.sh publish")
         self.assertContains(response, "--activate")
         self.assertContains(response, "Dependencies are not installed")
-        self.assertContains(response, "Python code cannot be uploaded directly through this browser")
+        self.assertContains(response, "Build with form")
+        self.assertContains(response, "Upload manifest.yaml")
+        self.assertContains(response, "Operator access key")
+        self.assertContains(response, "Validate and publish")
         self.assertContains(response, reverse("models_overview") + "?tab=detectors")
         self.assertContains(response, reverse("models_train"))
         self.assertContains(response, reverse("comparison_overview"))
         self.assertContains(response, "data-copy-target", count=5)
         self.assertContains(response, "data-copy-status", count=5)
         self.assertContains(response, "detector_onboarding.js")
-        self.assertNotContains(response, 'type="file"')
+        self.assertContains(response, 'type="file"')
         self.learning.list_detectors.assert_called_once_with()
 
     def test_custom_detector_copy_script_only_performs_local_clipboard_work(self):
@@ -149,9 +153,47 @@ class ModelsUiTests(SimpleTestCase):
             / "detector_onboarding.js"
         ).read_text(encoding="utf-8")
         self.assertIn("navigator.clipboard.writeText", script)
-        self.assertNotIn("innerHTML", script)
         self.assertNotIn("fetch(", script)
         self.assertNotIn("XMLHttpRequest", script)
+
+    def test_custom_detector_can_be_built_validated_and_published_from_browser(self):
+        self.learning.upload_detector_plugin.return_value = {
+            "status": "published",
+            "detector_id": "browser-detector",
+            "detector_version": "1.0.0",
+            "package_sha256": "a" * 64,
+            "active": True,
+        }
+        response = self.client.post(
+            reverse("models_add_detector"),
+            {
+                "manifest_mode": "builder",
+                "detector_id": "browser-detector",
+                "detector_name": "Browser detector",
+                "detector_version": "1.0.0",
+                "detector_description": "A detector added through the UI",
+                "entry_point": "adapter:CustomDetectorAdapter",
+                "training_parameters_json": '{"trees":{"type":"integer","default":100,"description":"Tree count"}}',
+                "operator_key": "operator-secret",
+                "action": "publish",
+                "activate": "on",
+                "adapter_file": SimpleUploadedFile(
+                    "adapter.py", b"class CustomDetectorAdapter: pass\n"
+                ),
+                "requirements_file": SimpleUploadedFile(
+                    "requirements.lock", b"numpy==1.26.4\n"
+                ),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "browser-detector")
+        call = self.learning.upload_detector_plugin.call_args.kwargs
+        self.assertEqual(call["operator_key"], "operator-secret")
+        self.assertEqual(call["action"], "publish")
+        self.assertTrue(call["activate"])
+        manifest = __import__("json").loads(call["manifest"])
+        self.assertEqual(manifest["id"], "browser-detector")
+        self.assertEqual(manifest["training_parameters"]["trees"]["default"], 100)
 
     def test_custom_detector_status_only_projects_external_plugins(self):
         builtin = detector("builtin-private")
@@ -182,10 +224,14 @@ class ModelsUiTests(SimpleTestCase):
         self.assertNotContains(response, "Built-in Private")
         self.assertNotContains(response, "builtin-private")
 
-    def test_custom_detector_onboarding_is_read_only(self):
-        response = self.client.post(reverse("models_add_detector"), {"plugin": "code"})
-        self.assertEqual(response.status_code, 405)
-        self.learning.list_detectors.assert_not_called()
+    def test_custom_detector_upload_requires_package_files(self):
+        response = self.client.post(
+            reverse("models_add_detector"),
+            {"manifest_mode": "upload", "operator_key": "operator-secret"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "manifest.yaml is required")
+        self.learning.upload_detector_plugin.assert_not_called()
 
     def test_custom_detector_discovery_errors_are_external_and_sanitized(self):
         self.learning.list_detectors.return_value = {

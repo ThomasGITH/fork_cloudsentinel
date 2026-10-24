@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: monitoring-project
-        image: jojojochem/monitoring_project:usability-access-1
+        image: jojojochem/monitoring_project:research-workflow-20261024
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
@@ -44,6 +44,11 @@ spec:
           value: "http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090"
         - name: CLUSTER_NAMESPACE
           value: "cloudsentinel"
+        - name: EXPERIMENT_OPERATOR_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudsentinel-experiment-operator
+              key: operator-key
 ---
 # apiVersion: v1
 # kind: Service

@@ -331,7 +331,7 @@ def comparison_new(request: HttpRequest):
 @require_GET
 def comparison_detail(request: HttpRequest, comparison_id: str):
     tab = request.GET.get("tab", "overview")
-    if tab not in {"overview", "timeline", "models", "robustness"}:
+    if tab not in {"overview", "timeline", "models", "evidence", "robustness"}:
         tab = "overview"
     try:
         client = get_learning_client()
