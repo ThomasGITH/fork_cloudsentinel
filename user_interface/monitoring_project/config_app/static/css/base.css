@@ -120,10 +120,64 @@ body {
     color: #333;
 }
 .card-header {
-    background-color: #283c50 !important;
+    background-color: #fff;
+    color: #263849;
 }
 .btnnn {
     margin-right: 10px;
+}
+
+.app-page {
+    width: min(1500px, 100%);
+    margin: 0 auto;
+}
+.app-page-narrow { width: min(1280px, 100%); }
+.app-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.app-page-header h1 {
+    margin-bottom: .35rem;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+}
+.app-page-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.app-eyebrow {
+    margin-bottom: .25rem;
+    color: #0b4f87;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.app-card {
+    border: 0;
+    border-radius: .75rem;
+    box-shadow: 0 2px 12px rgba(25, 47, 68, .08);
+}
+.app-card > .card-header {
+    border-bottom-color: #e2e8ee;
+    border-radius: .75rem .75rem 0 0;
+    background: #fff;
+}
+.app-diagnostics-summary {
+    color: #fff;
+    background: #283c50;
+}
+.app-diagnostics-summary:hover { background: #324b63; }
+.app-muted { color: #607080; }
+.models-card, .catalogue-card, .comparison-card { border-radius: .75rem; }
+.models-hero h1, .catalogue-hero h1, .comparison-hero h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+}
+@media (max-width: 575.98px) {
+    .app-page { padding-left: .5rem; padding-right: .5rem; }
+    .app-page-actions, .app-page-actions .btn { width: 100%; }
 }
 
 .guided-flow {

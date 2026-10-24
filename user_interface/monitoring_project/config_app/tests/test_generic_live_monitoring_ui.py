@@ -233,6 +233,16 @@ class GenericLiveMonitoringUiTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         post.assert_not_called()
 
+    def test_invalid_ajax_setup_returns_a_readable_json_error(self):
+        response = self.client.post(
+            reverse("monitoring"),
+            {"window_minutes": 10, "poll_interval_seconds": 30},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["status"], "error")
+        self.assertTrue(response.json()["message"])
+
     def test_dashboard_exposes_warmup_and_safe_status_language(self):
         response = self.client.get(reverse("monitoring_overview"))
         self.assertContains(response, "Warm-up observations")

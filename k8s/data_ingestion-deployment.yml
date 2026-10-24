@@ -19,7 +19,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: data-ingestion
-        image: jojojochem/data_ingestion:research-workflow-20261024
+        image: jojojochem/data_ingestion:ui-consistency-20261024
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false

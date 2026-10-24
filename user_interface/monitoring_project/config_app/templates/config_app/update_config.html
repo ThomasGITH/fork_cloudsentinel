@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% block title %}Monitored environment | CloudSentinel{% endblock %}
 {% block content %}
-<main class="container-fluid py-4" style="max-width: 1180px;">
-  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
-    <div><p class="text-uppercase fw-bold text-primary small mb-1">Runtime configuration</p><h1 class="mb-2">Monitored environment</h1><p class="text-muted mb-0">Configure the Prometheus source used for new captures and live monitoring.</p></div>
+<main class="app-page app-page-narrow container-fluid py-4">
+  <div class="app-page-header">
+    <div><p class="app-eyebrow">Runtime configuration</p><h1>Monitored environment</h1><p class="text-muted mb-0">Configure the Prometheus source used for new captures and live monitoring.</p></div>
     <a class="btn btn-outline-primary" href="{% url 'home' %}">View workflow status</a>
   </div>
   {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
-  <section class="card shadow-sm mb-4" aria-labelledby="environment-title"><div class="card-body p-4">
+  <section class="card app-card mb-4" aria-labelledby="environment-title"><div class="card-body p-4">
     <h2 class="h4" id="environment-title">Data source</h2>
     <p class="text-muted">These values are stored by Data Ingestion and are used by both the catalogue and its background worker. Existing datasets and model provenance are not changed.</p>
     <form method="post">{% csrf_token %}<div class="row g-3">
@@ -25,7 +25,7 @@
       <div class="col-md-2"><label class="form-label" for="grafana-datasource">Grafana datasource UID</label><input class="form-control" id="grafana-datasource" name="grafana_datasource_uid" value="{{ environment.grafana_datasource_uid|default:'prometheus' }}"></div>
     </div><div class="d-flex flex-wrap justify-content-between gap-2 mt-4"><div>{% if environment.auth_configured %}<span class="text-success">Authentication settings are complete.</span>{% else %}<span class="text-danger">Authentication credentials are incomplete.</span>{% endif %}</div><div class="d-flex flex-wrap gap-2">{% if environment.grafana_browser_url %}<a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ environment.grafana_browser_url }}">Open Grafana</a>{% endif %}{% if environment.prometheus_browser_url %}<a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ environment.prometheus_browser_url }}">Open Prometheus</a>{% endif %}<a class="btn btn-outline-secondary" href="{% url 'telemetry_explorer' %}">Open telemetry explorer</a><button class="btn btn-outline-primary" name="action" value="test" type="submit">Test connection</button><button class="btn btn-primary" name="action" value="save" type="submit">Save settings</button></div></div></form>
   </div></section>
-  <details class="card shadow-sm"><summary class="card-header p-4 h5 mb-0 text-white" style="cursor: pointer;">Deployment diagnostics</summary><div class="card-body p-0">
+  <details class="card app-card"><summary class="app-diagnostics-summary p-4 h5 mb-0" style="cursor: pointer;">Deployment diagnostics</summary><div class="card-body p-0">
     <div class="p-4 border-bottom"><p class="text-muted mb-0">These internal service addresses are deployment wiring. Application users should not edit them here.</p></div>
     <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th class="ps-4">Service</th><th>Purpose</th><th>Deployment variable</th><th class="pe-4">Current value</th></tr></thead><tbody>{% for connection in diagnostics %}<tr><td class="ps-4"><strong>{{ connection.name }}</strong></td><td>{{ connection.purpose }}</td><td><code>{{ connection.environment }}</code></td><td class="pe-4"><code class="text-break">{{ connection.value }}</code></td></tr>{% endfor %}</tbody></table></div>
   </div></details>

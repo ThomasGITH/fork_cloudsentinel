@@ -37,11 +37,11 @@
                         <li><a class="dropdown-item{% if request.resolver_match.url_name == 'workload_experiments' %} active{% endif %}" href="{% url 'workload_experiments' %}">Controlled workload</a></li>
                         <li><a class="dropdown-item{% if request.path|slice:':8' == '/models/' %} active{% endif %}"{% if request.path|slice:':8' == '/models/' %} aria-current="page"{% endif %} href="{% url 'models_overview' %}">2. Models and training</a></li>
                         <li><a class="dropdown-item{% if request.path|slice:':12' == '/comparison/' %} active{% endif %}"{% if request.path|slice:':12' == '/comparison/' %} aria-current="page"{% endif %} href="{% url 'comparison_overview' %}">3. Model comparison</a></li>
-                        <li><a class="dropdown-item" href="{% url 'monitoring' %}">4. Set up live monitoring</a></li>
-                        <li><a class="dropdown-item" href="{% url 'monitoring_overview' %}">5. Monitoring and RCA history</a></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'monitoring' %} active{% endif %}"{% if request.resolver_match.url_name == 'monitoring' %} aria-current="page"{% endif %} href="{% url 'monitoring' %}">4. Set up live monitoring</a></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'monitoring_overview' %} active{% endif %}"{% if request.resolver_match.url_name == 'monitoring_overview' %} aria-current="page"{% endif %} href="{% url 'monitoring_overview' %}">5. Monitoring and RCA history</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><h6 class="dropdown-header">Administration and extension</h6></li>
-                        <li><a class="dropdown-item" href="{% url 'models_add_detector' %}">Detector onboarding</a></li>
+                        <li><a class="dropdown-item{% if request.resolver_match.url_name == 'models_add_detector' %} active{% endif %}"{% if request.resolver_match.url_name == 'models_add_detector' %} aria-current="page"{% endif %} href="{% url 'models_add_detector' %}">Add detector</a></li>
                         <li><a class="dropdown-item{% if request.resolver_match.url_name == 'config' %} active{% endif %}"{% if request.resolver_match.url_name == 'config' %} aria-current="page"{% endif %} href="{% url 'config' %}">Monitored environment</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><h6 class="dropdown-header">Legacy component screens</h6></li>

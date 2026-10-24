@@ -266,7 +266,7 @@ def test_prometheus_connection(
             "status": "connected",
             "target_count": target_count,
             "message": (
-                f"Prometheus responded with {target_count} active series."
+                f"Prometheus responded with {target_count} scrape targets."
                 if target_count
                 else "Prometheus accepted the query."
             ),

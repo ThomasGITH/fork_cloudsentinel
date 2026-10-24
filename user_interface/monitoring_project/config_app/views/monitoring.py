@@ -246,6 +246,19 @@ def monitoring(request):
             )
             payload["workflow_token"] = encode_context(workflow)
             return JsonResponse(payload, status=202)
+    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        first_error = next(
+            (
+                str(error)
+                for errors in form.errors.values()
+                for error in errors
+            ),
+            "Check the monitoring settings and try again.",
+        )
+        return JsonResponse(
+            {"status": "error", "message": first_error[:500]},
+            status=400,
+        )
     try:
         observability = get_catalogue_client().get_monitored_environment()
     except CatalogueClientError:

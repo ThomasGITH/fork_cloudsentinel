@@ -1,19 +1,87 @@
-{% extends 'base.html' %}
-{% block title %}Live Monitoring | CloudSentinel{% endblock %}
+{% extends 'base.html' %}{% load static %}
+{% block title %}Set up live monitoring | CloudSentinel{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/monitoring.css' %}">{% endblock %}
 {% block content %}
-<main class="container py-4">
+<main class="app-page container-fluid py-3 monitoring-setup">
   {% include "config_app/_workflow_progress.html" %}
-  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4"><div><h1>Live Monitoring</h1><p class="text-muted mb-0">The model selected from the comparison is already filled in. Configure the live window and RCA behaviour, then continue directly to its evidence.</p></div><div class="d-flex flex-wrap gap-2">{% if observability.grafana_browser_url %}<a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ observability.grafana_browser_url }}">Open Grafana</a>{% endif %}{% if observability.prometheus_browser_url %}<a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ observability.prometheus_browser_url }}">Open Prometheus</a>{% endif %}<a class="btn btn-outline-primary" href="{% url 'monitoring_overview' %}{% if workflow_token %}?flow={{ workflow_token|urlencode }}{% endif %}">View monitoring status</a></div></div>
+  <div class="app-page-header">
+    <div><p class="app-eyebrow">Live validation</p><h1>Set up live monitoring</h1><p class="text-muted mb-0">Select a live-ready model, define its observation cycle, and optionally run RCA after a sustained anomaly signal.</p></div>
+    <div class="app-page-actions">
+      {% if observability.grafana_browser_url %}<a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ observability.grafana_browser_url }}">Open Grafana</a>{% endif %}
+      {% if observability.prometheus_browser_url %}<a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ observability.prometheus_browser_url }}">Open Prometheus</a>{% endif %}
+      <a class="btn btn-outline-primary" href="{% url 'monitoring_overview' %}{% if workflow_token %}?flow={{ workflow_token|urlencode }}{% endif %}">Monitoring history</a>
+    </div>
+  </div>
   {% if upstream_error %}<div class="alert alert-danger" role="alert">{{ upstream_error }}</div>{% endif %}
   {% if not ready_count %}<div class="alert alert-warning" role="alert"><strong>No live-ready models.</strong> A model needs generic inference and a complete recipe from a newly fetched catalogue version. Older models remain available for offline inference and Comparison.</div>{% endif %}
-  <div class="row g-4"><div class="col-lg-7"><section class="card"><div class="card-body"><h2 class="h5">Start a monitoring session</h2><form id="monitoring-form" method="post">{% csrf_token %}{{ form.as_p }}<fieldset class="mt-4"><legend class="h6">About the RCA methods</legend><p class="small text-muted">The RCA method analyses monitoring evidence after an anomaly trigger. It is independent of the selected anomaly-detection model.</p><div class="row g-3">{% for method in rca_methods %}<div class="col-12"><article class="border rounded p-3 h-100" data-rca-method="{{ method.id }}"><div class="d-flex justify-content-between gap-3 align-items-start"><strong>{{ method.display_name }}</strong>{% if method.status == 'available' %}<span class="badge bg-success">Available</span>{% else %}<span class="badge bg-secondary">Unavailable</span>{% endif %}</div><p class="mb-2 mt-2">{{ method.description }}</p><dl class="row small mb-0"><dt class="col-sm-3">Input</dt><dd class="col-sm-9">{{ method.input_type }}</dd><dt class="col-sm-3">Output</dt><dd class="col-sm-9">{{ method.output_type }}</dd>{% if method.reason %}<dt class="col-sm-3">Reason</dt><dd class="col-sm-9">{{ method.reason }}</dd>{% endif %}</dl></article></div>{% endfor %}</div></fieldset><button class="btn btn-success mt-4" type="submit"{% if not ready_count %} disabled{% endif %}>Start monitoring</button></form><div id="start-message" class="mt-3" aria-live="polite"></div></div></section></div>
-  <div class="col-lg-5"><section class="card"><div class="card-body"><h2 class="h5">Model readiness</h2>{% for model in models %}<div class="border rounded p-3 mb-2"><strong>{{ model.display_name }}</strong><small class="d-block text-muted">{{ model.model_id }} · {{ model.detector_id }} v{{ model.detector_version }}</small>{% if model.live_monitoring.status == 'ready' and model.inference.status == 'ready' %}<span class="badge bg-success">Live-ready</span><small class="d-block mt-2">Sampling: {{ model.live_monitoring.sampling_interval_seconds }} seconds</small>{% if model.rca_readiness.status == 'ready' %}<span class="badge bg-info text-dark mt-2">RCA-compatible input</span>{% else %}<span class="badge bg-secondary mt-2">RCA unavailable</span><small class="d-block mt-1">{{ model.rca_readiness.reason }}</small>{% endif %}{% if model.rca_readiness.methods %}<ul class="list-unstyled small mt-2 mb-0">{% for method in model.rca_readiness.methods %}<li class="mb-1"><strong>{{ method.display_name|default:method.id }}:</strong> {{ method.status }}{% if method.reason %} — {{ method.reason }}{% endif %}</li>{% endfor %}</ul>{% endif %}{% else %}<span class="badge bg-secondary">Offline only</span><small class="d-block mt-2">{{ model.live_monitoring.reason|default:'No validated live recipe is available.' }}</small>{% endif %}</div>{% empty %}<p>No Saved Models are available.</p>{% endfor %}<p class="small text-muted mt-3 mb-0">A high anomaly percentage is a detector signal and does not by itself prove an incident or root cause.</p></div></section></div></div>
+
+  <form id="monitoring-form" method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row g-4">
+      <div class="col-xl-8">
+        <section class="card app-card mb-4" aria-labelledby="session-settings-title"><div class="card-body p-4">
+          <div class="monitoring-section-heading"><span class="monitoring-section-number">1</span><div><h2 class="h4 mb-1" id="session-settings-title">Session and model</h2><p class="text-muted mb-0">Name this run and choose the saved model that will evaluate incoming metrics.</p></div></div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-5"><label class="form-label" for="{{ form.display_name.id_for_label }}">{{ form.display_name.label }}</label>{{ form.display_name }}{% if form.display_name.help_text %}<div class="form-text">{{ form.display_name.help_text }}</div>{% endif %}{% if form.display_name.errors %}<div class="invalid-feedback d-block">{{ form.display_name.errors|striptags }}</div>{% endif %}</div>
+            <div class="col-md-7"><label class="form-label" for="{{ form.model_id.id_for_label }}">{{ form.model_id.label }}</label>{{ form.model_id }}<div class="form-text">Only models with a validated live-input recipe are listed.</div>{% if form.model_id.errors %}<div class="invalid-feedback d-block">{{ form.model_id.errors|striptags }}</div>{% endif %}</div>
+          </div>
+        </div></section>
+
+        <section class="card app-card mb-4" aria-labelledby="cycle-settings-title"><div class="card-body p-4">
+          <div class="monitoring-section-heading"><span class="monitoring-section-number">2</span><div><h2 class="h4 mb-1" id="cycle-settings-title">Detection cycle</h2><p class="text-muted mb-0">CloudSentinel repeatedly fetches a recent data window and evaluates it with the selected model.</p></div></div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-6"><label class="form-label" for="{{ form.window_minutes.id_for_label }}">{{ form.window_minutes.label }}</label><div class="input-group">{{ form.window_minutes }}<span class="input-group-text">minutes</span></div><div class="form-text">{{ form.window_minutes.help_text }}</div>{% if form.window_minutes.errors %}<div class="invalid-feedback d-block">{{ form.window_minutes.errors|striptags }}</div>{% endif %}</div>
+            <div class="col-md-6"><label class="form-label" for="{{ form.poll_interval_seconds.id_for_label }}">{{ form.poll_interval_seconds.label }}</label><div class="input-group">{{ form.poll_interval_seconds }}<span class="input-group-text">seconds</span></div><div class="form-text">{{ form.poll_interval_seconds.help_text }}</div>{% if form.poll_interval_seconds.errors %}<div class="invalid-feedback d-block">{{ form.poll_interval_seconds.errors|striptags }}</div>{% endif %}</div>
+          </div>
+        </div></section>
+
+        <section class="card app-card mb-4" aria-labelledby="rca-settings-title"><div class="card-body p-4">
+          <div class="monitoring-section-heading"><span class="monitoring-section-number">3</span><div class="flex-grow-1"><h2 class="h4 mb-1" id="rca-settings-title">Root cause analysis</h2><p class="text-muted mb-0">RCA is optional and runs only after the detector signal passes the configured trigger.</p></div><div class="form-check form-switch monitoring-rca-switch">{{ form.automatic_rca_enabled }}<label class="form-check-label fw-bold" for="{{ form.automatic_rca_enabled.id_for_label }}">Enable automatic RCA</label></div></div>
+          {% if form.automatic_rca_enabled.errors %}<div class="invalid-feedback d-block">{{ form.automatic_rca_enabled.errors|striptags }}</div>{% endif %}
+          <div class="monitoring-rca-settings mt-4" data-rca-settings>
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="{{ form.rca_method.id_for_label }}">{{ form.rca_method.label }}</label>{{ form.rca_method }}<div class="form-text">{{ form.rca_method.help_text }}</div>{% if form.rca_method.errors %}<div class="invalid-feedback d-block">{{ form.rca_method.errors|striptags }}</div>{% endif %}</div>
+              <div class="col-md-6"><label class="form-label" for="{{ form.rca_threshold_percentage.id_for_label }}">{{ form.rca_threshold_percentage.label }}</label><div class="input-group">{{ form.rca_threshold_percentage }}<span class="input-group-text">%</span></div><div class="form-text">Percentage of anomalous observations in one newly evaluated cycle; it is not an acceptable long-term anomaly rate.</div>{% if form.rca_threshold_percentage.errors %}<div class="invalid-feedback d-block">{{ form.rca_threshold_percentage.errors|striptags }}</div>{% endif %}</div>
+              <div class="col-md-6"><label class="form-label" for="{{ form.rca_analysis_window_minutes.id_for_label }}">{{ form.rca_analysis_window_minutes.label }}</label><div class="input-group">{{ form.rca_analysis_window_minutes }}<span class="input-group-text">minutes</span></div>{% if form.rca_analysis_window_minutes.errors %}<div class="invalid-feedback d-block">{{ form.rca_analysis_window_minutes.errors|striptags }}</div>{% endif %}</div>
+              <div class="col-md-6"><label class="form-label" for="{{ form.rca_cooldown_minutes.id_for_label }}">{{ form.rca_cooldown_minutes.label }}</label><div class="input-group">{{ form.rca_cooldown_minutes }}<span class="input-group-text">minutes</span></div>{% if form.rca_cooldown_minutes.errors %}<div class="invalid-feedback d-block">{{ form.rca_cooldown_minutes.errors|striptags }}</div>{% endif %}</div>
+            </div>
+            <details class="monitoring-advanced mt-4"><summary class="fw-bold">Advanced reanalysis limits</summary><p class="small text-muted mt-2">Keep these defaults unless the same anomaly episode should be analysed more than once.</p>
+              <div class="form-check mb-3">{{ form.rca_reanalysis_enabled }}<label class="form-check-label" for="{{ form.rca_reanalysis_enabled.id_for_label }}">{{ form.rca_reanalysis_enabled.label }}</label></div>
+              <div class="row g-3"><div class="col-md-4"><label class="form-label" for="{{ form.rca_reanalysis_min_interval_seconds.id_for_label }}">Minimum interval</label><div class="input-group">{{ form.rca_reanalysis_min_interval_seconds }}<span class="input-group-text">sec</span></div><div class="form-text">{{ form.rca_reanalysis_min_interval_seconds.help_text }}</div></div><div class="col-md-4"><label class="form-label" for="{{ form.rca_reanalysis_min_new_observations.id_for_label }}">New observations</label>{{ form.rca_reanalysis_min_new_observations }}</div><div class="col-md-4"><label class="form-label" for="{{ form.rca_max_attempts_per_episode.id_for_label }}">Maximum attempts</label>{{ form.rca_max_attempts_per_episode }}<div class="form-text">{{ form.rca_max_attempts_per_episode.help_text }}</div></div></div>
+            </details>
+          </div>
+        </div></section>
+
+        <div class="monitoring-submit-bar"><div><strong>Ready to start?</strong><span class="d-block small text-muted">The session appears in Monitoring History immediately.</span></div><button class="btn btn-primary" type="submit"{% if not ready_count %} disabled{% endif %}>Start monitoring</button></div>
+        <div id="start-message" class="mt-3" aria-live="polite"></div>
+      </div>
+
+      <aside class="col-xl-4">
+        <section class="card app-card mb-4" aria-labelledby="readiness-title"><div class="card-header p-3"><h2 class="h5 mb-0" id="readiness-title">Model readiness</h2></div><div class="card-body p-3 monitoring-readiness-list">
+          {% for model in models %}<article class="monitoring-readiness-item"><div class="d-flex justify-content-between align-items-start gap-2"><strong>{{ model.display_name }}</strong>{% if model.live_monitoring.status == 'ready' and model.inference.status == 'ready' %}<span class="badge bg-success">Live-ready</span>{% else %}<span class="badge bg-secondary">Offline only</span>{% endif %}</div><small class="d-block text-muted text-break">{{ model.detector_id }} v{{ model.detector_version }} · {{ model.model_id }}</small>{% if model.live_monitoring.status == 'ready' and model.inference.status == 'ready' %}<small class="d-block mt-2">Sampling interval: {{ model.live_monitoring.sampling_interval_seconds }} seconds</small>{% if model.rca_readiness.status == 'ready' %}<span class="badge bg-info text-dark mt-2">RCA-compatible input</span>{% else %}<small class="d-block mt-2 text-muted">RCA unavailable: {{ model.rca_readiness.reason }}</small>{% endif %}{% else %}<small class="d-block mt-2 text-muted">{{ model.live_monitoring.reason|default:'No validated live recipe is available.' }}</small>{% endif %}</article>{% empty %}<p class="text-muted mb-0">No saved models are available.</p>{% endfor %}
+        </div></section>
+        <section class="card app-card" aria-labelledby="rca-methods-title"><div class="card-header p-3"><h2 class="h5 mb-0" id="rca-methods-title">Available RCA methods</h2></div><div class="card-body p-3"><p class="small text-muted">RCA uses the evidence collected after a detector trigger and is independent of the selected anomaly-detection model.</p>{% for method in rca_methods %}<article class="monitoring-method-item"><div class="d-flex justify-content-between gap-2"><strong>{{ method.display_name }}</strong>{% if method.status == 'available' %}<span class="badge bg-success">Available</span>{% else %}<span class="badge bg-secondary">Unavailable</span>{% endif %}</div><p class="small mb-1 mt-2">{{ method.description }}</p><small class="text-muted">{{ method.input_type }} → {{ method.output_type }}</small></article>{% endfor %}</div></section>
+      </aside>
+    </div>
+  </form>
 </main>
 <script>
-document.getElementById('monitoring-form').addEventListener('submit', async function (event) {
-  event.preventDefault(); const button=this.querySelector('button[type="submit"]'); const message=document.getElementById('start-message'); button.disabled=true; message.textContent='Starting monitoring…';
-  try { const response=await fetch(window.location.href,{method:'POST',body:new FormData(this),headers:{'X-CSRFToken':this.querySelector('[name="csrfmiddlewaretoken"]').value}}); const payload=await response.json(); if(!response.ok) throw new Error(payload.message||'Monitoring could not be started.'); message.textContent='Monitoring started. Opening its evidence…'; const target=new URL('{% url "monitoring_overview" %}',window.location.origin); if(payload.session&&payload.session.session_id)target.searchParams.set('session',payload.session.session_id); if(payload.workflow_token)target.searchParams.set('flow',payload.workflow_token); window.location.assign(target); }
-  catch(error) { message.textContent=error.message; button.disabled=false; }
-});
+(function () {
+  const form = document.getElementById('monitoring-form');
+  const rcaToggle = document.getElementById('{{ form.automatic_rca_enabled.id_for_label }}');
+  const rcaSettings = document.querySelector('[data-rca-settings]');
+  const message = document.getElementById('start-message');
+  function syncRcaSettings() {
+    const enabled = rcaToggle && rcaToggle.checked;
+    rcaSettings.classList.toggle('is-disabled', !enabled);
+    rcaSettings.querySelectorAll('input, select').forEach(function (field) { field.disabled = !enabled; });
+  }
+  if (rcaToggle && rcaSettings) { rcaToggle.addEventListener('change', syncRcaSettings); syncRcaSettings(); }
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault(); const button = this.querySelector('button[type="submit"]'); button.disabled = true; message.className = 'alert alert-info mt-3'; message.textContent = 'Starting monitoring…';
+    try { const response = await fetch(window.location.href, {method: 'POST', body: new FormData(this), headers: {'X-CSRFToken': this.querySelector('[name="csrfmiddlewaretoken"]').value, 'X-Requested-With': 'XMLHttpRequest'}}); const payload = await response.json(); if (!response.ok) throw new Error(payload.message || 'Monitoring could not be started.'); message.textContent = 'Monitoring started. Opening its evidence…'; const target = new URL('{% url "monitoring_overview" %}', window.location.origin); if (payload.session && payload.session.session_id) target.searchParams.set('session', payload.session.session_id); if (payload.workflow_token) target.searchParams.set('flow', payload.workflow_token); window.location.assign(target); }
+    catch (error) { message.className = 'alert alert-danger mt-3'; message.textContent = error.message; button.disabled = false; }
+  });
+}());
 </script>
 {% endblock %}

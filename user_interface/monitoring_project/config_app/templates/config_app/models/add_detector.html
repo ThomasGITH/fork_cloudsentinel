@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% load static %}
-{% block title %}Add a custom detector | Models | CloudSentinel{% endblock %}
+{% block title %}Add detector | Models | CloudSentinel{% endblock %}
 {% block extra_head %}<link href="{% static 'css/models.css' %}" rel="stylesheet">{% endblock %}
 {% block content %}
 <main class="models-page container-fluid py-3 detector-onboarding">
@@ -7,7 +7,7 @@
 
   <div class="models-hero mb-4">
     <div>
-      <h1>Add a custom detector</h1>
+      <h1>Add detector</h1>
       <p class="models-muted mb-0">Create a trusted external plugin, publish an immutable release, then use it in the existing training and comparison flow.</p>
     </div>
     <a class="btn btn-outline-primary" href="{% url 'models_overview' %}?tab=detectors">Back to Detector Library</a>

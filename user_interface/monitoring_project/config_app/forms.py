@@ -90,6 +90,20 @@ class MonitoringForm(forms.Form):
         help_text="Includes the first accepted execution. Preflight skips do not consume this budget.",
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                css_class = "form-check-input"
+            elif isinstance(widget, forms.Select):
+                css_class = "form-select"
+            else:
+                css_class = "form-control"
+            widget.attrs["class"] = " ".join(
+                value for value in (widget.attrs.get("class", ""), css_class) if value
+            )
+
 
 class UploadCGNNTrainDataForm(forms.Form):
     train_array = forms.FileField(label='Train Array')

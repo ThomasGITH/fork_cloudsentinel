@@ -3,21 +3,21 @@
 {% block title %}Monitoring History | CloudSentinel{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{% static 'css/monitoring.css' %}">{% endblock %}
 {% block content %}
-<main class="container-fluid py-4 monitoring-history" id="monitoring-history"
+<main class="app-page container-fluid py-4 monitoring-history" id="monitoring-history"
       data-list-url="{% url 'monitoring_sessions' %}"
       data-detail-url-template="{% url 'monitoring_session_detail' 'SESSION_ID' %}"
       data-rca-url-template="{% url 'monitoring_rca_run_detail' 'SESSION_ID' 'RUN_ID' %}"
       data-stop-url-template="{% url 'stop_task' 'SESSION_ID' %}"
       data-csrf-token="{{ csrf_token }}">
   {% include "config_app/_workflow_progress.html" %}
-  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div class="app-page-header">
     <div><h1>Monitoring History</h1><p class="text-muted mb-0">Live and historical recipe-pinned monitoring sessions.</p></div>
     <a class="btn btn-primary" href="{% url 'monitoring' %}{% if workflow_token %}?flow={{ workflow_token|urlencode }}{% endif %}">Start monitoring</a>
   </div>
   <div id="monitoring-error" class="alert alert-danger d-none" role="alert"></div>
   <div class="row g-4">
     <aside class="col-lg-4 col-xl-3" aria-label="Monitoring sessions">
-      <section class="card h-100">
+      <section class="card app-card h-100">
         <div class="card-header bg-white"><strong>Sessions</strong></div>
         <div id="monitoring-sessions" class="list-group list-group-flush" aria-live="polite"><div class="p-3 text-muted">Loading monitoring sessions…</div></div>
         <div class="card-footer bg-white d-flex justify-content-between align-items-center">
@@ -27,7 +27,7 @@
         </div>
       </section>
     </aside>
-    <section class="col-lg-8 col-xl-9"><div id="monitoring-detail" aria-live="polite"><div class="card"><div class="card-body text-muted">Select a monitoring session to view Buffered observations, Warm-up observations and committed cycle results.</div></div></div></section>
+    <section class="col-lg-8 col-xl-9"><div id="monitoring-detail" aria-live="polite"><div class="card app-card"><div class="card-body text-muted">Select a monitoring session to view Buffered observations, Warm-up observations and committed cycle results.</div></div></div></section>
   </div>
 </main>
 <script src="{% static 'js/monitoring_rca_presentation.js' %}"></script>

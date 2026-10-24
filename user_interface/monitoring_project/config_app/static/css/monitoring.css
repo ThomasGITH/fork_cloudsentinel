@@ -1,10 +1,41 @@
 .monitoring-history .session-button { text-align: left; border-left: 0; border-right: 0; }
+.monitoring-history .card { border: 0; border-radius: .75rem; box-shadow: 0 2px 12px rgba(25,47,68,.08); }
 .monitoring-history .session-button.active { background: #e9f2ff; color: #102a43; border-color: #9ec5fe; }
 .monitoring-history .chart-wrap { position: relative; min-height: 320px; }
 .monitoring-history .provenance-value { overflow-wrap: anywhere; }
 .monitoring-history .rca-score-track { height: .55rem; overflow: hidden; background: #e9ecef; border-radius: 999px; }
 .monitoring-history .rca-score-bar { height: 100%; min-width: 2px; background: #0d6efd; border-radius: inherit; }
+
+.monitoring-setup .form-label { font-weight: 600; }
+.monitoring-section-heading { display: flex; align-items: flex-start; gap: .85rem; }
+.monitoring-section-number {
+  display: inline-grid;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #0b4f87;
+  font-weight: 700;
+}
+.monitoring-rca-switch { flex: 0 0 auto; padding: .65rem .9rem .65rem 3rem; border: 1px solid #cbd9e5; border-radius: .6rem; background: #f6f9fb; }
+.monitoring-rca-settings { padding: 1rem; border: 1px solid #dce5ec; border-radius: .65rem; background: #fbfcfd; transition: opacity .2s ease; }
+.monitoring-rca-settings.is-disabled { opacity: .55; }
+.monitoring-advanced { padding-top: 1rem; border-top: 1px solid #dce5ec; }
+.monitoring-advanced summary { color: #334e68; cursor: pointer; }
+.monitoring-submit-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; border: 1px solid #cbd9e5; border-radius: .75rem; background: #fff; box-shadow: 0 2px 12px rgba(25,47,68,.08); }
+.monitoring-readiness-list { max-height: 34rem; overflow-y: auto; }
+.monitoring-readiness-item, .monitoring-method-item { padding: .9rem 0; border-bottom: 1px solid #e2e8ee; }
+.monitoring-readiness-item:first-child, .monitoring-method-item:first-of-type { padding-top: 0; }
+.monitoring-readiness-item:last-child, .monitoring-method-item:last-child { padding-bottom: 0; border-bottom: 0; }
 @media (max-width: 991.98px) {
   .monitoring-history aside .card { max-height: 24rem; }
   .monitoring-history #monitoring-sessions { overflow-y: auto; }
+  .monitoring-rca-switch { width: 100%; margin-top: .5rem; }
+}
+@media (max-width: 575.98px) {
+  .monitoring-section-heading { flex-wrap: wrap; }
+  .monitoring-submit-bar { align-items: stretch; flex-direction: column; }
+  .monitoring-submit-bar .btn { width: 100%; }
 }

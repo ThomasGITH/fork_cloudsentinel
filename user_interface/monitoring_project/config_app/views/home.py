@@ -56,8 +56,15 @@ def _prometheus_status() -> dict[str, Any]:
         return {
             "state": "ready",
             "label": "Connected",
-            "metric": f"{target_count} active series" if target_count else "Source responded",
-            "detail": "The configured catalogue source accepted a live query.",
+            "metric": (
+                f"{target_count} Prometheus targets responding"
+                if target_count
+                else "Prometheus responded"
+            ),
+            "detail": (
+                "Current result of the Prometheus 'up' query. This checks connectivity; "
+                "it is not a count of saved datasets or stored metric series."
+            ),
         }
     except CatalogueClientError:
         return {
