@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -17,6 +18,26 @@ from ..learning_client import LearningAdaptationClient, LearningClientError
 
 
 _TIMEOUT = (1.5, 4.0)
+_ACTIVE_MONITORING_STATES = {"queued", "collecting", "warmup", "active"}
+
+
+def _is_recent_active_session(item: Any, now: datetime | None = None) -> bool:
+    if not isinstance(item, dict) or item.get("status") not in _ACTIVE_MONITORING_STATES:
+        return False
+    raw_timestamp = item.get("last_successful_update") or item.get("updated_at")
+    if not isinstance(raw_timestamp, str):
+        return False
+    try:
+        updated_at = datetime.fromisoformat(raw_timestamp.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if updated_at.tzinfo is None:
+        updated_at = updated_at.replace(tzinfo=timezone.utc)
+    poll_interval = item.get("poll_interval_seconds")
+    if not isinstance(poll_interval, (int, float)) or poll_interval <= 0:
+        poll_interval = 60
+    freshness_window = timedelta(seconds=max(600, min(float(poll_interval) * 3, 3600)))
+    return (now or datetime.now(timezone.utc)) - updated_at.astimezone(timezone.utc) <= freshness_window
 
 
 def _total(payload: dict[str, Any]) -> int:
@@ -131,7 +152,7 @@ def _monitoring_status() -> dict[str, Any]:
     try:
         response = requests.get(
             f"{settings.API_DATA_INGESTION_URL.rstrip('/')}/monitoring-sessions",
-            params={"page": 1, "page_size": 1},
+            params={"page": 1, "page_size": 100},
             timeout=_TIMEOUT,
         )
         response.raise_for_status()
@@ -139,16 +160,24 @@ def _monitoring_status() -> dict[str, Any]:
         if not isinstance(payload, dict) or not isinstance(payload.get("items"), list):
             raise ValueError("invalid monitoring response")
         count = _total(payload)
+        active_count = sum(
+            1
+            for item in payload["items"]
+            if _is_recent_active_session(item)
+        )
         return {
-            "state": "ready" if count else "action",
-            "label": "History available" if count else "Not started",
+            "state": "active" if active_count else "ready" if count else "action",
+            "label": "Running" if active_count else "History available" if count else "Not started",
             "metric": f"{count} monitoring session{'s' if count != 1 else ''}",
             "detail": (
-                "Open monitoring history to inspect detections and RCA results."
+                f"{active_count} monitoring session{'s are' if active_count != 1 else ' is'} currently active."
+                if active_count
+                else "Past detections and RCA results remain available in monitoring history."
                 if count
                 else "Start live monitoring after an inference-ready model is available."
             ),
             "count": count,
+            "active_count": active_count,
         }
     except (requests.RequestException, ValueError, TypeError):
         return {
@@ -157,6 +186,7 @@ def _monitoring_status() -> dict[str, Any]:
             "metric": "Status unknown",
             "detail": "Monitoring History could not be reached.",
             "count": None,
+            "active_count": None,
         }
 
 
@@ -221,10 +251,16 @@ def _next_step(status: dict[str, Any]) -> dict[str, str]:
             "detail": "Run an inference-ready model and optionally enable automatic RCA.",
             "url": reverse("monitoring"),
         }
+    if status["monitoring"].get("active_count", 0) > 0:
+        return {
+            "label": "View active monitoring",
+            "detail": "A monitoring session is currently collecting live evidence.",
+            "url": reverse("monitoring_overview"),
+        }
     return {
-        "label": "Review monitoring evidence",
-        "detail": "Inspect detections, anomaly episodes, and stored RCA results.",
-        "url": reverse("monitoring_overview"),
+        "label": "Start a new experiment",
+        "detail": "The previous lifecycle is complete. Begin with a new telemetry window or reuse an existing dataset; earlier evidence remains available in history.",
+        "url": reverse("telemetry_explorer"),
     }
 
 

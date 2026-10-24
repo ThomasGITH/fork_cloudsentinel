@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -61,6 +62,53 @@ class GuidedWorkflowHomeTests(SimpleTestCase):
         self.assertEqual(payload["next_step"]["label"], "Compare saved models")
         self.assertEqual(payload["next_step"]["url"], reverse("comparison_new"))
         self.assertNotIn("PROMETHEUS_URL", str(payload))
+
+    def test_completed_history_suggests_a_new_experiment(self):
+        status = {
+            "source": {"state": "ready"},
+            "catalogue": {"state": "ready", "count": 3},
+            "models": {"state": "ready", "count": 4, "live_ready_count": 2},
+            "comparisons": {"state": "ready", "count": 2},
+            "monitoring": {"state": "ready", "count": 5, "active_count": 0},
+        }
+
+        from config_app.views.home import _next_step
+
+        result = _next_step(status)
+        self.assertEqual(result["label"], "Start a new experiment")
+        self.assertEqual(result["url"], reverse("telemetry_explorer"))
+
+    def test_active_monitoring_remains_the_current_action(self):
+        status = {
+            "source": {"state": "ready"},
+            "catalogue": {"state": "ready", "count": 3},
+            "models": {"state": "ready", "count": 4, "live_ready_count": 2},
+            "comparisons": {"state": "ready", "count": 2},
+            "monitoring": {"state": "active", "count": 5, "active_count": 1},
+        }
+
+        from config_app.views.home import _next_step
+
+        result = _next_step(status)
+        self.assertEqual(result["label"], "View active monitoring")
+        self.assertEqual(result["url"], reverse("monitoring_overview"))
+
+    def test_stale_active_monitoring_is_not_treated_as_current_work(self):
+        from config_app.views.home import _is_recent_active_session
+
+        now = datetime.now(timezone.utc)
+        stale = {
+            "status": "active",
+            "updated_at": (now - timedelta(hours=2)).isoformat(),
+            "poll_interval_seconds": 300,
+        }
+        recent = {
+            "status": "active",
+            "updated_at": (now - timedelta(minutes=2)).isoformat(),
+            "poll_interval_seconds": 300,
+        }
+        self.assertFalse(_is_recent_active_session(stale, now))
+        self.assertTrue(_is_recent_active_session(recent, now))
 
     @patch("config_app.views.update_config.get_catalogue_client")
     def test_monitored_environment_is_editable_and_separates_diagnostics(self, get_client):

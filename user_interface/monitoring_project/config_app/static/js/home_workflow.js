@@ -25,7 +25,7 @@
             retry.textContent = "Checking…";
         }
         nextTitle.textContent = "Checking workflow status…";
-        nextDetail.textContent = "Based on service availability and the number of existing datasets, models, comparisons, and monitoring sessions.";
+        nextDetail.textContent = "Based on service availability, reusable experiment artefacts, and currently active work.";
         nextAction.textContent = "Checking…";
         nextAction.classList.add("disabled");
         nextAction.setAttribute("aria-disabled", "true");
