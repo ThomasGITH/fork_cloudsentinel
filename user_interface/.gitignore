@@ -1,0 +1,3 @@
+# Python bytecode and interpreter caches are generated locally.
+__pycache__/
+*.py[cod]
