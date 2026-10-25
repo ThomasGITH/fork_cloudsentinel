@@ -117,8 +117,23 @@ def _validated_parameters(overrides: dict[str, Any] | None) -> dict[str, Any]:
         raise IsolationForestInputError("training parameter 'n_jobs' must not be zero")
     if parameters["max_samples"] != "auto":
         raise IsolationForestInputError("training parameter 'max_samples' must be 'auto'")
-    if parameters["contamination"] != "auto":
-        raise IsolationForestInputError("training parameter 'contamination' must be 'auto'")
+    contamination = parameters["contamination"]
+    if isinstance(contamination, str) and contamination != "auto":
+        try:
+            contamination = float(contamination)
+        except ValueError as exc:
+            raise IsolationForestInputError(
+                "training parameter 'contamination' must be 'auto' or a number"
+            ) from exc
+        parameters["contamination"] = contamination
+    if contamination != "auto" and (
+        not isinstance(contamination, (int, float))
+        or isinstance(contamination, bool)
+        or not 0 < contamination <= 0.5
+    ):
+        raise IsolationForestInputError(
+            "training parameter 'contamination' must be 'auto' or a number greater than 0 and at most 0.5"
+        )
     if (
         not isinstance(parameters["max_features"], (int, float))
         or isinstance(parameters["max_features"], bool)

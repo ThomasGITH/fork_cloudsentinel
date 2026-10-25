@@ -149,8 +149,24 @@ class Predictor:
             print("voor eval", train_anomaly_scores, test_anomaly_scores, true_anomalies, len(train_anomaly_scores), len(test_anomaly_scores), len(true_anomalies))
 
             e_eval = epsilon_eval(train_anomaly_scores, test_anomaly_scores, true_anomalies, reg_level=self.reg_level)
-            p_eval = pot_eval(train_anomaly_scores, test_anomaly_scores, true_anomalies,
-                              q=self.q, level=self.level, dynamic=self.dynamic_pot)
+            try:
+                p_eval = pot_eval(
+                    train_anomaly_scores,
+                    test_anomaly_scores,
+                    true_anomalies,
+                    q=self.q,
+                    level=self.level,
+                    dynamic=self.dynamic_pot,
+                )
+            except (ValueError, FloatingPointError, ArithmeticError) as exc:
+                # POT needs a non-empty tail above its initial threshold. Some
+                # short, stable baselines do not contain such peaks. That makes
+                # POT unavailable for this run, but does not invalidate the
+                # trained model or the independently calculated epsilon result.
+                p_eval = {
+                    "status": "unavailable",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                }
             bf_eval = bf_search(test_anomaly_scores, true_anomalies, start=0.01, end=2, step_num=100, verbose=False)
             print(f"Results using epsilon method:\n {e_eval}")
             print(f"Results using peak-over-threshold method:\n {p_eval}")
@@ -159,9 +175,10 @@ class Predictor:
             for k, v in e_eval.items():
                 if not type(e_eval[k]) is list:
                     e_eval[k] = float(v)
-            for k, v in p_eval.items():
-                if not type(p_eval[k]) is list:
-                    p_eval[k] = float(v)
+            if p_eval.get("status") != "unavailable":
+                for k, v in p_eval.items():
+                    if not type(p_eval[k]) is list:
+                        p_eval[k] = float(v)
             for k, v in bf_eval.items():
                 bf_eval[k] = float(v)
 

@@ -162,9 +162,22 @@ def validate_parameters(value: Mapping[str, Any]) -> dict[str, Any]:
         raise LocalOutlierFactorInputError(
             "training parameter 'algorithm' is not supported"
         )
-    if parameters["contamination"] != "auto":
+    contamination = parameters["contamination"]
+    if isinstance(contamination, str) and contamination != "auto":
+        try:
+            contamination = float(contamination)
+        except ValueError as exc:
+            raise LocalOutlierFactorInputError(
+                "training parameter 'contamination' must be 'auto' or a number"
+            ) from exc
+        parameters["contamination"] = contamination
+    if contamination != "auto" and (
+        not isinstance(contamination, (int, float))
+        or isinstance(contamination, bool)
+        or not 0 < contamination <= 0.5
+    ):
         raise LocalOutlierFactorInputError(
-            "training parameter 'contamination' must be 'auto'"
+            "training parameter 'contamination' must be 'auto' or a number greater than 0 and at most 0.5"
         )
     return parameters
 

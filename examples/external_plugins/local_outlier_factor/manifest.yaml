@@ -53,9 +53,9 @@ training_parameters:
   contamination:
     type: string
     default: auto
-    allowed_values: [auto]
+    allowed_values: [auto, "0.01", "0.02", "0.05"]
     advanced: false
-    description: Uses scikit-learn's automatic offset for binary novelty predictions.
+    description: Expected fraction of anomalous baseline observations, or scikit-learn's automatic offset.
   algorithm:
     type: string
     default: auto

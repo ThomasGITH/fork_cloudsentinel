@@ -54,9 +54,9 @@ training_parameters:
   contamination:
     type: string
     default: auto
-    allowed_values: [auto]
+    allowed_values: [auto, "0.01", "0.02", "0.05"]
     advanced: true
-    description: Automatic strategy for determining the binary anomaly threshold.
+    description: Expected fraction of anomalous baseline observations, or automatic thresholding.
   max_features:
     type: number
     default: 1.0

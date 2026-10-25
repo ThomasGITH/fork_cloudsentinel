@@ -81,7 +81,10 @@ class DetectorRegistryTests(unittest.TestCase):
         manifest = load_manifest(IF_MANIFEST)
         parameters = manifest["training_parameters"]
         self.assertEqual(parameters["max_samples"]["allowed_values"], ["auto"])
-        self.assertEqual(parameters["contamination"]["allowed_values"], ["auto"])
+        self.assertEqual(
+            parameters["contamination"]["allowed_values"],
+            ["auto", "0.01", "0.02", "0.05"],
+        )
         self.assertEqual(parameters["n_estimators"]["minimum"], 1)
         self.assertEqual(parameters["max_features"]["exclusive_minimum"], 0)
         self.assertEqual(parameters["max_features"]["maximum"], 1.0)

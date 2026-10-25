@@ -219,11 +219,17 @@ class IsolationForestRuntimeTests(unittest.TestCase):
                 self.adapter.evaluate(self.test, invalid_labels, artifact_dir)
             with self.assertRaisesRegex(error, "one-dimensional or a single-row"):
                 self.adapter.evaluate(self.test, np.zeros((5, 5)), artifact_dir)
-            with self.assertRaisesRegex(error, "contamination.*'auto'"):
+            calibrated = self.adapter.train(
+                self.train,
+                artifact_dir,
+                training_parameters={"contamination": "0.02"},
+            )
+            self.assertEqual(calibrated["training_parameters"]["contamination"], 0.02)
+            with self.assertRaisesRegex(error, "contamination.*at most 0.5"):
                 self.adapter.train(
                     self.train,
                     artifact_dir,
-                    training_parameters={"contamination": 0.1},
+                    training_parameters={"contamination": 0.9},
                 )
 
 

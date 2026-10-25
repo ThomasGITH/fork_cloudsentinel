@@ -31,7 +31,7 @@ the same for live observations.
   of training observations.
 - `metric`: allowed distance metric (`minkowski`, `euclidean`, `manhattan` or
   `chebyshev`).
-- `contamination`: currently fixed to scikit-learn's `auto` behavior.
+- `contamination`: `auto` or a small expected baseline-anomaly fraction (`0.01`, `0.02`, or `0.05`).
 - `algorithm`: advanced nearest-neighbor search strategy.
 - `leaf_size`: advanced BallTree/KDTree leaf size.
 - `p`: advanced Minkowski power parameter.
@@ -81,7 +81,7 @@ appear with source `external` and can use the generic **Train models** flow.
 ## Current limitations
 
 - Training uses only the labelled `metrics-partition-v1` profile.
-- `contamination` supports only `auto` in this first version.
+- `contamination` supports `auto` and the bounded calibration choices exposed by the manifest.
 - Input must be finite numeric metrics with stable positional feature order.
 - No LOF-specific inference service or promotion call exists. Published models
   use `cloudsentinel.inference/v1` through the shared Generic Detection Runtime.

@@ -110,9 +110,9 @@ def validate_training_parameters(value: Any) -> dict[str, Any]:
         raise IsolationForestRequestError(
             "training parameter 'max_samples' must be 'auto'"
         )
-    if parameters["contamination"] != "auto":
+    if parameters["contamination"] not in {"auto", "0.01", "0.02", "0.05"}:
         raise IsolationForestRequestError(
-            "training parameter 'contamination' must be 'auto'"
+            "training parameter 'contamination' must be 'auto', '0.01', '0.02', or '0.05'"
         )
     if (
         not isinstance(parameters["max_features"], (int, float))

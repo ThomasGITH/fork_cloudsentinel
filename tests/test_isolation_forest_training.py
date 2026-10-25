@@ -213,7 +213,7 @@ class IsolationForestTrainingRouteTests(unittest.TestCase):
     def test_unknown_and_unsupported_parameters_return_client_errors(self):
         invalid_parameters = (
             ({"unknown": 1}, "unknown training parameter"),
-            ({"contamination": 0.1}, "contamination.*must be 'auto'"),
+            ({"contamination": 0.1}, "contamination.*must be"),
             ({"max_samples": 20}, "max_samples.*must be 'auto'"),
         )
         for parameters, expected_error in invalid_parameters:
