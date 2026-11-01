@@ -1,0 +1,26 @@
+case,dataset,suite,system,system_name,root_cause_service,fault,fault_description,repetition,inject_time,n_metrics,n_timesteps,time_start,time_end,duration_minutes,normal_timesteps,faulty_timesteps,has_logs,n_logs,has_traces,n_traces,has_root_cause_file
+re1tt_ts-auth-service_cpu_1,RE1-TT,RE1,tt,Train Ticket,ts-auth-service,cpu,CPU stress,1,1693187418,220,961,1693186938,1693187898,16.0,480,481,False,0,False,0,False
+re1tt_ts-auth-service_delay_2,RE1-TT,RE1,tt,Train Ticket,ts-auth-service,delay,network delay,2,1693258609,218,961,1693258129,1693259089,16.0,480,481,False,0,False,0,False
+re1tt_ts-auth-service_disk_3,RE1-TT,RE1,tt,Train Ticket,ts-auth-service,disk,disk I/O stress,3,1702387087,228,721,1702386727,1702387447,12.0,360,361,False,0,False,0,False
+re1tt_ts-auth-service_loss_4,RE1-TT,RE1,tt,Train Ticket,ts-auth-service,loss,network packet loss,4,1693280226,201,961,1693279746,1693280706,16.0,480,481,False,0,False,0,False
+re1tt_ts-auth-service_mem_5,RE1-TT,RE1,tt,Train Ticket,ts-auth-service,mem,memory stress,5,1693350515,198,961,1693350035,1693350995,16.0,480,481,False,0,False,0,False
+re1tt_ts-order-service_cpu_2,RE1-TT,RE1,tt,Train Ticket,ts-order-service,cpu,CPU stress,2,1693244807,215,961,1693244327,1693245287,16.0,480,481,False,0,False,0,False
+re1tt_ts-order-service_delay_3,RE1-TT,RE1,tt,Train Ticket,ts-order-service,delay,network delay,3,1693272698,201,961,1693272218,1693273178,16.0,480,481,False,0,False,0,False
+re1tt_ts-order-service_disk_4,RE1-TT,RE1,tt,Train Ticket,ts-order-service,disk,disk I/O stress,4,1702393007,236,721,1702392647,1702393367,12.0,360,361,False,0,False,0,False
+re1tt_ts-order-service_loss_5,RE1-TT,RE1,tt,Train Ticket,ts-order-service,loss,network packet loss,5,1693324928,200,961,1693324448,1693325408,16.0,480,481,False,0,False,0,False
+re1tt_ts-order-service_mem_1,RE1-TT,RE1,tt,Train Ticket,ts-order-service,mem,memory stress,1,1693334559,199,961,1693334079,1693335039,16.0,480,481,False,0,False,0,False
+re1tt_ts-route-service_cpu_3,RE1-TT,RE1,tt,Train Ticket,ts-route-service,cpu,CPU stress,3,1693254864,215,961,1693254384,1693255344,16.0,480,481,False,0,False,0,False
+re1tt_ts-route-service_delay_4,RE1-TT,RE1,tt,Train Ticket,ts-route-service,delay,network delay,4,1693282644,204,961,1693282164,1693283124,16.0,480,481,False,0,False,0,False
+re1tt_ts-route-service_disk_5,RE1-TT,RE1,tt,Train Ticket,ts-route-service,disk,disk I/O stress,5,1702397991,238,721,1702397631,1702398351,12.0,360,361,False,0,False,0,False
+re1tt_ts-route-service_loss_1,RE1-TT,RE1,tt,Train Ticket,ts-route-service,loss,network packet loss,1,1693330546,200,961,1693330066,1693331026,16.0,480,481,False,0,False,0,False
+re1tt_ts-route-service_mem_2,RE1-TT,RE1,tt,Train Ticket,ts-route-service,mem,memory stress,2,1693337820,198,961,1693337340,1693338300,16.0,480,481,False,0,False,0,False
+re1tt_ts-train-service_cpu_4,RE1-TT,RE1,tt,Train Ticket,ts-train-service,cpu,CPU stress,4,1693286203,202,961,1693285723,1693286683,16.0,480,481,False,0,False,0,False
+re1tt_ts-train-service_delay_5,RE1-TT,RE1,tt,Train Ticket,ts-train-service,delay,network delay,5,1693312203,204,961,1693311723,1693312683,16.0,480,481,False,0,False,0,False
+re1tt_ts-train-service_disk_1,RE1-TT,RE1,tt,Train Ticket,ts-train-service,disk,disk I/O stress,1,1702383178,224,721,1702382818,1702383538,12.0,360,361,False,0,False,0,False
+re1tt_ts-train-service_loss_2,RE1-TT,RE1,tt,Train Ticket,ts-train-service,loss,network packet loss,2,1693238896,221,961,1693238416,1693239376,16.0,480,481,False,0,False,0,False
+re1tt_ts-train-service_mem_3,RE1-TT,RE1,tt,Train Ticket,ts-train-service,mem,memory stress,3,1693264015,218,961,1693263535,1693264495,16.0,480,481,False,0,False,0,False
+re1tt_ts-travel-service_cpu_5,RE1-TT,RE1,tt,Train Ticket,ts-travel-service,cpu,CPU stress,5,1693316211,198,961,1693315731,1693316691,16.0,480,481,False,0,False,0,False
+re1tt_ts-travel-service_delay_1,RE1-TT,RE1,tt,Train Ticket,ts-travel-service,delay,network delay,1,1693203716,220,961,1693203236,1693204196,16.0,480,481,False,0,False,0,False
+re1tt_ts-travel-service_disk_2,RE1-TT,RE1,tt,Train Ticket,ts-travel-service,disk,disk I/O stress,2,1702402965,238,721,1702402605,1702403325,12.0,360,361,False,0,False,0,False
+re1tt_ts-travel-service_loss_3,RE1-TT,RE1,tt,Train Ticket,ts-travel-service,loss,network packet loss,3,1693270276,201,961,1693269796,1693270756,16.0,480,481,False,0,False,0,False
+re1tt_ts-travel-service_mem_4,RE1-TT,RE1,tt,Train Ticket,ts-travel-service,mem,memory stress,4,1693349332,198,961,1693348852,1693349812,16.0,480,481,False,0,False,0,False

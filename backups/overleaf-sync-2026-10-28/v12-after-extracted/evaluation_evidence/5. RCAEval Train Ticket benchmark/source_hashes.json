@@ -1,0 +1,156 @@
+{
+  "cases.parquet": {
+    "sha256": "c49a288920dbba2e8e724679a14636d5c7eb2b45426bba14007ef79a6c0ab1bb",
+    "source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/cases.parquet"
+  },
+  "re1tt_ts-auth-service_cpu_1": {
+    "inject_time_sha256": "1b922e31c96d959d595e695a827a7d04033df8d731b31ff6ec5b2958bbd751b1",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_cpu_1/inject_time.txt",
+    "metrics_sha256": "15dd9821d1091e525429fd912411fc6202a1b386f284a06ac4ff8e8d5830e4f7",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_cpu_1/metrics.parquet"
+  },
+  "re1tt_ts-auth-service_delay_2": {
+    "inject_time_sha256": "f6e1355f83522bc620a6286531d82a42ecc8d855481dfc819724d6d66236bd8d",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_delay_2/inject_time.txt",
+    "metrics_sha256": "009d251fb8abdc0a0981be8fa664272a02b2b7b58a9d1c2abae2b3f029d339be",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_delay_2/metrics.parquet"
+  },
+  "re1tt_ts-auth-service_disk_3": {
+    "inject_time_sha256": "ed383e2a4870cf576e45b1aaa06bd98b2a066c0c8a8ac075eb0d7e87c9594c4c",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_disk_3/inject_time.txt",
+    "metrics_sha256": "e835a81adeb4d2204dabc54ceb9b1efc1a23a93fd46257eabcdf82d3db58e08e",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_disk_3/metrics.parquet"
+  },
+  "re1tt_ts-auth-service_loss_4": {
+    "inject_time_sha256": "4a1e5470d2c644c848933ed88b0b75f8871da13da505b06f29451c2cdc64cd75",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_loss_4/inject_time.txt",
+    "metrics_sha256": "2c49d5f2db728daef4f18f7ad3ca7ef70297211524a4c15d83fb74c1559ab02f",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_loss_4/metrics.parquet"
+  },
+  "re1tt_ts-auth-service_mem_5": {
+    "inject_time_sha256": "233035ab251175ba3e762c57eb8fb178b610e6e23a8847532a53e7b31eed710c",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_mem_5/inject_time.txt",
+    "metrics_sha256": "50002dfa4bce035f064501663a44b55b63760f0edc2f1abd19a4bbe6f728058c",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-auth-service_mem_5/metrics.parquet"
+  },
+  "re1tt_ts-order-service_cpu_2": {
+    "inject_time_sha256": "8c4787a5d37ee0511a55ec79b23e867ac1a7bb48cd3502529f5b73eb07ca6523",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_cpu_2/inject_time.txt",
+    "metrics_sha256": "51f32b73feeb24c1c8a74b7fbb40dbbf5e716976caee4da968a76f5081e99013",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_cpu_2/metrics.parquet"
+  },
+  "re1tt_ts-order-service_delay_3": {
+    "inject_time_sha256": "5db3be5688248e7fb90d23f6c36843e1f4b743561ef7a95da06db6e565cb0af9",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_delay_3/inject_time.txt",
+    "metrics_sha256": "094e934afd89c58d1785e5714640c5c5a840d95f630c7b3c37f6dc62b940f50f",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_delay_3/metrics.parquet"
+  },
+  "re1tt_ts-order-service_disk_4": {
+    "inject_time_sha256": "88b898fb6a5908ea052434ab57201ea19a8fd6a116a0f66b802aa1fdf89f7178",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_disk_4/inject_time.txt",
+    "metrics_sha256": "2ad68550c781d67fe4299faa67c582a3a866248a77ba2ac800bc9b40e3f5aa03",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_disk_4/metrics.parquet"
+  },
+  "re1tt_ts-order-service_loss_5": {
+    "inject_time_sha256": "dd96ec98415c03865528b65cd075a4f683637bb292270ad6357cfe1ae17e169b",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_loss_5/inject_time.txt",
+    "metrics_sha256": "a30f2d5d3bedc77bc20df02532934cd435df474b93c59f6ab1d384e28b49aed6",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_loss_5/metrics.parquet"
+  },
+  "re1tt_ts-order-service_mem_1": {
+    "inject_time_sha256": "2f889059eac4fa8964eca6459b021db53d87cff66a8e586ac4525d4facdd5daa",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_mem_1/inject_time.txt",
+    "metrics_sha256": "69b46d1a205f07e55182d29b0ca9097a873f6a64e0e2575dceac3d464b0d7e30",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-order-service_mem_1/metrics.parquet"
+  },
+  "re1tt_ts-route-service_cpu_3": {
+    "inject_time_sha256": "a9d9f685bf052a686bc0d44007689786de3e5baefeb91581a3e1635f2be07e15",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_cpu_3/inject_time.txt",
+    "metrics_sha256": "c81558ece7f92a8e122f77d3b86da0be669f5f604ce12c0c0efbf13029cd3238",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_cpu_3/metrics.parquet"
+  },
+  "re1tt_ts-route-service_delay_4": {
+    "inject_time_sha256": "d54497ef36e61d14b298186b1457bb8df9e7a5e4438f8686377316f15300801f",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_delay_4/inject_time.txt",
+    "metrics_sha256": "afa6d9bad17a3351160c56403b814622284911d8a6024da015001f3bc2dae0e7",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_delay_4/metrics.parquet"
+  },
+  "re1tt_ts-route-service_disk_5": {
+    "inject_time_sha256": "8c57098c249ac566e3e64fad935431294f44f2799c7f6c800a2aec5392f1e9bb",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_disk_5/inject_time.txt",
+    "metrics_sha256": "1f4b4a8d40e9af2b76c9309f8291e4b92c1d0bb7e3ff4a90e4af0d608b8b02d9",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_disk_5/metrics.parquet"
+  },
+  "re1tt_ts-route-service_loss_1": {
+    "inject_time_sha256": "5eea3008f20b5124fd48feb69bd0726dc147e66268abf6fa0686e840149749bc",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_loss_1/inject_time.txt",
+    "metrics_sha256": "35a11c7a4155cc1939e00c84294fe2edd1af1517358bf9229f81ba57cfe580de",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_loss_1/metrics.parquet"
+  },
+  "re1tt_ts-route-service_mem_2": {
+    "inject_time_sha256": "1056339c366540a6227898fa3d65b84520ee1d3dbf8fc44bad131a0ecc933ca3",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_mem_2/inject_time.txt",
+    "metrics_sha256": "2803811e37bd5c28bbe084c619c08853b3682e5a09d4cd8443fb424ade8ee8e6",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-route-service_mem_2/metrics.parquet"
+  },
+  "re1tt_ts-train-service_cpu_4": {
+    "inject_time_sha256": "235284a0204844a911c5a0b7086b461ab6d1e984d44f94af4f7f061d3757532d",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_cpu_4/inject_time.txt",
+    "metrics_sha256": "d3d8969f5995da00c600d4c543003b772d25f571138ff207bdad28ff5e8b0f50",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_cpu_4/metrics.parquet"
+  },
+  "re1tt_ts-train-service_delay_5": {
+    "inject_time_sha256": "bc9ae6bf27e3d538ac010170aec7a226007692d8a9edbffb0da167c669792c66",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_delay_5/inject_time.txt",
+    "metrics_sha256": "bcbdc659597bc58fd9645190b7694e761f3e93b8033ce3cd08c62cbf02886a64",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_delay_5/metrics.parquet"
+  },
+  "re1tt_ts-train-service_disk_1": {
+    "inject_time_sha256": "c1570f855e69cc3da3285c702cf6a95f7a0e1880b43134293f8cc76de4b870b9",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_disk_1/inject_time.txt",
+    "metrics_sha256": "e049921f73f044089722ed9b2560d84f15fa4b5bd1ec9469b73ccda46efac003",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_disk_1/metrics.parquet"
+  },
+  "re1tt_ts-train-service_loss_2": {
+    "inject_time_sha256": "2bb51ef580c46bc06371ab4873b9d8d70ec67931bc64e1981bc61ccbfba04565",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_loss_2/inject_time.txt",
+    "metrics_sha256": "caec0c86d9ff2cd426d4884dd0f993dc86c6e0df702c7aa5594b7cc5a77672c3",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_loss_2/metrics.parquet"
+  },
+  "re1tt_ts-train-service_mem_3": {
+    "inject_time_sha256": "1e42d5592072ddf6f7d3982d63cb72aa4f4ac33964d19004cbdd08c8b5db1acb",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_mem_3/inject_time.txt",
+    "metrics_sha256": "86468091192ea7a8660eec22623bcf1a53efa1b7f6ddd627143363b618947e37",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-train-service_mem_3/metrics.parquet"
+  },
+  "re1tt_ts-travel-service_cpu_5": {
+    "inject_time_sha256": "35f76dca5e83d01979d247c0ab65b968367723d7c36cdfe367ba511d2db0f0a2",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_cpu_5/inject_time.txt",
+    "metrics_sha256": "ca7f74e31e146c58a3d1abc5a8b1c21d7b3549e2d30888fc0cc42f0c9b19fc70",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_cpu_5/metrics.parquet"
+  },
+  "re1tt_ts-travel-service_delay_1": {
+    "inject_time_sha256": "2defb5ffd72955ca1b03390e75edf06f9c1a28ab6c4ea638df33d2ac76358199",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_delay_1/inject_time.txt",
+    "metrics_sha256": "fc40c835c09a384f00aa7cc49875cdd33f3869874fd52531a2d749ede42a5140",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_delay_1/metrics.parquet"
+  },
+  "re1tt_ts-travel-service_disk_2": {
+    "inject_time_sha256": "d38164282a2f76b161ac82efe7d61d89f0c18fae4752b2d388cd69aea6e84ac2",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_disk_2/inject_time.txt",
+    "metrics_sha256": "7bd376364339411b79cf857346b9c5ae3cbc0698b11ccba3e455acdc075fe4aa",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_disk_2/metrics.parquet"
+  },
+  "re1tt_ts-travel-service_loss_3": {
+    "inject_time_sha256": "54d97ea18ed26bccdd6a966d9c41a32b5436045c2bd38f95e4228d74427c7766",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_loss_3/inject_time.txt",
+    "metrics_sha256": "71665e08e347405f8668e992b823572f9f290a97e4c9e641dc0650778ba994fc",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_loss_3/metrics.parquet"
+  },
+  "re1tt_ts-travel-service_mem_4": {
+    "inject_time_sha256": "091977b0b36fdf798909a37719308cfdbfc6543f5a5adf8b6ed6e57967ebf1c1",
+    "inject_time_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_mem_4/inject_time.txt",
+    "metrics_sha256": "bfe2dea8cfdd011d3f614b331a11fd63291dd4a3d072eebe0440d4c5e23abc4c",
+    "metrics_source": "https://huggingface.co/datasets/phamquiluan/RCAEval/resolve/main/re1tt_ts-travel-service_mem_4/metrics.parquet"
+  }
+}

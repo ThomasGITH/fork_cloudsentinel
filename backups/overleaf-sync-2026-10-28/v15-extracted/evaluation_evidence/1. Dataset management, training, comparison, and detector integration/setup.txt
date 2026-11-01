@@ -1,0 +1,67 @@
+CloudSentinel evaluation, setup notes
+Written on 2026-10-22
+
+Context: This document contains the basesetup used by evaluations 1 to 4.
+
+Software:
+- Repository commit: 958b023bacc5dce8d8fbf5104aad97d3e6d4930f
+- Branch: ManifestAndTraining
+- The EC2 checkout was clean when inspected.
+- Kubernetes client: v1.36.0; server: v1.35.1.
+- Relevant immutable container image IDs:
+  - data ingestion/API and worker: sha256:55771f034918685e2fcf33d1394a6b3ccc8ac189559f573512fb8e96c634ac61
+  - learning adaptation/API and worker: sha256:55aaba7da1afbfbee14d0683a0d18d1938493dd8234b81e8e9b0a326930a2179
+  - generic detection runtime: sha256:d12a0dd85befd526545c0898b58cbd85ba808fbfbeeb3557b33286ba7173dd9d
+  - monitoring UI: sha256:11f5703bd9afcaaed4eafb87974472e46083224b4a9741c00d1d3877e8f586dd
+
+Environment and resources:
+- AWS EC2 host running a single-node Minikube cluster.
+- Linux kernel: 7.0.0-1012-aws, x86_64.
+- CPU: 4 vCPU; Intel Xeon Platinum 8175M at 2.50 GHz.
+- Memory: 15 GiB total; no swap. At setup capture: 6.8 GiB used and 8.6 GiB available.
+- Minikube capacity: 4 CPU, 16161512 KiB memory, 110 pods.
+- At setup capture: 918 millicores (22%) and 6994 MiB (44%) reported for the node.
+- Learning worker requests 500 millicores and 4 GiB, with limits of 2 CPU and 8 GiB.
+- The learning API and data-ingestion API had no explicit CPU or memory requests/limits.
+- Online Boutique ran in namespace `default`; CloudSentinel ran in namespace `cloudsentinel`.
+
+Data source and dataset used for training/comparison:
+- Prometheus endpoint (cluster-internal): http://kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local:9090
+- Catalogue dataset: ds_317be8f795914aaaa95be455f457ba8e, version 8.
+- Partition: partition-41d83a42121a46a1bfe2a0e0535be512.
+- Partition checksum: 665c8293bda13d41545cedd47c1d725d2dd2382410e4ef3eaa7e75e601a22090.
+- Feature-order SHA-256: c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d.
+- Sampling interval: 15 seconds.
+- Features: 44 ordered features across 11 Boutique pods: CPU usage, memory usage,
+  CPU throttling, and pod-restart rate per pod.
+- Source preprocessing: no imputation and no catalogue-level normalization.
+- Bundle contents: 1,441 train observations, 921 test observations, 921 binary labels.
+- Ground truth: one manually recorded checkoutservice CPU-stress interval;
+  labels were derived by inclusive timestamp membership in that interval.
+
+PromQL templates (namespace resolved to `default`)
+- CPU usage: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="default", pod!~"loadgenerator-.*",container!="POD",pod!=""}[1m]))
+- Memory: sum by (pod) (container_memory_usage_bytes{namespace="default", pod!~"loadgenerator-.*", container!="POD", pod!=""})
+- CPU throttling: sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace="default", pod!~"loadgenerator-.*", container!="POD", pod!=""}[1m]))
+- Restarts: sum by (pod) (rate(kube_pod_container_status_restarts_total{namespace="default", pod!~"loadgenerator-.*", pod!=""}[1m]))
+
+Models and preprocessing
+- CGNN-MHSA-AR 1.0.0: MinMaxScaler fitted only on training data; lookback 100;
+  five epochs; batch size 256; validation fraction 0.1; CUDA off; feature
+  importance and TensorBoard logging off. Its first 100 evaluation observations
+  are warm-up and are excluded from metric calculation.
+- Isolation Forest 1.0.0: persisted StandardScaler + IsolationForest pipeline;
+  100 estimators, contamination=auto, max_samples=auto, random_state=42,
+  n_jobs=1; no warm-up.
+- Local Outlier Factor 1.0.1 (external plugin): persisted StandardScaler +
+  novelty-enabled LOF pipeline; n_neighbors=20, Minkowski p=2,
+  contamination=auto; no warm-up.
+- Binary label/prediction semantics: 0=normal, 1=anomaly.
+- Comparison metrics: precision=TP/(TP+FP), recall=TP/(TP+FN), and harmonic-mean F1;
+  zero denominators are represented as 0.0 by the current implementation.
+
+Evaluation identifiers
+- F1 data check: H9-F1-20261022T1455Z.
+- Training/integration run: run_66c1afb51b384ddea76f2a6a31ee86fb.
+- Labelled CPU-stress comparison: comparison-30e17f28be2b47088614f54c4798aae3.
+- Normal-operation comparison: comparison-d64e51fcd1604d5480a9ac34a21821d2.

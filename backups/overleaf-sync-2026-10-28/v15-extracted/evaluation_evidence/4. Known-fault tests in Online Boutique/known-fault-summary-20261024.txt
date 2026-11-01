@@ -1,0 +1,53 @@
+Known-fault evaluation summary
+Recorded: 2026-10-24
+
+Final configuration
+- Model: run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402
+- Live window: 600 seconds; polling: 15 seconds; automatic-RCA threshold: 50%.
+- Parallel sessions: CausalRCA legacy-v1 and BARO RobustScorer v1.
+- No detector parameter or threshold was changed after the final trial began.
+
+B1 -- checkoutservice CPU stress
+- Fault interval: 18:03:38Z--18:06:40Z.
+- Prometheus range: 0.000351--0.200136 CPU cores; immediate pre-fault value 0.001508.
+- Temporary container ended after the bounded interval (exit 143).
+- Detector output was 100% anomalous in baseline and throughout the fault.
+- CausalRCA checkout CPU ranks during the fault: 26 and 28.
+- BARO: skipped; insufficient normal baseline observations.
+
+B2 -- cartservice memory allocation
+- Fault interval: 18:08:40Z--18:11:43Z.
+- Prometheus range: 70,926,336--134,107,136 bytes.
+- Temporary container completed after the bounded interval.
+- Detector output remained 100% anomalous.
+- CausalRCA during the fault: cart CPU rank 1; cart memory rank 26.
+- BARO: skipped; insufficient normal baseline observations.
+
+B3 -- paymentservice pod replacement
+- Replacement interval: 18:18:08Z--18:18:28Z.
+- Old UID: 1fca3e8e-38c8-42d5-8e6d-cd9b29737a04.
+- New UID: 256ede41-d3dd-4f92-b5da-160b5c60200c; Ready=true.
+- Both monitoring sessions failed when the pinned no-imputation policy encountered
+  one missing live value during pod absence.
+- Last CausalRCA update: frontend CPU rank 1, payment CPU rank 7,
+  payment restart rate rank 12.
+- BARO: skipped; insufficient normal baseline observations.
+
+Interpretation
+- All interventions were independently verified.
+- The detector produced false positives throughout the normal baseline, so later
+  threshold crossings and RCA executions cannot be attributed to the faults.
+- CausalRCA executed and retained rankings, but did not reliably identify the
+  injected fault metric in these trials.
+- BARO refused to calculate a ranking without a usable normal baseline.
+- Temporary pod absence terminates monitoring under the current strict missing-data policy.
+
+Raw records
+- Boutique-known-faults-cpu-memory-20261024.json
+- Boutique-known-faults-cpu-memory-sessions-20261024.json
+- Boutique-payment-replacement-20261024.json
+- Boutique-fault-prometheus-verification-20261024.json
+- Boutique-known-faults-rca-details-20261024.json
+
+Diagnostic pilots and aborted preflights were retained separately but are not
+counted as completed known-fault trials.

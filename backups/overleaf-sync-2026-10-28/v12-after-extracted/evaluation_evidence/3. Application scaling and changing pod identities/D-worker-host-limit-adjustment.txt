@@ -1,0 +1,8 @@
+changed_at=2026-10-26T20:13:51Z
+original_fs.inotify.max_user_instances=128
+fs.inotify.max_user_instances = 512
+fs.inotify.max_user_instances = 512
+fs.inotify.max_user_watches = 127497
+retry_at=2026-10-26T20:15:32Z
+fs.inotify.max_user_instances = 1024
+fs.inotify.max_user_instances = 128

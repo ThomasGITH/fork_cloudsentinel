@@ -1,0 +1,236 @@
+
+%
+%% This is the template to use for your master thesis Software Engineering. It
+%% provides you with a structure that we expect you to follow, with guidelines on 
+%% the contents of each section. Depending on your research you can deviate from
+%% this structure, usually by renaming or adding some chapters in the middle. Do
+%% discuss this with your academic supervisor first!
+%% 
+%% Be sure to change the variables under the "Options" banner down below, such as
+%% title, subtitle, author, examiner, company, etc., and pick a cover image (or
+%% remove it entirely).
+%
+\RequirePackage[l2tabu, orthodox]{nag}
+
+% DE OUDE MET HET FORMATTING PROBLEEM:
+% \documentclass{mscthesis}
+
+% HIERBIJ DEELS OPGELOST:
+% \documentclass[oneside]{mscthesis}
+\documentclass[oneside,openany]{mscthesis}
+
+\usepackage{import}
+\usepackage[final]{microtype}
+\usepackage{float}
+\usepackage{polyglossia}
+\setmainlanguage[variant=british]{english}
+\usepackage[backend=biber,
+            hyperref=true,
+            isbn=true,
+            backref=false,
+            maxcitenames=3,
+            maxbibnames=100,
+            block=none,
+            style=numeric-comp,
+            giveninits=true,
+            sortlocale=auto]{biblatex}
+\addbibresource{references.bib}
+
+\DefineBibliographyStrings{english}{%
+  bibliography = {References},
+  references = {References},
+}
+
+\usepackage[svgnames]{xcolor}
+\usepackage{graphicx}
+\graphicspath{{./figures/}}
+\setkeys{Gin}{width=0.9\linewidth}
+\usepackage{subcaption}
+\captionsetup{margin=1pt}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,fit,positioning,shapes.geometric}
+
+\usepackage[colorlinks=false,
+			pdfborder={0 0 0},
+			pdfusetitle]{hyperref}
+\urlstyle{same}
+
+\usepackage{booktabs} % publication quality tables
+\usepackage{mathtools} % mathematical tools to use with amsmath
+\usepackage{cleveref} % intelligent cross-referencing
+\usepackage{blindtext} % producing 'blind' text for testing
+\usepackage[british,xlatin,abbreviations]{foreign} % systematic treatment of 'foreign' words in documents
+\usepackage[cachedir=_minted-\jobname]{minted} % highlight source code
+\usepackage[colorinlistoftodos]{todonotes} % marking things to do in a LaTeX document
+
+\usepackage[acronym,shortcuts=ac,nomain,nonumberlist]{glossaries-extra}
+\makeglossaries{}
+\setabbreviationstyle[acronym]{long-short}
+\loadglsentries{acronyms}
+
+\usepackage[shortlabels,inline]{enumitem} % control layout of itemize, enumerate, description
+\setlist{noitemsep} % shorten space between items
+
+\settocdepth{subsection}
+\setsecnumdepth{subsection}
+
+% Change table numbers to lininig instead of oldstyle
+\usepackage{etoolbox}
+\AtBeginEnvironment{tabular}{\addfontfeatures{Numbers={Lining}}}
+
+% STUFF I ADDED MYSELF:
+\usepackage{svg}
+
+%---------------------------------------------------------------------%
+%                     Options                                         %
+%---------------------------------------------------------------------%
+
+% \title{Exploring Graph Abstraction\\Techniques for Kubernetes Service Dependency Analysis\\}
+\title{\LARGE From Telemetry to Diagnosis:\\[0.3em]Designing and Evaluating an End-to-End Experimental Workflow\\for Anomaly Detection and Root Cause Analysis\\in Kubernetes Microservices} \AtBeginDocument{\hypersetup{pdftitle={From Telemetry to Diagnosis: Designing and Evaluating an End-to-End Experimental Workflow for Anomaly Detection and Root Cause Analysis in Kubernetes Microservices}}}
+\subtitle{Version of \today}
+\date{\today}
+\author{Thomas Linssen}
+
+% Provide the logo and address of the host organisation (company or research group)
+\hostorganisation{sue_logo.svg}{%
+Sue B.V.\\
+De Ooyen 9\\
+4191~PB Geldermalsen\\
+The Netherlands
+}
+
+% Optional cover picture. Put this in comments when not needed.
+% \coverpicture{\includegraphics[width=\textwidth]{figures/sue_logo.png}}
+\coverpicture{\includesvg[scale=4]{figures/sue_logo.svg}}
+
+% -- Thesis committee --
+
+% MANDATORY
+% Examiner (academic supervisor), also chair of the committee 
+\examiner{Dr.\ Zhiming Zhao}{UvA}
+% Second reviewer (reader)
+\reviewer{[fill in reviewer here]}{[research group / department]], UvA}
+
+% OPTIONAL
+% Daily supervisor is supervisor from a research group, typically a PhD student or Postdoc.
+\dailysupervisor{Dr.\ Zhiming Zhao}{UvA}
+% External supervisor is the (daily) supervisor from the company
+\externalsupervisor{Mike van Haren}{Sue}
+% Any other committee members and their affiliation
+\othermembers{[FILL IN HERE. SEE COMMENTED OUT EXAMPLE BELOW.]}
+% \othermembers{Prof.\ dr.\ ir.\ Cees~Bakker (VU), Dr.\ Pierre~de~Vries (RUG)}
+
+% A copyright notice and maybe something about the cover picture.
+% Put in comments to get the default copyright notice.
+\colophon{\noindent{}%
+  Copyright \copyright{} \theauthor{}, \the\year{}. \emph{Note that this notice is for 
+  demonstration purposes and that the \LaTeX{} style and document source are free to
+  use as basis for your MSc thesis.}\\[1em]
+  Cover picture: A ``random'' maze.
+}
+
+% FOR THE APPENDIX:
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    breakatwhitespace=false,
+    frame=single,
+    columns=fullflexible,
+    showstringspaces=false
+}
+
+%---------------------------------------------------------------------%
+%                     /Options                                        %
+%---------------------------------------------------------------------%
+
+\usepackage{titlesec}
+
+\begin{document}
+%
+% FRONTMATTER
+%
+
+\frontmatter
+% from memdesign.pdf, see Table 2.1: Front matter
+% cover title - recto, no folio
+\import{frontmatter/}{cover.tex}
+
+% title page - recto
+\cleartorecto{}
+\import{frontmatter/}{title.tex}
+
+% dedication / epigraph - recto
+% \cleartorecto{}
+% \import{frontmatter/}{epigraph.tex}
+
+% abstract
+\cleartorecto{}
+\chapter{Abstract}
+\import{frontmatter/}{abstract.tex}
+% reset all used acronyms so we can properly introduce them next time
+\glsresetall{}
+
+% blank - verso
+% ToC
+\cleartorecto{}
+\tableofcontents{}
+\clearpage{}
+
+% List of Figures - recto or verso
+\listoffigures{}
+\clearpage{}
+
+% List of Tables - recto or verso
+\listoftables{}
+\clearpage{}
+
+% acknowledgments (any acknowledgemnts not mentioned in preface)
+\cleartorecto{}
+\chapter{Acknowledgements}
+\import{frontmatter/}{acknowledgement.tex}
+
+
+\mainmatter
+
+\import{chapters/}{1_introduction.tex}
+\import{chapters/}{2_background_and_related_work.tex}
+\import{chapters/}{3_research_design_and_methods.tex}
+\import{chapters/}{4_existing_AIops_framework_and_problem_analysis.tex}
+\import{chapters/}{5_requirements_and_evaluation_criteria.tex}
+\import{chapters/}{6_evaluation_design_and_protocol.tex}
+\import{chapters/}{7_baseline_evaluation_results.tex}
+\import{chapters/}{8_framework_evaluation_and_design_requirements.tex}
+\import{chapters/}{9_improvement_design_implementation_and_evaluation.tex}
+\import{chapters/}{10_conclusion.tex}
+
+%
+% APPENDICES
+%
+
+\appendix
+
+\import{appendix/}{appendix.tex}
+\import{appendix/}{showcase.tex}
+
+%
+% BACKMATTER
+%
+
+\backmatter
+
+% Bibliography
+\printbibliography{}
+\cleardoublepage{}
+
+% Acronyms
+\printacronyms[style=long,title={Acronyms}]
+\cleardoublepage{}
+
+% List of ToDos
+% \listoftodos{}
+% \cleardoublepage{}
+
+\end{document}

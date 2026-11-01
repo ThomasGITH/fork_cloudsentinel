@@ -1,0 +1,110 @@
+{
+  "by_fault": {
+    "cpu": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.9,
+      "mean_runtime_seconds": 0.15245278320000005,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.8,
+      "service_top_3_rate": 1.0,
+      "service_top_5_rate": 1.0
+    },
+    "delay": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.45,
+      "mean_runtime_seconds": 0.1384959179999999,
+      "median_root_service_rank": 2.0,
+      "service_top_1_rate": 0.0,
+      "service_top_3_rate": 0.8,
+      "service_top_5_rate": 1.0
+    },
+    "disk": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.9,
+      "mean_runtime_seconds": 0.11721978559999986,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.8,
+      "service_top_3_rate": 1.0,
+      "service_top_5_rate": 1.0
+    },
+    "loss": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.6848484848484848,
+      "mean_runtime_seconds": 0.1357122347999999,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.6,
+      "service_top_3_rate": 0.8,
+      "service_top_5_rate": 0.8
+    },
+    "mem": {
+      "cases": 5,
+      "mean_reciprocal_rank": 1.0,
+      "mean_runtime_seconds": 0.21464161599999976,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 1.0,
+      "service_top_3_rate": 1.0,
+      "service_top_5_rate": 1.0
+    }
+  },
+  "by_root_service": {
+    "ts-auth-service": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.7181818181818181,
+      "mean_runtime_seconds": 0.1328199264000002,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.6,
+      "service_top_3_rate": 0.8,
+      "service_top_5_rate": 0.8
+    },
+    "ts-order-service": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.8,
+      "mean_runtime_seconds": 0.2046711748,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.6,
+      "service_top_3_rate": 1.0,
+      "service_top_5_rate": 1.0
+    },
+    "ts-route-service": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.7166666666666667,
+      "mean_runtime_seconds": 0.13365505239999997,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.6,
+      "service_top_3_rate": 0.8,
+      "service_top_5_rate": 1.0
+    },
+    "ts-train-service": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.9,
+      "mean_runtime_seconds": 0.13801438299999996,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.8,
+      "service_top_3_rate": 1.0,
+      "service_top_5_rate": 1.0
+    },
+    "ts-travel-service": {
+      "cases": 5,
+      "mean_reciprocal_rank": 0.8,
+      "mean_runtime_seconds": 0.14936180099999935,
+      "median_root_service_rank": 1.0,
+      "service_top_1_rate": 0.6,
+      "service_top_3_rate": 1.0,
+      "service_top_5_rate": 1.0
+    }
+  },
+  "change_point_source": "published benchmark injection time",
+  "created_at": "2026-10-25T19:51:42.521798Z",
+  "evidence_boundary": "The published injection time is supplied to RobustScorer. These results evaluate ranking conditional on a known change point, not anomaly or change-point detection.",
+  "method": "fse-baro RobustScorer 0.2.2",
+  "overall": {
+    "cases": 25,
+    "mean_reciprocal_rank": 0.7869696969696969,
+    "mean_runtime_seconds": 0.15170446751999989,
+    "median_root_service_rank": 1.0,
+    "service_top_1_rate": 0.64,
+    "service_top_3_rate": 0.92,
+    "service_top_5_rate": 0.96
+  },
+  "protocol_version": "cloudsentinel-rcaeval-train-ticket/v1"
+}

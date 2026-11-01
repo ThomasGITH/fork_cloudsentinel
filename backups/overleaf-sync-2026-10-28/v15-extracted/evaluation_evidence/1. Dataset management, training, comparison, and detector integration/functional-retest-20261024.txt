@@ -1,0 +1,28 @@
+CloudSentinel final-workflow functional retest
+Recorded: 2026-10-24
+
+Automated regression checks
+- Backend and workflow regression selection: 116 tests passed.
+- Deployed monitoring-interface selection: 91 tests passed.
+- Covered catalogue, lifecycle delivery, fetching, training runs, Isolation Forest,
+  external LOF, comparison, detector onboarding, live monitoring and automatic RCA.
+
+Deployed UI smoke check
+- HTTP 200 and expected page content confirmed for:
+  /, /config/, /data-catalogue/, /models/, /models/detectors/add/,
+  /comparison/, /comparison/new/, /monitoring-home/ and /monitoring/.
+- Confirmed workflow navigation labels, system-connection authentication and
+  diagnostics, Grafana and Prometheus links, detector YAML/adapter onboarding,
+  comparison continuation controls, and monitoring/RCA entry points.
+
+Configured telemetry connection
+- The stored Prometheus configuration test returned status `connected`.
+- Prometheus reported 17 scrape targets.
+- Authentication mode was `none`; a credential-secret record was present but
+  no credential was sent for this cluster-internal connection.
+
+Interpretation
+- These checks show that the recent workflow and interface changes did not break
+  the tested functions in the deployed evaluation build.
+- They do not prove model accuracy, cross-environment portability, or that every
+  browser and input combination is defect free.

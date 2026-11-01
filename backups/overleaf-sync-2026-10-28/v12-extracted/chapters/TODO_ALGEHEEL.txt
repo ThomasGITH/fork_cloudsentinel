@@ -1,0 +1,9 @@
+
+TODO:
+- Introductie (vereist aanpassing)
+- Related works
+- 'Existing AIOps frameworks' (vereist aanpassing)
+- Kleine aanpassing: 'experimental setup' hoofdstuk
+- Cross-case evaluation
+- Discussion
+- Conclusion

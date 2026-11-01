@@ -1,0 +1,53 @@
+\section{Discussion}
+
+\subsection{What the redesign improved}
+
+The main improvements provided by the redesigned workflow relate to the linking together of the various experimental steps. The initial workflow required a larger amount of manual interaction between collecting data, training, saving models, evaluation, monitoring and RCA. The redesigned workflow provides common records and clearly defined transitions. A user can now collect some data, train multiple detectors, and select the desired Saved Models in a Model Comparison. The user can also see how their choice came to be via the data and settings used. The monitoring and RCA results also link back to the model used, recipe, window and input data, reducing the need to piece together the experiment from the filenames, interface and personal notes. The addition of the external LOF, RCAEval data and NaaVRE also shows that the workflow can handle more than just one detector and precise data sources. Each addition still requires adapters, preparation or specific configurations. Overall, the redesigned workflow provides improvements for extensibility and portability, but it is not automatic.
+
+\subsection{Important lesson: A working workflow is not the same as an accurate model}
+
+The evaluation highlighted how the workflow was functional, but did not guarantee accurate models. All three detectors could be trained and compared using the same workflow and CloudSentinel correctly calculated the saved precision, recall, and F1 values. However, the detectors did not perform well in all scenarios. The detectors had a large amount of false positives when using the normal Online Boutique data. When reusing one trained model for multiple services and faults, the Isolation Forest and LOF detectors marked nearly all the observations as anomalies. This meant the high recall and F1 values were misleading if not taken into consideration alongside the false positive rate and balanced accuracy.
+
+This does not indicate that the framework made the models less accurate. The models, training data, features, parameters and workload all affect the outcome of detection. The framework provides the context, highlighting why the models did not transfer well. This also means that detector scores should not be attributed to the changes in the workflow.
+
+The known faults test also highlighted this. CloudSentinel correctly followed the set process and saved why BARO was skipped. However, the diagnoses were not always accurate. BARO gave a high score to the effected service in RCAEval as the correct time for the start of the fault was provided. The quality of the RCA was heavily dependent on the input, especially how useful the baseline and change point were.
+
+\subsection{Research use vs company/operational use}
+
+The walkthrough with experts highlighted key differences between what is required for research and operations. The Data Catalogue, customisable training, Model Comparisons, and Robustness view mean that the user can analyse how the detectors behave in a controlled environment. The framework has been designed to be transparent in these areas. In most cases, operation users will look for something more automated. The participants preferred something that could monitor recent data, learn from operator feedback, and assume repeated accepted patterns as normal. They felt that the Live Monitoring and immediate probable cause were more relevant to their everyday use than creating datasets and training models. This framework should be seen as primarily a research and integration tool. The connection to operations is still useful to see how well the findings from experiments work with recent data from Prometheus. It does provide an insight into how an AD to RCA workflow could work. However, it is not a replacement for a managed monitoring solution. More automation, continual model management, feedback, and robust failure handling would be required to reach this goal. It would also need to be integrated with logs and traces.
+
+\subsection{Portability requires explicit adaptation}
+
+There are three examples of portability shown in the evaluation. Online Boutique provided a controlled live environment. RCAEval provided labelled historical data from another microservice application. NaaVRE provided recent read only data from an independently managed environment.
+
+This indicates that the internal data and recent input can easily be reused. However, it does show that it is not simply a case of changing the URL. RCAEval required columns to be selected and missing values handled. NaaVRE required an adapter with Grafana, and metrics mapped depending on the source. The scaling test required queries to be created using stable names for application components. As the full name of the Kubernetes pod changed over time.
+
+Overall, whilst the internal contracts make things easy to reuse, it does still require there to be a clear boundary for adapting. How the telemetry, application components and operational context map to the CloudSentinel workflow needs to be defined for any new environment. The framework does make this clear and recordable.
+
+\subsection{Trade-offs exposed by the evaluation}
+
+By designing the framework to aid traceability, there are some trade offs.
+
+CloudSentinel halts if any of the required live values are missing. This ensures the integrity of the analysis. However, this can cause problems with monitoring during a type of availability issue. The test to replace the pods showed that the monitoring stopped. A production ready version would require a clear policy on how to handle missing data and this would need to be visible within the provenance.
+
+The detailed configuration provides good reproducibility. However, this increases the amount of information the user needs to understand. Whilst the experts could understand many of the individual screens after an explanation, they still struggled to understand the full journey and some of the technical terms. The workflow requires detailed control over the experiment, however this needs to be accompanied by guidance on when to use these options.
+
+The common detector and RCA interfaces help reduce the dependency on specific algorithms. However, there are still requirements for certain algorithms. For example, CGNN requires a suitable window of input data and training configuration. BARO requires a valid baseline and change point.Whilst a generic interface can make declaring and storing these requirements consistent, they are still needed.
+
+\subsection{Limitations of the evaluation}
+
+Most tests were run in a controlled environment using one four vCPU EC2 instance and one Minikube cluster. This means the performance results are only for this environment. An attempt was made to run with two workers, however this failed. This means the behaviour has not been tested when using multiple working Kubernetes nodes. The application scaling test added more pods, however most were idle. The accuracy of the detectors and RCA were not tested for different application sizes.
+
+The anomaly detection results only cover three detectors, a limited range of feature sets and a small number of workload variations. The RCA results only cover CausalRCA and BARO. The best result for BARO was when the start time was known. Logs and traces were not used as inputs to the detectors or RCA. The results should not therefore be generalised to all detectors, faults, telemetry types or microservice applications.
+
+NaaVRE provided recent operational data, but no confirmed incident times or labels. This meant that whilst we could test how the data could be accessed and formed this could not be tested for accuracy of detection and diagnosis. CloudSentinel was not deployed within the NaaVRE environment.
+
+The expert evaluation was carried out with three people. This provides useful feedback from professionals. However, this is not measuring how well they can complete tasks on their own. Some changes were made to the interface after the walkthroughs and were not tested with the same participants.
+
+CPU and memory usage was sampled at intervals. This could have caused some short peaks in the resources. Whilst the evaluation provides enough information to describe how the runs performed, it does not give information on what the maximum capacity would be.
+
+\subsection{Overall interpretation}
+
+The evaluation supports the redesign in that it shows it to be effective at creating a limited experimental process. Overall, CloudSentinel allows the process of collecting data, training detectors, comparing models, incorporating recent monitoring data and performing RCA to be connected together and retain much of the context required to describe and replicate an experiment. The method also highlights areas where a model will fail to generalise, where there is no valid baseline for RCA and where adaptation is required from an external source. 
+
+The evaluation does not show that CloudSentinel is a good method for providing generally accurate anomaly detection, automatic diagnosis and incident management in a production environment. However, it does provide an easy way to combine, compare, track and examine different methods and their assumptions. Therefore, within its scope, the redesign has solved the issues within the workflow. However, due to the unsuccessful and mixed results, there are areas which require more research and implementation.

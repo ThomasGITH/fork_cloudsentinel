@@ -1,0 +1,21 @@
+Training-bundle integrity check
+
+Dataset: ds_317be8f795914aaaa95be455f457ba8e, version 8
+Partition: partition-41d83a42121a46a1bfe2a0e0535be512
+Partition checksum in response header and manifest:
+665c8293bda13d41545cedd47c1d725d2dd2382410e4ef3eaa7e75e601a22090
+
+Manifest counts
+- features: 44
+- train observations: 1441
+- test observations: 921
+- labels: 921
+
+Independent archive checks
+- train.csv: 665891 bytes; SHA-256 fa5d04d4fa9783a1ac0ba590c3ff28c6f5780e81efe878307815e48e77d4d846; matched manifest
+- test.csv: 427903 bytes; SHA-256 f2abd9afe3753ce0567a953358d78329dda83d346255a8e01563ef53d87a448c; matched manifest
+- labels.csv: 2763 bytes; SHA-256 8de00827f968b82bfcace6e9508a15c143244605dcfb6b7444744ecff111127d; matched manifest
+
+The check downloaded the ZIP through the catalogue API, opened it in memory, hashed
+the three CSV byte streams independently, and counted every CSV row. No CloudSentinel
+hash-validation function was imported for this control.

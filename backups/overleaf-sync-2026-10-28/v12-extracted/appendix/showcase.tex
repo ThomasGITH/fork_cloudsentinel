@@ -1,0 +1,132 @@
+\chapter{Showcase}%
+\label{ch:showcase}
+
+\newcommand{\ctan}[1]{\href{http://ctan.org/pkg/#1}{\texttt{ctan:#1}}}
+
+This is a showcase of the various packages and features that you can use with this template.
+You are more than welcome to load your own packages for features you would like to use.
+
+For each package, we also provide a (clickable) link to the \ac{CTAN}, as \ctan{package-name}.
+
+\section{References}
+For keeping track of your references, you can use the \ctan{biblatex} package.
+References are stored in \verb|references.bib| in the root of the project.
+To cite a paper, use \verb|\cite{key}|, for example \verb|\cite{ISO25010}|, becomes \cite{ISO25010}.
+When using a references in a sentence, you can use \verb|\textcite|, for example:
+\begin{verbatim}
+  \textcite{Beck2000a} argue that programmers should love writing tests.
+\end{verbatim}
+becomes
+\begin{quote}
+  \textcite{Beck2000a} argue that programmers should love writing tests.
+\end{quote}
+You can also directly cite the author by using \verb|\citeauthor{key}| and \verb|\citetitle{key}| for the title. For example:
+\begin{verbatim}
+  As \citeauthor{Beck2000b} shows in \citetitle{Beck2000b}~\cite{Beck2000b}
+\end{verbatim}
+becomes
+\begin{quote}
+    As \citeauthor{Beck2000b} shows in \citetitle{Beck2000b}~\cite{Beck2000b}
+\end{quote}
+
+When using Overleaf, you can also link your Zotero account\footnote{See \href{https://www.overleaf.com/learn/how-to/How_to_link_Zotero_to_your_Overleaf_account}{``How to link Zotero to your Overleaf account''}}.
+You can choose to either synchronise your entire Zotero library with the \verb|references.bib|, or use the ``advanced reference search'' to add an entry to \verb|references.bib| whenever you use a reference in your writing.
+
+\section{Tables}
+
+For making publication quality tables, you can use the \ctan{booktabs} package.
+An example is shown in \cref{tab:booktabs}.
+This package allows you to make clearer and visually pleasing tables, by providing additional space above and below rules, and rules of varying `thickness'.
+In this design, vertical and double rules are also left out as it often causes a distraction.
+
+\begin{table}
+\centering
+\begin{tabular}{@{}llr@{}} \toprule
+\multicolumn{2}{c}{Item} \\ \cmidrule(r){1-2}
+Animal & Description & Price (\$)\\ \midrule
+Gnat & per gram & 13.65 \\
+& each & 0.01 \\
+Gnu & stuffed & 92.50 \\
+Emu & stuffed & 33.33 \\
+Armadillo & frozen & 8.99 \\ \bottomrule
+\end{tabular}\caption{Booktabs example table}\label{tab:booktabs}
+\end{table}
+
+\section{Cleveref}
+
+To save the effort of having to type, \eg{} ``\verb|..see Table~\ref{tab:a-table}..|'', every time you use a cross-reference, you can make use of \ctan{cleveref}.
+To cross-reference tables, figures, listings, \etc{}, you can use \verb|\cref{tab:a-table}|, which will automatically provide the right format.
+Use \verb|\Cref{..}| for the capital version at the beginning of a sentence.
+
+\section{Glossary}
+
+You can make a glossary using \ctan{glossaries} for all the acronyms you use.
+We can define them in a separate \verb|acronyms.tex|.
+
+In each line, the format is \verb|\newacronym{label}{short}{long}|, whereby \verb|label| is the label you can use to refer to the acronym (can be the same as the actual acronym), \verb|short| is the actual acronym and \verb|long| is the expanded version.
+
+In your text, whenever you want to use an acronym (for example `\ac{CTAN}'), you can refer to it using \verb|\ac{CTAN}|.
+On first use, the acronym will be expanded, with the acronym in parentheses (as shown in the introduction of this chapter with the acronym \ac{CTAN}).
+Subsequent uses will display the acronym in its short form.
+All acronyms will also link to the glossary, which you can print using \verb|\printacronyms[style=long]| (also see \verb|main.tex|).
+
+You can create a glossary using the command \verb|\makeglossaries{}|. This will generate a glossary of all the acronyms you have used in your text. If you want to include all the acronyms you have defined (but not necessarily used in your text), you can use the starred version of the command (\ie \verb|\makeglossaries*|).
+
+\section{Todonotes}
+
+The package \ctan{todonotes} allows you to insert todo items in your document.
+The simplest form is by simply using \verb+\todo{note}+ to insert a note in the margin\todo{like this for example.}.
+You can also use inline notes for things that require more attention, \todo[inline]{like a note to say you need to expand this section.}
+What is also quite useful is that you can create placeholder images with todo notes, as shown in~\cref{fig:missing-figure}.
+With \verb+\listoftodos+ you can generate a list of todos as shown at the beginning of this template in \verb+main.tex+.
+
+\begin{figure}
+    \centering
+    \missingfigure[figwidth=0.95\linewidth]{Make a sketch of the structure of a trebuchet.}
+    \caption{Structure of a trebuchet.}
+    \label{fig:missing-figure}
+\end{figure}
+
+Alternatively, you can use the built-in review functionality of Overleaf.
+
+\section{Syntax Highlighting}
+For pretty printing of source code, you can use \ctan{minted}.
+You can directly show source code via the \verb|minted| environment, as shown in~\cref{lst:leap-years-in-c}, or import source code via \verb|\inputminted|, as shown in~\cref{lst:bubble-sort-in-forth}.
+
+\begin{listing}
+\begin{minted}[linenos]{c}
+#include <stdio.h>
+int main() {
+   int year;
+   printf("Enter a year: ");
+   scanf("%d", &year);
+
+   // leap year if perfectly divisible by 400
+   if (year % 400 == 0) {
+      printf("%d is a leap year.", year);
+   }
+   // not a leap year if divisible by 100
+   // but not divisible by 400
+   else if (year % 100 == 0) {
+      printf("%d is not a leap year.", year);
+   }
+   // leap year if not divisible by 100
+   // but divisible by 4
+   else if (year % 4 == 0) {
+      printf("%d is a leap year.", year);
+   }
+   // all other years are not leap years
+   else {
+      printf("%d is not a leap year.", year);
+   }
+
+   return 0;
+}
+\end{minted}
+\caption{Calculate leap years in C.}\label{lst:leap-years-in-c}
+\end{listing}
+
+\begin{listing}
+  \inputminted[bgcolor=Beige, linenos]{forth}{./appendix/bubble-sort.fs}
+  \caption{Bubble sort in Forth.}\label{lst:bubble-sort-in-forth}
+\end{listing}

@@ -1,0 +1,96 @@
+Mon Oct 26 14:17:58 UTC 2026
+CONFIG=preflight
+Linux ip-172-31-18-192 7.0.0-1012-aws #12-Ubuntu SMP PREEMPT Tue Aug 11 15:33:41 UTC 2026 x86_64 GNU/Linux
+4
+               total        used        free      shared  buff/cache   available
+Mem:     16549388288  7126388736   306360320  1209434112 10692964352  9422999552
+Swap:              0           0           0
+Filesystem        1B-blocks         Used    Available Use% Mounted on
+/dev/root      415381426176 269113921536 146250727424  65% /
+minikube
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+
+NAME       STATUS   ROLES           AGE    VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION   CONTAINER-RUNTIME
+minikube   Ready    control-plane   131d   v1.35.1   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   7.0.0-1012-aws   docker://29.2.1
+NAME       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+minikube   466m         11%      6370Mi          40%         
+NAMESPACE       NAME                                                       READY   STATUS    RESTARTS         AGE     IP             NODE       NOMINATED NODE   READINESS GATES
+cloudsentinel   celery-worker-deployment-7f7cc99b5d-wdnrt                  1/1     Running   0                2d14h   10.244.1.202   minikube   <none>           <none>
+cloudsentinel   cgnn-anomaly-detection-deployment-7d5f4cd65b-s5w89         1/1     Running   2 (29d ago)      65d     10.244.1.33    minikube   <none>           <none>
+cloudsentinel   crca-anomaly-detection-celery-deployment-667447d99-kl85c   1/1     Running   0                9d      10.244.1.169   minikube   <none>           <none>
+cloudsentinel   crca-anomaly-detection-deployment-7c5d8c68f9-hsfm9         1/1     Running   0                9d      10.244.1.168   minikube   <none>           <none>
+cloudsentinel   data-ingestion-deployment-798656f575-shx2f                 1/1     Running   0                2d      10.244.1.211   minikube   <none>           <none>
+cloudsentinel   data-processing-deployment-d96d69957-6jw2p                 1/1     Running   0                25d     10.244.1.100   minikube   <none>           <none>
+cloudsentinel   generic-anomaly-detection-deployment-65bf55dcc5-fct6h      1/1     Running   0                16h     10.244.1.224   minikube   <none>           <none>
+cloudsentinel   learning-adaptation-celery-deployment-7c5f496bd8-rs4j6     1/1     Running   0                17h     10.244.1.223   minikube   <none>           <none>
+cloudsentinel   learning-adaptation-deployment-67b6b86bc9-xmwck            1/1     Running   0                17h     10.244.1.222   minikube   <none>           <none>
+cloudsentinel   monitoring-project-deployment-68f6887-6r8vd                1/1     Running   0                2d      10.244.1.213   minikube   <none>           <none>
+cloudsentinel   redis-deployment-696c967b87-6tl5c                          1/1     Running   8 (37d ago)      131d    10.244.1.17    minikube   <none>           <none>
+default         adservice                                                  1/1     Running   18 (37d ago)     98d     10.244.1.35    minikube   <none>           <none>
+default         cartservice                                                1/1     Running   20 (44h ago)     98d     10.244.1.41    minikube   <none>           <none>
+default         checkoutservice                                            1/1     Running   0                44h     10.244.1.214   minikube   <none>           <none>
+default         currencyservice                                            1/1     Running   21 (29d ago)     98d     10.244.1.34    minikube   <none>           <none>
+default         emailservice                                               1/1     Running   85 (29d ago)     98d     10.244.1.47    minikube   <none>           <none>
+default         frontend                                                   1/1     Running   18 (37d ago)     98d     10.244.1.30    minikube   <none>           <none>
+default         loadgenerator-5c7cbd94ff-tmqp4                             1/1     Running   13 (2d20h ago)   131d    10.244.1.32    minikube   <none>           <none>
+default         paymentservice                                             1/1     Running   0                43h     10.244.1.215   minikube   <none>           <none>
+default         productcatalogservice                                      1/1     Running   19 (37d ago)     98d     10.244.1.37    minikube   <none>           <none>
+default         recommendationservice                                      1/1     Running   75 (29d ago)     98d     10.244.1.38    minikube   <none>           <none>
+default         redis-cart                                                 1/1     Running   17 (37d ago)     98d     10.244.1.21    minikube   <none>           <none>
+default         shippingservice                                            1/1     Running   19 (37d ago)     98d     10.244.1.39    minikube   <none>           <none>
+kube-system     coredns-7d764666f9-jv2cx                                   1/1     Running   21 (37d ago)     131d    10.244.1.25    minikube   <none>           <none>
+kube-system     etcd-minikube                                              1/1     Running   12 (37d ago)     131d    192.168.49.2   minikube   <none>           <none>
+kube-system     kube-apiserver-minikube                                    1/1     Running   23 (37d ago)     131d    192.168.49.2   minikube   <none>           <none>
+kube-system     kube-controller-manager-minikube                           1/1     Running   32 (37d ago)     131d    192.168.49.2   minikube   <none>           <none>
+kube-system     kube-proxy-xfs29                                           1/1     Running   8 (37d ago)      131d    192.168.49.2   minikube   <none>           <none>
+kube-system     kube-scheduler-minikube                                    1/1     Running   21 (37d ago)     131d    192.168.49.2   minikube   <none>           <none>
+kube-system     metrics-server-9d74bb658-d67p7                             1/1     Running   44 (25d ago)     82d     10.244.1.31    minikube   <none>           <none>
+kube-system     storage-provisioner                                        1/1     Running   45 (25d ago)     131d    192.168.49.2   minikube   <none>           <none>
+monitoring      alertmanager-kube-prometheus-kube-prome-alertmanager-0     2/2     Running   29 (37d ago)     131d    10.244.1.22    minikube   <none>           <none>
+monitoring      kube-prometheus-grafana-7876ddfc56-t5hr9                   3/3     Running   28 (37d ago)     131d    10.244.1.16    minikube   <none>           <none>
+monitoring      kube-prometheus-kube-prome-operator-6d648b5786-xlz9j       1/1     Running   46 (29d ago)     131d    10.244.1.23    minikube   <none>           <none>
+monitoring      kube-prometheus-kube-state-metrics-5f7dc657f9-lsqmt        1/1     Running   48 (37d ago)     131d    10.244.1.28    minikube   <none>           <none>
+monitoring      kube-prometheus-prometheus-node-exporter-6hxfg             1/1     Running   23 (37d ago)     131d    192.168.49.2   minikube   <none>           <none>
+monitoring      prometheus-kube-prometheus-kube-prome-prometheus-0         2/2     Running   32 (25d ago)     131d    10.244.1.27    minikube   <none>           <none>
+NAMESPACE       NAME                                                       CPU(cores)   MEMORY(bytes)   
+cloudsentinel   celery-worker-deployment-7f7cc99b5d-wdnrt                  2m           164Mi           
+cloudsentinel   cgnn-anomaly-detection-deployment-7d5f4cd65b-s5w89         1m           222Mi           
+cloudsentinel   crca-anomaly-detection-celery-deployment-667447d99-kl85c   2m           411Mi           
+cloudsentinel   crca-anomaly-detection-deployment-7c5d8c68f9-hsfm9         1m           218Mi           
+cloudsentinel   data-ingestion-deployment-798656f575-shx2f                 1m           128Mi           
+cloudsentinel   data-processing-deployment-d96d69957-6jw2p                 1m           97Mi            
+cloudsentinel   generic-anomaly-detection-deployment-65bf55dcc5-fct6h      1m           409Mi           
+cloudsentinel   learning-adaptation-celery-deployment-7c5f496bd8-rs4j6     3m           723Mi           
+cloudsentinel   learning-adaptation-deployment-67b6b86bc9-xmwck            1m           134Mi           
+cloudsentinel   monitoring-project-deployment-68f6887-6r8vd                1m           85Mi            
+cloudsentinel   redis-deployment-696c967b87-6tl5c                          4m           20Mi            
+default         adservice                                                  2m           112Mi           
+default         cartservice                                                7m           72Mi            
+default         checkoutservice                                            1m           17Mi            
+default         currencyservice                                            9m           55Mi            
+default         emailservice                                               3m           37Mi            
+default         frontend                                                   17m          23Mi            
+default         loadgenerator-5c7cbd94ff-tmqp4                             6m           150Mi           
+default         paymentservice                                             1m           60Mi            
+default         productcatalogservice                                      9m           17Mi            
+default         recommendationservice                                      9m           35Mi            
+default         redis-cart                                                 3m           9Mi             
+default         shippingservice                                            1m           14Mi            
+kube-system     coredns-7d764666f9-jv2cx                                   3m           43Mi            
+kube-system     etcd-minikube                                              27m          133Mi           
+kube-system     kube-apiserver-minikube                                    54m          474Mi           
+kube-system     kube-controller-manager-minikube                           20m          97Mi            
+kube-system     kube-proxy-xfs29                                           1m           44Mi            
+kube-system     kube-scheduler-minikube                                    9m           52Mi            
+kube-system     metrics-server-9d74bb658-d67p7                             4m           42Mi            
+kube-system     storage-provisioner                                        2m           20Mi            
+monitoring      alertmanager-kube-prometheus-kube-prome-alertmanager-0     1m           48Mi            
+monitoring      kube-prometheus-grafana-7876ddfc56-t5hr9                   13m          398Mi           
+monitoring      kube-prometheus-kube-prome-operator-6d648b5786-xlz9j       3m           42Mi            
+monitoring      kube-prometheus-kube-state-metrics-5f7dc657f9-lsqmt        1m           39Mi            
+monitoring      kube-prometheus-prometheus-node-exporter-6hxfg             2m           20Mi            
+monitoring      prometheus-kube-prometheus-kube-prome-prometheus-0         47m          1079Mi          

@@ -1,0 +1,900 @@
+\section{Evaluation of the improvement}
+\label{sec:improvement-evaluation}
+
+\subsection{Objectives}
+
+The evaluation examines the redesigned workflow from three perspectives:
+\begin{enumerate}
+    \item It checks whether the main steps of the workflow work (properly) together.
+    \item It measures the time and computing resources needed for the selected tasks.
+    \item It checks whether the workflow can also process data from environments other than Online Boutique.
+\end{enumerate}
+
+The results are judged/interpeted using our established five criteria from Section~5.5:
+\begin{itemize}
+    \item C1: end-to-end experimental workflow adequacy.
+    \item C2: RCA workflow adequacy and interpretability.
+    \item C3: portability and deployment ease.
+    \item C4: configurability, reproducibility, and extensibility.
+    \item C5: operational overhead.
+\end{itemize}
+
+As a whole, the evaluation covers 7 parts:
+\begin{enumerate}
+    \item Tests of dataset management, training, model comparison, and integration of external detectors.
+    \item Performance and resource-use tests/measurements.
+    \item Application-scaling tests with increasing replica counts and changing pod identities.
+    \item Detection and RCA tests with known faults that are incurred in the Online Boutique application.
+    \item External benchmark validation using historical Train Ticket fault data from RCAEval.
+    \item Exploratory validation using operational telemetry from the external NaaVRE environment.
+    \item User evaluation.
+\end{enumerate}
+
+It's important to note that these parts answer different questions and should not be combined into a single general claim. For example, a correctly calculated score shows that the software performed the calculation correctly, but it does not necessarily show that the underlying model is also accurate. This is an importnat distinction as not all of our performed tests show our models performing accurately. Similarly, successful execution of RCA shows that the analysis ran, but it does not show that the resulting diagnosis is correct. In this case too, however, we distinguish the RCA executing properly from it being a 'good RCA algorithm'.
+
+\subsection{Testing dataset management, training, model comparison, and detector integration}
+\label{sec:h9-workflow-functional-evaluation}
+
+\subsubsection{Purpose}
+One of the core design ideas in this thesis is for CloudSentinel to support an end-to-end experimental workflow rather than a just collection of separate tools. Obviously, this claim requires more than showing that the Data Catalogue, training page, and Model Comparisons screen can each be opened. The output of one step must become a usable input for the next step, and the final result must remain linked to the choices that produced it.
+
+This first part of the evaluation therefore focuses on two main requirements:\\
+First, \emph{workflow continuity}: monitoring data should move from collection to training and comparison without manual file transfer. Second, \emph{traceability}: after a comparison, a researcher should still be able to identify the data, model, settings, and predictions behind the displayed result. Without continuity, the proposed workflow is not genuinely connected. Without traceability, the result is difficult to check or reproduce.
+
+To put it more simply: the goal is to prove that unlike the original CloudSentinel, our improvements avoid manual file transfer, as well as provide full data provenance with regards to all the core operations of the framework.
+
+This evaluation part/test covers the first half of that workflow. It starts with monitoring data from Prometheus and ends with a comparison result. The later workflow aspects, that being live Monitoring and root-cause analysis, are evaluated in a later section because they involve different questions. Figure~\ref{fig:h9-functional-evaluation-path} summarises the path tested here.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.95\linewidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=5mm,
+        workflowbox/.style={draw, rounded corners=2pt, align=center, minimum height=10mm, text width=27mm, fill=blue!5},
+        flow/.style={-{Latex[length=2mm]}, thick}
+    ]
+        \node[workflowbox] (prom) {Prometheus\\monitoring data};
+        \node[workflowbox, right=of prom] (data) {Data Catalogue\\stored dataset};
+        \node[workflowbox, right=of data] (train) {Training\\Saved Model};
+        \node[workflowbox, right=of train] (compare) {Model Comparison\\traceable result};
+        \draw[flow] (prom) -- (data);
+        \draw[flow] (data) -- (train);
+        \draw[flow] (train) -- (compare);
+    \end{tikzpicture}}
+    \caption{The part of the workflow that is tested in this section}
+    \label{fig:h9-functional-evaluation-path}
+\end{figure}
+
+To properly test both workflow continuitity and traceability, we use the following five questions as criteria/checks:
+
+\begin{enumerate}
+    \item Does the Data Catalogue store the same monitoring data that was obtained from Prometheus?
+    \item Can a stored dataset be used to train different detectors without manually moving files?
+    \item Are the scores shown in CloudSentinel calculated correctly?
+    \item Can a comparison result be traced back to the data, model, and settings that produced it?
+    \item Can built-in and externally added detectors use the same workflow?
+\end{enumerate}
+
+It is important to note that these questions test only the operation of the workflow, not the general quality of the anomaly-detection algorithms themselves. For example, a detector can produce a 'bad' F1 score while the software still stores its predictions and calculates that score correctly. We then judge the test to have turned out positively because of that correct storing and calculating behaviour. Later evaluations test detector behaviour during known faults and in other data sources. This first section is only meant to establish that the supporting workflow itself functions correctly.
+
+This test provides evidence for the following established criteria of chapter 5.5:
+\begin{itemize}
+    \item C4 (configurability, reproducibility, and extensibility): By checking shared detector use and traceable results
+    \item part of C1 (end-to-end experimental workflow adequacy): By testing the path from stored data to a completed Model Comparison.
+\end{itemize}
+
+% This evaluation does not provide evidence for C3 (portability and deployment ease), because CloudSentinel was not moved to a different deployment environment in this test. The external LOF detector tests extensibility inside the existing deployment, which is part of C4.
+
+\subsubsection{Test environment and material}
+
+% CloudSentinel and Online Boutique ran on a single-node Minikube cluster hosted on an EC2 virtual machine. Prometheus collected measurements from Online Boutique. CloudSentinel then retrieved those measurements and stored them in the Data Catalogue component.
+
+% Two stored datasets were used. The first covered a period in which CPU stress had deliberately been applied using a 'busybox' sidecar. Its labels (generated by cloudsentinel as well) recorded when the stress was active. The second dataset covered normal/baseline application activity without any known incident. The point of the CPU-stress dataset was to be able to check whether the detectors recognised a known disturbance, while the normal dataset instead made false alerts visible when there was clearly no incident.
+
+% Both datasets contained the same 44 metric features. These represented CPU use, memory use, CPU throttling, and pod restarts for eleven Online Boutique pods (i.e. 4 x 11 = 44 columns of metric features). Ech observation/timestamp was 15 seconds apart. Using the same columns in both datasets meant that the same Saved Models could be evaluated in two different contexts.
+
+% Three anomaly detectors were included. CGNN and Isolation Forest were already included in CloudSentinel as built-in detectors, however, Outlier Factor (LOF) had been added as an external detector through the shared detector interface (mostly as a way to show that the framework is, in fact, capable of letting users add their own third-party detectors). Including LOF therefore checked whether an externally packaged detector could take part in the same workflow as the built-in implementations.
+
+% Exact software versions, container images, machine resources, queries, and identifiers can all be found in \texttt{evaluation\_evidence/1. Dataset management, training, comparison, and detector integration/setup.txt}. For the sake of not making this section unnecessarily difficult to read, we chose not to mention all of them here.
+
+% Note that the same EC2/Minikube deployment was reused in the performance, application-scaling, and known-fault evaluations that follow (i.e. the next 3 sections). Those sections explain any deliberate changes, such as a larger dataset, additional pod replicas, or an injected fault. The RCAEval and NaaVRE evaluations used different external data sources and therefore describe their own setup.
+
+The CloudSentinel and Online Boutique services ran on a single node Minikube cluster. The cluster was run on an EC2 machine. Metrics from Online Boutique were collected via Prometheus. These metrics were collected by CloudSentinel and stored in the Data Catalogue component.
+
+Two stored datasets were used. The first dataset contained metrics during a period of intentional CPU stress using a 'busybox' sidecar. The labels, also generated by cloudsentinel, indicated when the CPU stress was happening. The second dataset covered normal/baseline application activity without any known incident. The first dataset was used to ensure that the detectors could detect a known disturbance, whereas the 'normal' dataset instead made false alerts visible when there was clearly no incident.
+
+Both datasets contained the same 44 metrics features. These metrics were CPU usage, memory usage, CPU throttling and pod restarts for the 11 Online Boutique pods,  resulting in 4 x 11 = 44 columns. Ech observation/timestamp was 15 seconds apart. Using the same columns in both datasets meant that the same Saved Models could be evaluated in two different contexts.
+
+Three anomaly detectors were used in total. The CGNN detector and Isolation Forest detectpr were already integrated into CloudSentinel as built-in detectors. However,  Local Outlier Factor (LOF) had been added as an external detector through the shared detector interface (mostly as a way to show that the framework is, in fact, capable of letting users add their own third-party detectors). Including LOF therefore checked whether an externally packaged detector could take part in the same workflow as the built-in implementations.
+
+The exact software versions, container images, machine resoutces, queries and identifiers can be found in \texttt{evaluation\_evidence/1. Dataset management, training, comparison, and detector integration/setup.txt}. It was decided not to mention these in this section for the sake of readability.
+
+Note that the same EC2/Minikube deployment was used for the performance, application scaling and known faults evaluation that follow (i.e. the next 3 sections). Any deliverate changes to the deployment, e.g. a larger dataset, more replicas of pods or a fault injection, will be mentioned. As RCAEval and NaaVRE evaluations used different (external data) sources, their setup will be described separately.
+
+\subsubsection{Method}
+
+The evaluation followed the workflow shown in Figure~\ref{fig:h9-functional-evaluation-path}. It was divided into five checks. Each check focuses on a different place where an (apparently) successful experiment could otherwise lose data or context.
+
+\begin{enumerate}
+    \item[\textbf{Check 1}] \textbf{Does the Data Catalogue preserve the collected data?}
+    Three observations of the checkout service’s memory usage were selected from the dataset stored in the Data Catalogue. These observations were compared with the values returned by the same Prometheus query for the same three timestamps. The exported training and test files were also checked for the expected rows, columns, labels, and file contents. The purpose was to detect (accidental) changes between collection and later use. This small sample cannot prove that every stored value is correct, but it can show whether the tested path altered the selected values or files.
+
+    \item[\textbf{Check 2}] \textbf{Can stored data move through training and comparison?}
+    A training run was submitted for CGNN, Isolation Forest, and LOF. CloudSentinel was expected to create a Saved Model for each run. These Saved Models were then selected directly in the Model Comparisons screen and evaluated on both datasets. No dataset or model file was copied by hand. This checks whether the Data Catalogue, training, Saved Models, and Model Comparisons components actually form one workflow.
+
+    \item[\textbf{Check 3}] \textbf{Are the displayed scores calculated correctly?}
+    The predictions and known labels from the CPU-stress comparison were exported. A separate script then recalculated precision, recall, and F1 without calling CloudSentinel's scoring code. The independently calculated values were compared with the values displayed by CloudSentinel. If they are the same, it would show that the application reports its results correctly (even if the detector itself might not necessarily have performed well). The script used for calculating the scores can be found at \texttt{evaluation\_evidence/1. Dataset management, training, comparison, and detector integration/score\_check.py}.
+
+    \item[\textbf{Check 4}] \textbf{Can a result be explained afterwards?}
+    A completed Model Comparison was followed backwards to the selected Saved Model, the training dataset, the evaluation dataset, the feature order, and the detector settings. This checks whether a researcher can determine what produced a result instead of having to rely on memory or filenames. The check also recorded which environmental details were not stored by CloudSentinel itself. Essentially, this check confirmed that the earlier lack of providence of the original CloudSentinel framework had been implemented properly now.
+
+    \item[\textbf{Check 5}] \textbf{Can different detectors use the same workflow?}
+    The preceding training and comparison steps were performed for the two built-in detectors and the external LOF detector. The purpose was to determine whether the shared detector interface allowed all three implementations to receive data and return results in the same way. Essentially, the point of this test was to test generalizability across different detectors: the original CloudSentinel only supported a single hardcoded detector (CGNN); and to make the workflow functional with different detectors, particularly when external and not hard-coded, this generalizability is key as it would not be possible otherwise.
+\end{enumerate}
+
+% \subsubsection{Additional regression checks}
+
+% The five checks above evaluate the data-to-comparison workflow. A separate regression test was also run/performed after the final workflow and navigation changes. Its purpose was narrower: to make sure that these interface changes had not broken functions that previously worked. All 116 selected backend tests and all 91 selected tests against the deployed interface passed.
+
+% A page-level check additionally opened the main workflow screens and checked whether their expected content was present. The Prometheus connection check also succeeded and reported 17 monitored targets. Together, these regression checks show only that the tested software paths still functioned after the interface changes. They do not provide evidence about detector accuracy, portability, or usability. The complete record is stored in \texttt{evaluation\_evidence/1. Dataset management, training, comparison, and detector integration/functional-retest-20261024.txt}.
+
+\subsubsection{Results}
+
+As explained before, the five checks address two broad questions. First, did the components work together (i.e. workflow continuity)? Second, did CloudSentinel retain enough information to explain how a result was produced (i.e. traceability)? The short answer is that the tested workflow worked, but the complete deployment setup was not stored in one record.
+
+\begin{center}
+\small
+\begin{tabular}{|p{0.10\linewidth}|p{0.34\linewidth}|p{0.40\linewidth}|}
+\hline
+Check & Result & Why it matters \\
+\hline
+Check 1: Data & Passed. The checked values and exported files matched. & The tested data was not silently changed between Prometheus and later use. \\
+\hline
+Check 2: Training & Passed. All three detectors produced a Saved Model and completed both Model Comparisons. & The Data Catalogue, training, Saved Models, and Model Comparisons steps worked together without manual file transfer. \\
+\hline
+Check 3: Scores & Passed. The independently calculated scores matched CloudSentinel's scores. & The application displayed the calculated results correctly. \\
+\hline
+Check 4: Records & Partly passed. Data, models, and settings could be traced, but deployment details were stored separately. & The analysis can be understood and repeated, although the application does not yet contain the complete experiment record. \\
+\hline
+Check 5: Detectors & Passed for the three tested detectors, including external LOF. & The current detectors can use one shared workflow, but this does not yet prove that adding a new detector is easy. \\
+\hline
+\end{tabular}
+\end{center}
+
+\paragraph{Data and workflow checks.}
+For Check 1, the three selected memory measurements matched Prometheus exactly. The training and test files exported were of the correct size, number of columns, labels and file hashes. This provides useful evidence that the data has successfully passed through the Data Catalogue. Note again however that this only confirms that three metrics have been correctly calculated, and that it says nothing about the cirrectness of the values in the dataset.
+
+For Check 2, all three detectors were trained on and produced models that could be directly selected from the Model Comparisons screen. No model or dataset files needed to be manually moved. The CGNN detector took several minutes to train, whereas Isolation Forest and LOF took less than one second during this run. Note that this is just for reference purposes, as the performance and resource usage of these models will be looked at in the next subsection.
+
+\paragraph{Interpreting detector scores}
+The results of the labelled CPU stress dataset can be seen in Table~\ref{tab:h9-functional-labelled-scores}. 'Precision' indicates how many of the anomalies reported by the detector were correct, 'recall' indicates how much of the labelled incident period was detected, and 'F1' combines these into one value. Note again that these values are specific to this dataset and cannot be used to determine which detector is best overall. 
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Scores for the labelled CPU-stress comparison.}
+    \label{tab:h9-functional-labelled-scores}
+    \begin{tabular}{|l|r|r|r|}
+        \hline
+        Detector & Precision & Recall & F1 \\
+        \hline
+        CGNN & 0.354 & 0.975 & 0.520 \\
+        Isolation Forest & 0.190 & 0.889 & 0.313 \\
+        External LOF & 0.113 & 0.975 & 0.202 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+CGNN had the highest F1 value due to detecting the majority of the incident period and having less false positives compared to the other two detectors. However, the precision is low at 0.354, meaning there are a lot of false positives. Using the `score\_check.py` script, the individual calculation has replicated the scores perfectly, meaning that the score calculation for CloudSentinel is correct.
+
+\paragraph{Results of the normal dataset}
+This test in particular demonstrates the benefit of being able to evaluate the models in multiple contexts, as the comparison dashboard supports. As there are no labelled incidents in the data, the recall and F1 metrics are not particularly informative. However, the false positives give us useful information. The CGNN flagged 24 (17\%) of the 141 usable observations as anomalies, the Isolation Forest flagged 207 (86\%) of the 241 observations and LOF flagged all 241 (100\%). Whilst the models were able to run on a dataset with the same feature structure, they did not generalise well to this (different) workload context. Whilst we cannot make any general claims about robustness from one normal period, it does clearly demonstrate that just because there is technical compatibility, this does not mean they will reliably detect. Thus, the advantage of the 'robustness' functionality of cloudsentinel is demonstrated.
+
+\paragraph{Traceability and the external detector.}
+For check 4, the comparison was able to be directly traced back to the exact model, training data, evaluation data, feature ordering and detector parameters. This means we could clearly explain how we obtained our result. However, the software version, container images and machine resources were not included in the comparison, so these would still have to be manually recorded. So whilst CloudSentinel does provide strong links between these analysis objects, the full experiment configuration is not included, as some aspects are still missing.
+
+For check 5, the workflow was functional/ worked correctly for CGNN, Isolation Forest and the external LOF detector package. This proves that the detectors can be used with the shared interface/contract that has been implemented as part of the improvement. However, as LOF has already been implemented at the time of evaluation, it doesn’t prove that it would be easy to include a new detector. So  this could still arguably be a gap in this evaluation.
+
+As a whole, the results of these tests prove that the Data Catalogue, training, Saved Models and Model Comparisons steps can be used together to create a functional and traceable workflow. This supports C4 (configurability, reproducibility, and extensibility) and the data-to-comparison part of C1 (end-to-end experimental workflow adequacy). However, it doesn’t prove that the detectors are effective for all faults. It also doesn’t prove or enforcen C3 (portability and deployment ease) as we didn’t use any new deployment environments. The data that was evaluated included CPU, memory, CPU throttling and restarts in normal and CPU stress contexts. Latency, network telemetry, logs and traces were not included.
+
+\subsection{Performance and resource use}
+
+\subsubsection{Purpose}
+This test mainly provides evidence for:
+\begin{itemize}
+    \item C5 (operational overhead), through measured duration, CPU use, memory use, and successful completion.
+\end{itemize}
+
+During the test, a model comparison was executed multiple times with three models, but with varying amounts of historical observations. The purpose of this was to obtain an understanding of the performance impact of the dataset size.
+
+\subsubsection{Method}
+
+% For this test, only the number of historical observations was changed. The three test datasets contained 241, 481, and 921 observations respectively. Everything else stayed the same: i.e. all datasets used 44 features, the same sampling interval, the same three Saved Models, and the same EC2 host and single-node Minikube cluster.
+
+% Every dataset size was tested three times, giving nine runs in total. The number of Kubernetes nodes and replicas was not changed. This is therefore an input-size test, not a test of horizontal scaling.
+
+% For every run, the evaluation recorded whether the Model Comparison completed and how long the complete operation took. CPU and memory use were sampled for each container. Three measurements were also taken while the system was idle.
+
+% The measured duration includes more than detector execution. It starts before CloudSentinel checks and loads the data and ends after it stores the calculated results. Exact identifiers and measurements are retained in \texttt{evaluation\_evidence/2. Performance and resource use/C5-performance-20261024.json}.
+
+For this test, only the number of historical observations was changed. The three test datasets contained 241, 481, and 921 observations respectively. Everything else stayed the same: i.e. all datasets used 44 features, the same sampling interval, the same three Saved Models, and the same EC2 host and single-node Minikube cluster. Of the three datasets, there were 241, 481 and 921 observations respectively. All other variables remained consistent between the datasets.
+
+Each of the dataset sizes was ran three times, with nine runs in total. The amount of Kubernetes nodes and replicas was not changed, i.e. this is only a performance test in terms of input-size, not in terms of horizontal scaling or other infrastructure-related aspects.
+
+For each run, information was collected on whether the Model Comparison had finished running, and how long it had taken to complete. Furthermore, information on CPU and RAM usage was also collected for each container. We also collected three idle measurements.
+
+The total measured duration includes all processes from before the CloudSentinel checks and loads the data, until after it has stored the results. The exact identifiers/names and measurements can be found in \texttt{evaluation\_evidence/2. Performance and resource use/C5-performance-20261024.json}.
+
+\subsubsection{Results}
+
+All nine Model Comparisons were completed successfully, with none of the models crashing or running into other issues. Table~\ref{tab:h9-input-scaling-results} displays the complete duration of each run:
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Complete comparison-workflow time with increasing historical input size.}
+    \label{tab:h9-input-scaling-results}
+    \begin{tabular}{|r|r|r|r|r|}
+        \hline
+        Test observations & Run 1 (s) & Run 2 (s) & Run 3 (s) & Mean (s) \\
+        \hline
+        241 & 9.43 & 8.07 & 10.26 & 9.25 \\
+        481 & 20.35 & 20.32 & 20.40 & 20.36 \\
+        921 & 41.53 & 41.58 & 42.86 & 41.99 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% The timing pattern is straightforward. Increasing the input from 241 to 481 observations roughly doubled the mean duration, from 9.25 to 20.36 seconds. Increasing the input to 921 observations roughly doubled the duration again, to 41.99 seconds. Within these three tested sizes, the complete comparison time therefore increased approximately in proportion to the amount of input data.
+
+% The Generic Detection Runtime showed the clearest change in CPU use. CPU is reported in millicores; 1,000 millicores equal one CPU core. The runtime used approximately 1 millicore while idle and reached a recorded peak of 957 millicores during the largest runs. Its memory use increased from approximately 237~MiB while idle to 292~MiB at the recorded peak.
+
+% The Learning worker used more memory throughout the test, approximately 641--644~MiB, but its CPU use changed much less. The other components had lower recorded values. Their complete measurements remain in the evidence file.
+
+% The results show that all nine Model Comparisons completed and that both duration and detection-runtime CPU use increased with the number of observations. This provides bounded evidence for C5 (operational overhead) in the tested single-node environment.
+
+% The test does not show how CloudSentinel behaves when Kubernetes nodes or replicas are added. CPU and memory were sampled periodically, so short peaks may also have occurred between samples. The full run records and resource measurements are retained in \texttt{evaluation\_evidence/2. Performance and resource use/C5-performance-20261024.json}.
+
+The displayed results are quite straightforward. As the input increased from 241 to 481 observations, the average time increased by approximately double to 20.36 seconds. As the input increased to 921 observations, the time again increased by approximately double to 41.99 seconds. This means that the overall time taken to complete the comparison has increased proportionally to the input size (i.e. a linear pattern).
+
+The Generic Detection Runtime (i.e. the CloudSentinel service responsible for executing the three detectors) had the most noticeable differences. The CPU usage was around 1millicore when idle. During the largest runs, the CPU usage was recorded as peaking at 957millicores. Millicores are 1000 per CPU core. The memory usage increased to 292MiB from around 237MiB when idle.
+
+The Learning worker had higher memory usage throughout the test, ranging between 641-644MiB. However, the CPU usage changed very little. Other components had lower recorded usage. All the full results are in the evidence file.
+
+% Overall, the results show that all 9 Model Comparisons were able to complete and that the time and CPU usage of the Gneeric Detection Runtime increased with the number of observations. This provides limited evidence for C5 (Operational Overhead) in the single node environment tested.
+
+Overall, the results show that all 9 Model Comparisons were able to complete successfully, with the largest comparison, which had 921 observations, 44 features and 3 Saved Models, taking less than 43 seconds to complete. The runtime increased roughly linearly with the input size, while the memory consumption was somewhat  consistent. The Generic Detection Runtime was running close to using a full CPU core on the largest comparisons (975 millicores). This suggests that as the dataset size increases CPU resources are a likely candidate to to being the first limiting factor. This test support C5 (overhead) for this single node environment.
+
+It is important to note that this test does not show how CloudSentinel performs when adding Kubernetes nodes/replicas. The CPU and memory was recorded periodically so there may have been small peaks in between. The full results of the runs and resources can be found in \texttt{evaluation\_evidence/2. Performance and resource use/C5-performance-20261024.json}.
+
+\subsection{Application scaling and changing pod identities}
+
+\subsubsection{Purpose}
+While the above performance test changed the number of historical observations, it did not change the Kubernetes deployment configuration. This test focuses on a different question: does cloudsentinel-presented workflow still remain usable when the monitored application contains more replicas of its pods and when Deployment pod names change? Specifically, it provides evidence for:
+
+\begin{itemize}
+    \item C1 (end-to-end experimental workflow adequacy): By performing a completed Data Catalogue fetch while replicas were being added.
+    \item C3 (portability and deployment ease). By the use of Deployment-based Online Boutique services with changing pod identities.
+    \item C4 (configurability, reproducibility, and extensibility): Through using and looking at stored service-level queries, feature order and and  provenance.
+    \item C5 (operational overhead): Through looking at repeated CPU, memory, and availability observations for 3 application sizes.
+\end{itemize}
+
+The reason why we mention deployment pod names changing specifically is because an earlier limitation of the base-cloudsentinel revealed an issue where changing pod identities caused the application to break, as the podnames would not correspond anymore to the expected column feature names in the metric dataset files.
+
+\subsubsection{Method}
+
+For this test, a second Online Boutique installation was created in an separate Kubernetes namespace. This was to prevent the test from changing the original monitored application or the CloudSentinel deployment. The standard 'load generator' that comes with Online Boutique pod was paused so as to not to influence the results. The goal was to observe application scaling and integration behaviour.
+
+Three configurations were evaluated:
+
+\begin{itemize}
+    \item Configuration A: used one pod per service and contained 11 application pods.
+    \item Configuration B: five stateless services were increased from one to three replicas, producing 21 application pods.
+    \item Configuration C, every scalable stateless Deployment used three replicas, producing 29 application pods. Redis remained at one replica.
+\end{itemize}
+
+The chart's default CPU reservations could not be scheduled beside the existing workloads on the four-vCPU host. Only the scheduler reservations of the isolated installation were lowered; its CPU limits were retained. The two Python services also received a longer startup delay before their health checks. These changes are part of the test setup and are not CloudSentinel source-code changes.
+
+Each healthy configuration was measured three times. Every snapshot recorded pod and Deployment health, node CPU and memory, host memory, a frontend HTTP request, and Prometheus results. The CloudSentinel Data Catalogue used service-level queries. For example, the frontend query matched \texttt{frontend(-.*)?} and aggregated all matching replicas. This avoids storing one temporary pod suffix as the identity of a feature.
+
+A Data Catalogue fetch covered the transition from configuration A to B. After configuration C was stable, all three frontend pods were replaced through a rolling restart while 45 HTTP requests were issued. A second Data Catalogue fetch then checked whether the feature definition still worked with the new pod names.
+
+A final configuration D attempted to add a second Minikube worker. Both nodes would have shared the same EC2 hardware, so this could only test multi-node scheduling behaviour, not extra physical capacity.
+
+\subsubsection{Results}
+
+Configurations A, B, and C all became healthy. Table~\ref{tab:h9-topology-scaling-results} reports the three resource snapshots for each configuration. CPU did not rise with pod count because the added replicas were mostly idle. Memory is therefore the clearer indicator of the additional replicas in this test.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Observed resource use while the Online Boutique application was scaled.}
+    \label{tab:h9-topology-scaling-results}
+    \begin{tabular}{@{}lrrrr@{}}
+        \toprule
+        Configuration & Pods & Node CPU & Node memory & Host memory available \\
+        \midrule
+        A & 11 & 31--35\% & 43\% & 8,558--8,564~MiB \\
+        B & 21 & 31\% & 42--44\% & 8,315--8,361~MiB \\
+        C & 29 & 23--33\% & 44--46\% & 7,935--7,963~MiB \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% All nine snapshot requests to the frontend returned HTTP~200. The first Data Catalogue fetch completed all ten Prometheus queries and stored 17 observations with ten CPU and memory features. Validation passed without warnings and the stored matrix contained no missing values. CloudSentinel also retained the resolved queries, feature order, file checksums, and a live-input recipe.
+
+% The rolling restart changed all three frontend pod names. During the restart, 44 of 45 HTTP probes succeeded; one request timed out. The second Data Catalogue fetch nevertheless completed all ten queries, stored the same ten features, and again contained no missing values. Before and after the replacement, the live-input recipe had the same checksum. This shows that the service-level feature identity survived the pod-name change.
+
+% The older default metric configuration behaves differently: it substitutes one exact pod name into its Prometheus queries. Such a stored query cannot continue to identify a Deployment pod after that pod is replaced. The result therefore applies to the redesigned Data Catalogue route with a stable service-oriented query, not automatically to every legacy data path.
+
+% Configuration D did not reach Kubernetes. The second Minikube container stopped during system startup because the shared host could not create another cgroup inotify object. Increasing the relevant host limit did not solve the failure, so the original limit was restored. The stopped worker was not counted as a working node. CloudSentinel and configuration C remained healthy afterward.
+
+% The results show that the redesigned Data Catalogue remained functional while the tested Online Boutique topology grew from 11 to 29 pods and while all frontend pod identities changed. It preserved the same service-level feature definition without missing observations. This supports C1 (end-to-end experimental workflow adequacy), C3 (portability and deployment ease), C4 (configurability, reproducibility, and extensibility), and provides bounded C5 (operational overhead) evidence for a single EC2 host. It does not establish maximum throughput, multi-node scalability, or detector accuracy. The full protocol and raw records are retained in \texttt{evaluation\_evidence/3. Application scaling and changing pod identities/}.
+All nine snapshot requests were made to the frontend, each time returning an HTTP~200 status code. All ten Prometheus queries were executed in the first request to the Data Catalogue and all 17 observations, with 10 features relating to CPU and memory, were saved. There were no warnings during validation and there were no missing values in the results matrix. Queries were saved by CloudSentinel, along with the feature order, file checksums and recipe for live data.
+
+During the rolling restart all three frontend pod names changed. 44/45 probes were successful, with one timeout. All 10 queries were executed in the second request to the Data Catalogue. The same 10 features were saved with no missing data. The checksum of the recipe for live data stayed the same before and after the replacement. This shows that the feature definitions at service level remained consistent.
+
+The older default metric configuration inserts one specific pod name into the Prometheus queries. This means that once the pod has been replaced, the query can no longer be used to identify the Deployment pod. This limitation does not apply to the new Data Catalogue route using service-level queries.
+
+Configuration D did not reach Kubernetes. The second Minikube container failed to start due to the shared host not being able to create another cgroup inotify object. Increasing this limit on the host did not resolve the issue, so the original limit was restored. The worker was not counted as an active node. CloudSentinel and configuration C were still healthy.
+
+This shows that the new Data Catalogue design still worked with the increased number of pods (from 11 to 29) within the Online Boutique topology under test. All three frontend pod names changed but the feature definitions at service level remained consistent. This supports C1 (end-to-end experimental workflow adequacy), C3 (portability and deployment ease) and C4 (configurability, reproducibility and extensibility). Limited evidence for C5 (operational overhead) was provided within a single EC2 host. However, this does not establish maximum throughput, scaling across multiple nodes or detector accuracy. The complete protocol and raw data have been saved in \texttt{evaluation\_evidence/3. Application scaling and changing pod identities/}.
+
+\subsection{Known-fault tests in Boutique}
+
+\subsubsection{Purpose}
+
+This part introduces known faults and checks detection and root-cause analysis (RCA) separately. It provides evidence for:
+\begin{itemize}
+    \item C1 (end-to-end experimental workflow adequacy): by testing Live Monitoring from data collection through anomaly detection and RCA execution.
+    \item C2 (RCA workflow adequacy and interpretability): by checking whether the affected service or metric appears in the stored RCA result.
+\end{itemize}
+A missed fault alone does not explain whether the detector, the RCA method, or an earlier data step caused the problem. The results are therefore reported separately.
+
+\subsubsection{Method}
+
+Three faults were introduced in the controlled Online Boutique cluster:
+\begin{itemize}
+    \item CPU stress on \texttt{checkoutservice};
+    \item extra memory use in \texttt{cartservice}; and
+    \item replacement of the \texttt{paymentservice} pod.
+\end{itemize}
+
+Each of these faults affect different parts of the existing monitoring data. To be specific: CPU stress should mainly change CPU measurements; memory allocation should mainly change memory measurements, and pod replacement should temporarily affect availability and restart-related measurements. The faults were introduced only in the test environment. The exact commands used and the timings can be found in the evidence files (see: appendix).
+
+Two Live Monitoring sessions observed the same period with one trained 'Isolation Forest' model. To perform the RCA, one session used CausalRCA and the other used BARO RobustScorer. In their respective sessions, both algorithms refreshed every 15 seconds and examined the latest 10 minutes of data. RCA started when more than half (>\%50) of the evaluated observations were marked as anomalous by the running Anomaly Detection model.
+
+Isolation Forest was selected before the trial as the anomaly detection model. CGNN was also considered, but needed a longer input window without missing values, which (unfortunately) was not available due to/after an earlier pod recovery. Thus, due to time constraints, this test sticked to Isolation Forest. During the trial, Isolation Forest and the settings for anomaly detection and triggering RCA all remained  unchanged and were not changed.
+
+% A normal baseline dataset was recorded before the simulated faults. The CPU and memory stress faults each lasted three minutes and were followed by two minutes of recovery. Pod replacement was tested separately, with its own baseline and recovery period. The Prometheus telemetry data and Kubernetes state were used to confirm that each fault had really occurred. Detector output, RCA execution, and the resulting rankings were then assessed as separate outcomes. The exact timings and settings for these tests can be found in \texttt{evaluation\_evidence/4. Known-fault tests in Online Boutique/known-fault-summary-20261024.txt} and its referenced raw files.
+
+A normal baseline dataset was acquired as a baseline prior to simulating any faults. CPU and memory faults were each run for 3 minutes with an additional 2 minute recovery window. Pod replacement was run separately with its own baseline and recovery. Using the Prometheus telemetry data and Kubernetes state we can ensure that each of the faults has been executed. The detector output, running the RCA and the final rankings are all measured. Times and configurations can be found in \texttt{evaluation\_evidence/4. Known-fault tests in Online Boutique/known-fault-summary-20261024.txt} alongside the raw files for reference.
+
+\subsubsection{Results}
+
+Prometheus and Kubernetes confirmed that all three of the incurred faults actually occurred. However, the Isolation Forest detector already marked the normal period as anomalous before the faults started. As such, it did not show a clear change when the faults began. Table~\ref{tab:h9-known-fault-results} gives a short overview of the results. Below, each of the cases is explained.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Known-fault results in Online Boutique.}
+    \label{tab:h9-known-fault-results}
+    \begin{tabular}{|p{0.18\linewidth}|p{0.27\linewidth}|p{0.20\linewidth}|p{0.25\linewidth}|}
+        \hline
+        Scenario & Observation & Detector response & RCA response \\
+        \hline
+        Checkout CPU stress & CPU use clearly increased. & The normal period and the fault period were both reported as fully anomalous. & RCA ran, but checkout CPU was not ranked near the top. \\
+        \hline
+        Cart memory allocation & Memory use clearly increased. & The normal period and the fault period were again both reported as fully anomalous. & RCA ranked cart CPU highly, but not the changed memory measurement. \\
+        \hline
+        Payment pod replacement & Kubernetes confirmed that the pod was replaced. & Live Monitoring stopped when the temporary absence created a missing input value. & The last available ranking did not clearly identify the replacement. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% \paragraph{CPU stress.}
+% For the CPU test, the measured CPU rate rose from approximately 0.0015 to 0.2001 cores. The fault was therefore clearly present in the source data. CloudSentinel did not show a new detector response, because the preceding normal period had already been classified as fully anomalous. CausalRCA ran, but checkout CPU ranked only 26th and 28th in the two analyses during the fault.
+
+% \paragraph{Memory stress.}
+% The memory test had the same detection problem. Cart memory increased from 70.9~MB to 134.1~MB, but both the normal and faulty periods were classified as fully anomalous. CausalRCA ranked a cart CPU measurement first, while the changed cart memory measurement ranked 26th. The ranking therefore did not provide a convincing explanation of the known fault.
+
+% \paragraph{Why BARO did not run.}
+% BARO did not return a ranking for these two cases. It needs normal observations before the change so that it can compare the periods. Because the detector had not provided a usable normal baseline, CloudSentinel stored the BARO analyses as skipped with the reason \texttt{insufficient\_baro\_baseline}. This is preferable to presenting a ranking based on invalid input.
+
+% \paragraph{Pod replacement.}
+% The pod replacement exposed a different limitation. Kubernetes confirmed that the old pod disappeared and a new pod became ready about 19 seconds later. During that gap, one required input value was missing. Live Monitoring therefore stopped instead of inventing a value.
+
+% Stopping is safe from a data-integrity perspective, but it also means that monitoring could not continue through an availability fault. The last available RCA ranking placed payment CPU seventh and payment restarts twelfth. This did not clearly identify the replacement.
+
+% The results show mixed support for C1 (end-to-end experimental workflow adequacy). CloudSentinel collected live data, ran the selected model, applied the saved trigger rule, started RCA, and stored traceable results. However, the detector did not show a useful change for any of the three faults, and Live Monitoring stopped when pod replacement caused a missing value. The test therefore does not support C2 (RCA workflow adequacy and interpretability) as evidence of accurate diagnosis for this configuration. It does show that detection, triggering, RCA execution, rankings, and failure reasons are stored separately, which makes the unsuccessful result explainable. The retained records are listed in \texttt{evaluation\_evidence/4. Known-fault tests in Online Boutique/known-fault-summary-20261024.txt}.
+
+\paragraph{CPU stress.}
+The CPU stress test shows that there was an increase in the measured CPU rate from approximately 0.0015 to 0.2001 cores, indicating the fault was present within the source data. As the preceding normal period was identified as completely anomalous, CloudSentinel did not produce a new detector response. CausalRCA was executed; however, checkout CPU had an unconvincing rank of 26th and 28th in the two analyses during the fault.
+
+\paragraph{Memory stress.}
+
+The memory stress test produced similar issues. The cart memory increased to 134.1~MB from 70.9~MB. Both the normal and faulty periods were identified as completely anomalous. CausalRCA identified a cart CPU measurement as having the highest rank. The altered cart memory had a rank of 26th, therefore providing little explanation for the known fault.
+
+\paragraph{Why BARO did not run.}
+
+BARO did not produce a ranking for these two cases. BARO requires normal observations before the change. As there was no useful normal baseline provided by the detector, CloudSentinel stored the BARO analyses as skipped with the reason \texttt{insufficient\_baro\_baseline}. This provides better clarity than producing a ranking based on invalid data.
+
+\paragraph{Pod replacement.}
+
+The pod replacement test showed another issue. Kubernetes confirmed that the old pod was removed and a new pod was ready after approximately 19 seconds. During this period, there was a missing required input value. Live Monitoring halted.
+
+This is safe in terms of data integrity but means that monitoring could not continue during an availability fault. The last available RCA ranking had payment CPU as 7th and payment restarts as 12th. This did not clearly indicate the pod replacement.
+
+Overall, C1 (end-to-end experimental workflow adequacy) is somewhat supported. CloudSentinel collected real-time data, executed the chosen model, used the stored trigger rule and started RCA. However, the detector did not identify a useful change for any of the 3 faults. When the pod replacement occurred there was a missing value, so Live Monitoring halted. This does not support C2 (RCA workflow adequacy and interpretability) as evidence of an accurate diagnosis for this setup. However, it does show that detection, triggering, RCA execution, rankings and reasons for failure are all stored separately. This means the reason why the result failed can be explained. The stored information can be found in \texttt{evaluation\_evidence/4. Known-fault tests in Online Boutique/known-fault-summary-20261024.txt}.
+
+\subsection{External benchmark validation: RCAEval Train Ticket}
+
+\subsubsection{Purpose}
+
+The Online Boutique tests were performed one 'real' application and one locally controlled deployment. RCAEval adds saved monitoring data from a different microservice application, called 'Train Ticket'. The data includes known faults, so the expected answer is available: the fault type, its start time, and the affected service are known.
+
+The evaluation focuses on three separate questions:
+\begin{enumerate}
+    \item Can CloudSentinel import this external data and use it for training and Model Comparisons?
+    \item How do the detectors behave when they are trained for the context being evaluated, and what happens when one fitted model is reused in different contexts?
+    \item If BARO receives the correct fault-start time, does it rank the known affected service highly (as it should)?
+\end{enumerate}
+
+These questions provide evidence for:
+\begin{itemize}
+    \item C1 (end-to-end experimental workflow adequacy): Through the importing of data, training models, and completing Model Comparisons.
+    \item C2 (RCA workflow adequacy and interpretability): Through the service-rankings against a known affected service.
+    \item C3 (portability and deployment ease): Through the preparation needed for a different monitoring-data format.
+    \item C4 (configurability, reproducibility, and extensibility): Through fixed inputs and traceable experiment records.
+    \item A somewhat limited part of C5 (operational overhead): Through recorded training and evaluation times.
+\end{itemize}
+The data is historical. This means that although the test can evaluate importing, training, comparison, and scoring; it does not evaluate a live connection to the Train Ticket application (i.e. no 'true' 'live monitoring' session was performed here, even though CloudSentinel provides this functionality).
+
+\subsubsection{Method}
+
+% \paragraph{Preparing the external data.}
+% The original RCAEval files contain between 198 and 238 metric columns. However, the current Data Catalogue accepts at most 100 columns from a CSV file. A single set of 100 metrics was therefore selected and used in every case. It included general workload and response-time measurements, plus CPU and memory measurements for all services that could be affected. The 100-column limit is unfortunately a limitation of CloudSentinel and is taken into consideration in the final conclusion.
+
+% Some of the observations/timestamps had missing values. One fixed preparation rule was used to fill these gaps. The choice of metrics and the gap-handling rule were made before the final results were inspected. Their exact definitions, together with file hashes and settings, are kept under \texttt{evaluation\_evidence/5. RCAEval Train Ticket benchmark}, which can be found in the appendix. For this evaluation, we take this extra preparation work as part of the result of measuring C3 (portability).
+
+% \paragraph{Test A: training for the target context.}
+% The first detector test used five cases: CPU stress, network delay, disk stress, packet loss, and memory stress. Each case contained a normal period followed by a known fault.
+
+% For each case, the detectors received normal training data from that same context. This represents a realistic situation in which a researcher can first collect normal behaviour from the system that will later be evaluated. A separate recording was used to choose the Isolation Forest and LOF settings, so the final recording was not also used for that choice. CGNN used the same settings in every case and trained for 20 epochs.
+
+% The fault labels were not used to train the detectors. They were used only afterwards to calculate the final scores.
+
+% \paragraph{Test B: reusing one model in other contexts.}
+% The second detector test was deliberately more difficult. One fitted Isolation Forest model and one fitted LOF model were reused unchanged across 25 combinations of services and fault types.
+
+% This test asks whether a model that works in one context can simply be carried over to other contexts. It is not the same as Test A. In Test A, every detector first saw normal training data from its target context. In Test B, it did not.
+
+% \paragraph{BARO service ranking.}
+% BARO was tested separately from anomaly detection. It received the published fault-start time and compared the period before that time with the period after it. It then ranked the services that changed most.
+
+% This is a limited but useful test. It shows whether the affected service appears high in the ranking when the correct change time is already known. It does not show that Live Monitoring can find that time automatically. A high rank also indicates an association with the change, not proof that the service caused every observed effect.
+
+\paragraph{Preparing the external data.}
+
+The original RCAEval files contain between 198 and 238 metric columns. However, the current Data Catalogue accepts at most 100 columns from a CSV file. A single set of 100 metrics was therefore selected and used in every case. It included general workload and response-time measurements, plus CPU and memory measurements for all services that could be affected. The 100-column limit is unfortunately a limitation of CloudSentinel and is taken into consideration in the final conclusion.
+
+There were some missing values in the observations. A single rule was used to fill in the missing values. Metrics were chosen and a rule to fill in missing values was decided upon before looking at the final results. They are clearly defined, along with the file hashes and settings, under \texttt{evaluation\_evidence/5. RCAEval Train Ticket benchmark} in the appendix. The additional preparation of the data for this evaluation is considered part of the measurement of C3 (portability).
+
+\paragraph{Test A: training for the target context.}
+
+The detectors were tested using 5 different cases. These were CPU stress, network delay, disk stress, packet loss and memory stress. Each of these had a section of normal data followed by a known fault.
+
+Each detector was trained using normal data from the same context. This is a realistic scenario where a researcher would first gather some normal data from the system they are going to evaluate. A different recording was used to decide on the settings for the Isolation Forest and LOF. The final recording was not used. CGNN was using the same settings for all cases, with 20 epochs of training.
+
+The labels for the faults were not used during training.
+
+\paragraph{Test B: reusing one model in other contexts.}
+
+This test was intentionally harder. A single trained Isolation Forest model and a single trained LOF model were used unchanged in all 25 service/fault type combinations.
+
+This is testing if a model can be transferred directly from one context to another. Unlike Test A, the models had not been trained using normal data from their target context.
+
+\paragraph{BARO service ranking.}
+
+BARO was tested separately. It was provided with the published start time of the fault. It compared the data before and after this point. It then ranked the services with the biggest changes.
+
+This is a basic test but is useful. It shows whether the impacted service is ranked highly when the correct time is known. However, it does not show that Live Monitoring can automatically find the correct time. It also shows whether the service is associated with the change but does not prove that it caused all the effects observed.
+
+\subsubsection{Results}
+
+\paragraph{Workflow result.}
+% The Data Catalogue accepted the five prepared datasets. Each dataset used the same 100 columns. For every dataset, CloudSentinel trained CGNN, Isolation Forest, and LOF and then completed one Model Comparison containing all three Saved Models. This confirms that the external data could pass through the implemented workflow.
+
+% The training times differed substantially. Isolation Forest and LOF completed each case in less than four seconds. CGNN needed approximately five to nine minutes for training. It used 20 training rounds and processed the observations as sequences. During the later Model Comparisons, Isolation Forest and LOF produced results in milliseconds, while CGNN needed about 55 seconds on average.
+
+All five of the prepared datasets were successfully accepted by/added to the Data Catalogue. Each datasets used the same 100 columns. Three models were trained on each dataset, CGNN, Isolation Forest and LOF. A Model Comparison was then performed with all three Saved Models. This proves that the external data can be used within the workflow.
+
+The models took significantly different amounts of time to train compared to each other. Isolation Forest and LOF took less than 4 seconds to complete each case. CGNN took between 5-9 minutes to train with 20 training iterations. The observations were sequential. During the later Model Comparisons, Isolation Forest and LOF returned results in milliseconds. However, CGNN needed about 55 seconds on average.
+
+\paragraph{Test A: detectors trained for the target context.}
+Table~\ref{tab:h9-rcaeval-calibrated-results} reports the average result of Test A, in which every detector received normal training data from its target context.
+
+Five main measures/metrics were used. Each of these represent a different aspect:
+\begin{itemize}
+    \item \textbf{Precision}: when the detector reports an anomaly, how often is it correct?
+    \item \textbf{Recall}: how much of the known fault period did the detector find?
+    \item \textbf{F1}: Combines precision and recall into one value. (i.e., if both values are high, F1 will also be high).
+    \item \textbf{false-positive rate}: Sshows how often normal observations were incorrectly marked as anomalous.
+    \item \textbf{Balanced accuracy}: BA gives equal weight to recognising normal and faulty observation timestamps. This is useful because the dataset-recordings contain unequal amounts of normal and faulty data.
+\end{itemize}
+
+For precision, recall, F1, and balanced accuracy: the closer to 1 the value is, the better. For the false-positive rate, the opposite is true: values closer to 0 are better. It's important that every detector, all columns are taken into account, as the detector with the highest F1 score may not necessarily also be the best choice. BA and mean runtime in particular are also important aspects.
+
+\begin{table}[H]
+    \centering
+    \scriptsize
+    \caption{Mean results for the five held-out temporal tests.}
+    \label{tab:h9-rcaeval-calibrated-results}
+    \resizebox{\linewidth}{!}{%
+    \begin{tabular}{|l|r|r|r|r|r|r|}
+        \hline
+        Detector & Precision & Recall & F1 & False-positive rate & Balanced accuracy & Mean runtime \\
+        \hline
+        Isolation Forest & 0.930 & 0.748 & 0.799 & 0.159 & 0.795 & 41 ms \\
+        External LOF & 0.897 & 0.972 & 0.932 & 0.287 & 0.842 & 45 ms \\
+        CGNN & 0.943 & 0.962 & 0.951 & 0.371 & 0.796 & 55.2 s \\
+        \hline
+    \end{tabular}
+    }
+\end{table}
+
+% No detector is best in every column. CGNN has the highest average F1 value, at 0.951. This means that it achieved the strongest average balance between precision and recall. However, its false-positive rate is also the highest: 0.371. In practical terms, more than one third of the normal observations were incorrectly marked as anomalous.
+
+% LOF has the highest balanced accuracy, at 0.842. It found most of the faulty observations, as shown by its recall of 0.972. It also produced false alerts for 28.7\% of the normal observations, which is more than Isolation Forest.
+
+% Isolation Forest produced the fewest false positives: 15.9\% of normal observations were marked as anomalous. The trade-off is that it found less of the fault period, as shown by its lower recall of 0.748.
+
+% These averages hide differences between fault types. Table~\ref{tab:h9-rcaeval-balanced-by-fault} therefore shows the result for each fault separately. It uses balanced accuracy because this measure gives equal importance to normal and faulty observations. A value near 0.5 means that the decisions are not useful for distinguishing the two periods. Higher values are better.
+
+No single detector performs best on all columns. The CGNN performed best overall with an average F1 score of 0.951. This indicates it gave the best average precision-recall trade-off. However, it also had the highest false positive rate of 0.371 meaning over a third of normal data was incorrectly labelled as anomalous.
+
+LOF performed best in terms of balanced accuracy (0.842). It detected the most faulty data (recall = 0.972). However, it also had more false alarms with 28.7\% of normal data being labelled as anomalous.
+
+Isolation Forest had the lowest false positive rate, only labelling 15.9\% of normal data as anomalous. However, it also missed out on detecting as much of the fault period (recall = 0.748).
+
+The average results do not tell the whole story. Table~\ref{tab:h9-rcaeval-balanced-by-fault} shows the results for each fault type. Balanced accuracy was used to ensure both normal and faulty observations were weighted equally. If the value is close to 0.5 then the decisions are not useful in distinguishing between the two periods. Higher values are better.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Balanced accuracy by held-out fault context.}
+    \label{tab:h9-rcaeval-balanced-by-fault}
+    \begin{tabular}{|l|r|r|r|}
+        \hline
+        Fault context & Isolation Forest & External LOF & CGNN \\
+        \hline
+        CPU & 0.640 & 0.753 & 0.540 \\
+        Delay & 0.742 & 0.833 & 0.919 \\
+        Disk & 0.699 & 0.831 & 0.654 \\
+        Packet loss & 0.949 & 0.844 & 0.883 \\
+        Memory & 0.943 & 0.952 & 0.982 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% The per-case results make the trade-offs clearer. CGNN performed well for delay, packet loss, and memory, but poorly for CPU and disk. Its CPU score of 0.540 is close to the uninformative level of 0.5 because it marked most normal CPU observations as anomalous.
+
+% Isolation Forest also struggled with CPU, where it missed many faulty observations. It performed much better for packet loss and memory. LOF was the most consistent of the three detectors in this small five-case sample: its result did not fall below 0.753 in any case.
+
+% The important conclusion is not that LOF is generally the best algorithm. Five cases are too few for that claim, and the selected 100 metrics affect the result. The table instead shows why comparison across several fault contexts is useful: an average score can hide a detector's weak context.
+
+The per-case results give us more clarity on the trade-offs. CGNN performed well on delay, packet loss and memory but worse on CPU and disk. CGNN had a score close to the uninformative value of 0.5, with a score of 0.540, showing that most of the normal CPU observations were being detected as anomalies.
+
+The Isolation Forest also performed badly on CPU, with many faulty observations not being detected. It performed very well on packet loss and memory. The LOF algorithm performed most consistently in the small sample size (5 cases), with all scores at or above 0.753.
+
+The key takeaway here is not that LOF is generally the best algorithm. The sample size is too small (only 5 cases) and the 100 metrics that were chosen will affect the result. But this table shows the usefulness of comparing algorithms in multiple fault scenarios. If the average score is used, this can hide how badly a detector performs in a particular context.
+
+
+
+
+\paragraph{Result of Test B: reuse across different contexts.}
+Test B focuses a different question. Instead of training for each target context, one fitted/trained Isolation Forest model and one fitted LOF model were reused (unchanged) across 25 service-fault combinations. Table~\ref{tab:h9-rcaeval-transfer-results} shows the result.
+
+\begin{table}[H]
+    \centering
+    \scriptsize
+    \caption{Cross-context transfer stress test across 25 Train Ticket cases.}
+    \label{tab:h9-rcaeval-transfer-results}
+    \resizebox{\linewidth}{!}{%
+    \begin{tabular}{|l|r|r|r|r|r|r|}
+        \hline
+        Detector & Precision & Recall & F1 & False-positive rate & Balanced accuracy & Mean runtime \\
+        \hline
+        Isolation Forest & 0.716 & 0.998 & 0.834 & 0.994 & 0.502 & 13.2 ms \\
+        External LOF & 0.717 & 1.000 & 0.835 & 0.991 & 0.505 & 13.3 ms \\
+        \hline
+    \end{tabular}
+    }
+\end{table}
+
+% At first glance, the recall and F1 values in Table~\ref{tab:h9-rcaeval-transfer-results} appear high. That impression is misleading. Both models marked almost every observation as anomalous. They therefore found nearly every faulty observation, but they also incorrectly marked nearly every normal observation as faulty.
+
+% This behaviour is visible in the false-positive rates of 0.994 and 0.991. Balanced accuracy is approximately 0.5 for both models, which confirms that the classifications were not useful across these contexts.
+
+% The contrast between Test A and Test B is the main detector finding. The models produced useful results in several cases when they first received normal data from their target context. Reusing one fitted model unchanged across different services and fault types did not work. CloudSentinel helps expose this difference because it stores the data partition, model identity, settings, timeline, and underlying classification counts instead of showing only F1.
+
+The recall and F1 scores from Table~\ref{tab:h9-rcaeval-transfer-results} appear high. However, the models flagged almost all observations as anomalies. This means that the models correctly flagged almost all faulty observations, but also incorrectly flagged almost all normal observations as faulty. 
+
+This can be seen from the high false-positive rates of 0.994 and 0.991. The balanced accuracy is around 0.5 for both models, confirming that the classifications were not useful across these contexts. 
+
+The key detector finding was the difference between Test A and Test B. In some instances, the models did produce useful results when trained using normal data from the target context. However, reusing one fitted model without any changes between different services and fault types was not effective. CloudSentinel helps identify this by storing/providing more information, such as the data partition, model identity, settings, timeline and underlying classification counts, rather than just the F1 score.
+
+\paragraph{BARO service-ranking result.}
+The evaluation of the BARO RCA method focuses on a different question: when the correct fault-start time is already given, where does it place the known affected service in its calculated ranking?
+
+Across the 25 cases that were used, BARO ranked the affected service on first place a total of 16 times, while it placed it in the top three 23 times,, and in the top five 24 times. Its average execution time was 0.152 seconds. Table~\ref{tab:h9-rcaeval-baro-results} gives more clarity on this result by showing it per faulttype:
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{BARO service-ranking results with the published change point supplied.}
+    \label{tab:h9-rcaeval-baro-results}
+    \begin{tabular}{|l|r|r|r|r|}
+        \hline
+        Fault & Cases & Top 1 & Top 3 & Top 5 \\
+        \hline
+        CPU & 5 & 80\% & 100\% & 100\% \\
+        Memory & 5 & 100\% & 100\% & 100\% \\
+        Disk & 5 & 80\% & 100\% & 100\% \\
+        Delay & 5 & 0\% & 80\% & 100\% \\
+        Packet loss & 5 & 60\% & 80\% & 80\% \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% As can be seen from the table, BARO performed best on the CPU, memory, and disk cases. It was weaker for delay and packet loss. The only case in which the affected service did not appear in the top five involved packet loss in the authentication service.
+
+% This result provides conditional support for C2 (RCA workflow adequacy and interpretability). BARO usually ranked the affected service highly when it was given the correct fault-start time. The test does not show that Live Monitoring would find that time automatically. It also does not prove that the highest-ranked service caused every other change.
+
+Looking at the results in the table, we can see that BARO performed best at identifying the affected service in the CPU, memory and disk scenarios. It was not as good at identifying the service in the delay and packet loss scenarios. The only scenario where the affected service was not in the top 5 services was the packet loss scenario for the authentication service.
+
+This gives us some conditional evidence for C2 (RCA workflow adequacy and interpretability). BARO generally ranked the affected service highly when the correct fault start time was provided. This test does not show that Live Monitoring would automatically find the correct fault start time. It also does not show that the highest-ranked service is the cause of all the other changes.
+
+\paragraph{What the case shows about portability and reproducibility.}
+% For C3 (portability and deployment ease), the result is mixed. CloudSentinel accepted all 25 prepared cases. However, the original files exceeded the Data Catalogue's 100-column limit, and missing values had to be handled before import. The case therefore shows that external historical data can be used after a documented preparation step. It does not show zero-configuration portability or deployment next to a live Train Ticket system.
+
+% For C4 (configurability, reproducibility, and extensibility), CloudSentinel stored the identities of the datasets and models, their settings, the labels, and the Model Comparison results. The same two fitted model identities could also be inspected across all 25 contexts in the Robustness view. A researcher can therefore trace which inputs and settings produced a result.
+
+% For C5 (operational overhead), the main difference was between algorithms. Isolation Forest and LOF trained and ran in seconds or less. CGNN training took several minutes, and its later Model Comparison took about one minute. These are measurements from the evaluated EC2 and Minikube setup, not production capacity claims.
+
+% The complete protocol and outputs are stored under \texttt{evaluation\_evidence/5. RCAEval Train Ticket benchmark}.
+
+% The results show that CloudSentinel can import an external historical dataset, train and compare three detectors, and retain the context needed to explain their results. Useful anomaly detection generally required normal training data from the target context; reusing one fitted model unchanged across other contexts failed. Separately, BARO placed the known affected service in the top three in 23 of 25 cases when the correct fault-start time was supplied. This supports service ranking under that condition, but not automatic live diagnosis.
+
+For C3 (portability and deployment ease), the result is mixed. CloudSentinel was able to take all 25 prepared cases. However, the original files did not fit within the 100-column limit of the Data Catalogue. Missing values also had to be accounted for before importing the data. This demonstrates that external historical data can be used with documentation of how it is prepared. However, there is no evidence that the system is portable with no configuration or can be easily deployed next to a live Train Ticket system.
+
+For C4 (configurability, reproducibility, and extensibility), CloudSentinel stored the identities of the datasets and models, as well as the configuration, labels and Model Comparison results. The same two fitted model identities can be seen for all 25 contexts in the Robustness view. Therefore, it can be seen what inputs and configurations were used.
+
+For C5 (operational overhead), the main difference was between algorithms. Isolation Forest and LOF were trained and run in a matter of seconds or less. CGNN took several minutes to train; however, Model Comparison only took around a minute. This is based on the EC2 and Minikube setup used for evaluation and does not reflect production capabilities.
+
+The full protocol and results can be found in \texttt{evaluation\_evidence/5. RCAEval Train Ticket benchmark}.
+
+The results demonstrate that CloudSentinel can import an external historical dataset, train and compare 3 detectors, and keep the context required to explain the results. Useful anomaly detection generally required normal training data from the target context. Reusing the same fitted models without changes in other contexts did not work. BARO was able to place the known affected service in the top 3 in 23 of the 25 cases when the correct fault-start time was provided. This demonstrates that services can be ranked with this information; although, it's importnant to note that this does not demonstrate automatic diagnosis in a 'real' live setting.
+
+\subsection{NaaVRE as a real operational environment}
+
+\subsubsection{Purpose and method}
+
+The RCAEval case used historical data with known faults. A project called 'NaaVRE' adds a different type of evidence: recent monitoring data from an independently managed operational environment. NaaVRE (or 'Notebook as a Virtual Research Environment') is a cloud-based platform for creating, sharing, and executing research workflows in collaborative virtual labs. In this evaluation, NaaVRE is used only as a a real 'live' production environment that provides recent monitoring data. Due to time and practical constraints, it was unfortunately not possible to evaluate real incidents/faults that occured on NaaVRE. Instead, we... 
+
+The main purpose of this test is to see whether CloudSentinel can retrieve this data, create a Data Catalogue dataset with it, and later construct a compatible recent window for Live Monitoring. It provides evidence for:
+\begin{itemize}
+    \item C3 (portability and deployment ease): Through connection to a different operational data source;
+    \item C4 (configurability, reproducibility, and extensibility): Through saved queries, feature order, and file hashes;
+    \item part of C1 (end-to-end experimental workflow adequacy): Through Data Catalogue creation and reuse of the saved Live Monitoring input recipe
+    \item a limited part of C5 (operational overhead): Through recorded query times.
+\end{itemize}
+
+NaaVRE exposes its Prometheus data through Grafana. The available account was read-only. CloudSentinel was therefore not installed inside NaaVRE, and no faults were introduced. Without a confirmed fault time, the case cannot evaluate detection accuracy or C2 (RCA workflow adequacy and interpretability).
+
+Direct Prometheus access was not available. A small compatibility adapter was therefore used on a separate evaluation branch. It sent authenticated queries through Grafana and converted the response into the format that CloudSentinel already accepts.
+
+The adapter was not merged into the main implementation. After the conversion, the normal CloudSentinel code created the Data Catalogue dataset and saved the recipe used to retrieve a later Live Monitoring window. The need for this adapter is part of the portability result: the source could be connected, but not without source-specific work.
+
+The test first requested 24 hours of monitoring data at intervals of 65 seconds. It collected five node-level signals: CPU use, memory use, disk-I/O use, received network traffic, and transmitted network traffic.
+
+CloudSentinel then reused the saved retrieval recipe to request a recent 15-minute window with the same five signals and the same feature order. Raw operational values were kept only in temporary storage. The retained evidence contains counts, timings, settings, and file hashes, but not the raw NaaVRE data.
+
+\subsubsection{Results}
+
+The connection succeeded. The Data Catalogue produced an available dataset with 1,330 observations and five features. Together, this gives 6,650 values, and none were missing.
+
+The saved retrieval recipe was then reused for the recent 15-minute window. It produced 14 observations with the same five features in the same order. Again, no values were missing. Table~\ref{tab:h9-naavre-results} summarises these checks.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Results of the read-only NaaVRE portability case.}
+    \label{tab:h9-naavre-results}
+    \begin{tabular}{|p{0.31\linewidth}|p{0.22\linewidth}|p{0.36\linewidth}|}
+        \hline
+        Check & Result & Interpretation \\
+        \hline
+        Grafana--Prometheus connection & Successful & Recent external monitoring data could be read without cluster access. \\
+        \hline
+        Data Catalogue dataset & 1,330 observations, five features, zero missing values & The normal Data Catalogue process accepted the adapted source. \\
+        \hline
+        Retained evidence & Hashes for five main files, the feature order, and the saved recipe & The exact constructed input can be identified without retaining raw operational data in the thesis project. \\
+        \hline
+        Live Monitoring input reuse & 14 observations, matching feature order, zero missing values & The saved recipe could construct a compatible recent window. \\
+        \hline
+        Query time & Mean 0.083 seconds per Data Catalogue query; 0.375 seconds for the five-query recent-data fetch & Bounded query overhead in this run only; not a production capacity result. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+For C3 (portability and deployment ease), the result is mixed. After the adapter converted the Grafana response, the normal Data Catalogue and saved Live Monitoring input formats could be used unchanged. However, both the adapter and a source-specific choice of metrics were still needed. CloudSentinel itself was not deployed inside NaaVRE. The test therefore shows data-source portability after limited adaptation, not zero-configuration deployment portability.
+
+For C4 (configurability, reproducibility, and extensibility), the time window, feature order, saved retrieval recipe, and file hashes were retained. These records identify how the input was constructed without publishing the raw operational data.
+
+Creating both the Data Catalogue dataset and the recent Live Monitoring input window provides partial support for C1 (end-to-end experimental workflow adequacy). The later stages were intentionally not scored. There were no confirmed incident times or labels, so training results, anomaly alerts, or RCA output could not be judged against a known answer. An observed alert or restart was not treated as proof of an incident.
+
+The query times provide only limited evidence for C5 (operational overhead). They show that the five recent-data queries completed in this run, not how the connection performs under production load.
+
+The results show that CloudSentinel could reuse its Data Catalogue and Live Monitoring input workflow with recent data from another environment after a small adapter was added. RCAEval and NaaVRE provide complementary evidence. RCAEval offers known faults and labels, but only in historical files. NaaVRE offers a recent read-only connection, but no confirmed incidents. Keeping those limits separate prevents either case from supporting a stronger claim than it can justify.
+
+The read-only query protocol, evaluation scripts, and retained aggregate results are stored under \texttt{evaluation\_evidence/6. NaaVRE external environment}. Access credentials and raw operational telemetry are not included.
+
+\subsection{User evaluation}
+
+\subsubsection{Purpose}
+
+The user evaluation examined how experienced technical professionals understood the workflow and how useful they considered its different parts. It focused on the order of the workflow, the clarity of the screens and terminology, the interpretation of the presented results, and the possible use of CloudSentinel in research and operational environments.
+
+The walkthroughs mainly provide evidence for:
+
+\begin{itemize}
+    \item C1 (end-to-end experimental workflow adequacy), by examining whether participants understood the overall process from data collection to Live Monitoring and RCA;
+    \item C2 (RCA workflow adequacy and interpretability), by examining how participants interpreted the RCA information shown in Live Monitoring;
+    \item C3 (portability and deployment ease), by collecting feedback about the configuration and manual work needed to use the framework; and
+    \item C4 (configurability, reproducibility, and extensibility), by discussing detector onboarding, training, Model Comparisons, and the configuration of experiments.
+\end{itemize}
+
+The walkthroughs did not test aspects such as whether the calculated scores were numerically correct, how many users could operate the system successfully, or whether an organisation would adopt CloudSentinel in production. These questions are addressed only partially by the technical evaluations and remain outside the scope of the walkthroughs.
+
+\subsubsection{Method}
+
+Three experienced technical professionals participated in separate expert walkthroughs of approximately 30 minutes. They are referred to as P1, P2, and P3. The participants had professional experience with DevOps, managed services, or operational monitoring, or where otherwise involved with these activities and possessed the relevant expertise.
+
+The researcher demonstrated the application while the participants observed the workflow and commented on it. The same general route through the application was used in each session. This included the system connection, Data Catalogue, detector training, Model Comparisons, robustness information, and Live Monitoring with RCA results. The walkthrough was semi-structured: the researcher explained the purpose of each component and asked participants what they found clear, unclear, useful, or unsuitable for their work.
+
+The participants did not operate the application independently. The sessions are therefore described as expert walkthroughs rather than independent usability tests. The sessions also took place during final development. Some navigation and presentation changes were added afterward, so the results apply to the workflow and screens demonstrated during the sessions. Written notes from the three walkthroughs were used to identify repeated observations and differences between participants.
+
+\subsubsection{Participant feedback}
+
+P1 had an overall positive impression of the application. Live Monitoring was considered clear and visually understandable. P1 spent most of the discussion on the Model Comparisons screen and considered the application more likely to be useful for researchers than for operational teams. The main point of confusion was where a new user should begin. The individual components could be understood after they were explained, but the starting point and order of the complete workflow were not immediately clear.
+
+P2 considered the interface for adding detectors useful, particularly for users who have less experience with manually creating detector configurations. However, P2 did not immediately see a personal use case for the dataset and training workflow. From an operational perspective, a more ready-to-use form of anomaly detection was preferred over manually creating a dataset and starting a separate training run.
+
+P2 also identified several terms that required more explanation. For example, the meaning of the F1 score was not immediately clear, and the robustness information needed additional explanation of terms such as medium precision and runtime. P2 stated that, when entering the application without guidance, it would be difficult to know what to do first.
+
+P2 described an operational monitoring process as something that changes over time. A pattern that initially appears anomalous may later be accepted as normal if it occurs regularly. In their current work, such behaviour can lead to thresholds or monitoring rules being adjusted. P2 therefore suggested that a practical anomaly-detection system should support feedback over time, such as marking an observed pattern as normal or periodically updating a model using recent monitoring data. This differs from CloudSentinel's current experiment-oriented process, in which a fixed historical dataset is selected and used for one training run.
+
+Despite these concerns, P2 considered Live Monitoring the most useful part from a company perspective. Seeing an anomaly together with an immediate probable cause was considered valuable. The expected next step would be to inspect the cluster, verify the reported metric, and use logs, traces, or dependency information to investigate the cause further. P2 therefore saw value in combining anomaly detection and RCA, even though the preceding dataset and training process was considered too labour-intensive for routine operational use.
+
+P3 also considered the amount of manual input an important limitation. From a managed-services perspective, P3 was unsure whether the complete workflow would be used in its current form. The names and explanations of training parameters needed to be clearer, and the robustness results would benefit from additional information buttons or explanatory columns.
+
+At the same time, P3 found many individual screens self-explanatory after their purpose had been introduced. Live Monitoring was viewed positively because it displayed a likely cause together with the detected anomaly. Like P1, P3 found the overall structure less clear than the individual components. In particular, it was not immediately clear where a user should start, where the Prometheus connection should be configured, or how the separate setup steps formed one continuous workflow.
+
+\subsubsection{Combined findings}
+
+Four main themes were found across the walkthroughs.
+
+\paragraph{The individual components were clearer than the complete workflow.}
+
+Participants could generally understand the purpose of the screens after a short explanation. However, the application did not clearly communicate where a new user should begin or which step should follow the current one. This limits the evidence for C1 (end-to-end experimental workflow adequacy). The required components were present, but their relationship was not always clear to the participants.
+
+\paragraph{Live Monitoring and RCA provided the clearest practical value.}
+
+All three participants responded positively to Live Monitoring. The combination of a visible anomaly and a probable cause was easier to connect to operational work than the earlier dataset, training, and comparison stages. This provides qualitative support for C2 (RCA workflow adequacy and interpretability), specifically for the presentation of the RCA result. It does not demonstrate that the reported cause was technically correct.
+
+\paragraph{Researchers and operational teams have different expectations.}
+
+The Data Catalogue, detector training, and detailed Model Comparisons were considered more suitable for researchers or technical users who want to perform controlled experiments. Operational teams were expected to prefer a more automated and ready-to-use system that learns from recent monitoring data and can be adjusted using operator feedback. This does not mean that the experimental workflow was considered incorrect. It shows that its main target group and intended use should be stated clearly.
+
+\paragraph{Manual configuration and terminology remain barriers.}
+
+The participants identified manual setup, parameter names, metric terminology, and robustness explanations as areas that require improvement. The visual interface for adding detectors was considered a useful step, but it did not remove all the knowledge required to configure and interpret an experiment. This gives mixed support for C3 (portability and deployment ease) and C4 (configurability, reproducibility, and extensibility): the configuration options are available, but using them still requires guidance and technical knowledge.
+
+\subsubsection{Conclusion}
+
+The results show that the participants could understand the main CloudSentinel components and responded most positively to Live Monitoring and the presentation of probable causes. However, they did not always understand where to begin or how the separate components formed one continuous workflow. The dataset and training stages were considered more suitable for research and experimentation than for everyday managed-services work, where more automation and continuous adjustment would be expected.
+
+The walkthroughs therefore provide partial support for C1 (end-to-end experimental workflow adequacy), positive but limited support for the interpretability part of C2 (RCA workflow adequacy and interpretability), and mixed support for C3 (portability and deployment ease) and C4 (configurability, reproducibility, and extensibility). The evaluation does not provide evidence for C5 (operational overhead). It also does not establish independent usability, production readiness, organisational adoption, or the accuracy of the anomaly-detection and RCA results.
+
+% \subsection{Summary by evaluation criterion}
+
+% The seven evaluation parts answer different questions. A successful workflow test does not automatically mean that the detectors or RCA methods were accurate. Similarly, a successful test in one environment does not prove that the framework works without changes in every other environment. The evidence for each criterion is therefore summarised separately below.
+
+% \paragraph{C1: end-to-end experimental workflow adequacy.}
+
+% The strongest evidence for C1 comes from the functional workflow test. Monitoring data was collected through the Data Catalogue, three detectors were trained, their Saved Models became available for Model Comparisons, and the resulting scores could be traced back to the datasets and models that produced them. This shows that the data-to-comparison part of the workflow operates as one connected process without manually moving model or dataset files.
+
+% The Live Monitoring tests provide more mixed evidence. CloudSentinel collected recent data, executed a detector, applied the configured trigger, started RCA, and stored the results. However, the selected detector already classified the normal period as anomalous and therefore did not react clearly when the known faults began. Live Monitoring also stopped when pod replacement created a temporarily missing value.
+
+% The NaaVRE test showed that an adapted external data source could be used to create both a Data Catalogue dataset and a compatible recent input window. It did not test training, detection, and RCA against confirmed NaaVRE incidents. The expert walkthroughs also showed that participants generally understood the individual components, but did not always understand where to begin or how the components formed one continuous workflow.
+
+% C1 is therefore partially supported. The main workflow stages can operate together, but the evaluation also found breaks in the live workflow and weaknesses in how the complete process is communicated to users.
+
+% \paragraph{C2: RCA workflow adequacy and interpretability.}
+
+% CloudSentinel successfully executed RCA methods and stored their rankings, settings, input references, and failure reasons. This makes it possible to distinguish between an RCA method that ran unsuccessfully and one that could not run because its required input was unavailable.
+
+% The known-fault Online Boutique test did not provide evidence of accurate diagnosis. CausalRCA did not consistently rank the known affected measurements highly, while BARO was skipped because there was no usable normal baseline. In the RCAEval benchmark, BARO performed considerably better when the published fault-start time was supplied. It placed the affected service in the top three in 23 of the 25 cases. This result is conditional because the correct change time was already known and was not discovered automatically by Live Monitoring.
+
+% The expert participants considered the presentation of a detected anomaly together with a probable cause one of the most useful parts of the application. This supports the interpretability of the presentation, but not the correctness of the underlying diagnosis.
+
+% C2 is therefore conditionally supported. The framework can execute RCA, retain the required context, and present the result in an understandable way. Accurate automatic diagnosis was not demonstrated consistently.
+
+% \paragraph{C3: portability and deployment ease.}
+
+% The application-scaling test showed that the redesigned Data Catalogue continued collecting the same features while Online Boutique increased from 11 to 29 pods and while the frontend pods received new names. This worked because the queries used stable application-component patterns instead of complete temporary pod names.
+
+% The RCAEval test showed that CloudSentinel could process historical data from a different microservice application. However, the original files exceeded the 100-column import limit and contained missing values. The files therefore required a documented preparation step.
+
+% The NaaVRE test provided evidence from a recent external monitoring source. After a small adapter converted the Grafana response, the standard Data Catalogue and recent-input formats could be reused. Metric selection and source-specific configuration were still required, and CloudSentinel itself was not deployed inside NaaVRE. The attempt to add a second Minikube worker node was unsuccessful, so multi-node deployment was not evaluated.
+
+% The expert walkthroughs further showed that the required setup and manual input could be a barrier for operational users. C3 is therefore mixed. The framework can work with different data sources and changing pod identities, but portability is not automatic and deployment ease was not demonstrated across multiple live clusters.
+
+% \paragraph{C4: configurability, reproducibility, and extensibility.}
+
+% C4 received the strongest support. CloudSentinel retained links between datasets, partitions, models, detector parameters, feature order, labels, Model Comparisons, recent-input recipes, and RCA results. The repeated score calculation also reproduced the stored precision, recall, and F1 values exactly.
+
+% CGNN, Isolation Forest, and the external LOF detector used the same training and comparison workflow. This confirms that the shared detector interface can support detectors with different implementations. However, LOF had already been integrated before the evaluation. The test therefore does not measure how much work an independent developer would need to add a completely new detector.
+
+% The Robustness view also made an important difference visible: models that could technically process the same feature structure did not necessarily perform usefully in another workload context. This shows why dataset context and model identity must be retained alongside the score.
+
+% Reproducibility is not yet complete. Software versions, container-image versions, and host-resource settings were not consistently stored with every experiment. The expert walkthroughs also showed that parameter names and robustness terms still require clearer explanations. C4 is therefore well supported for the implemented experiment records and extension interfaces, but some environmental provenance and usability information remains missing.
+
+% \paragraph{C5: operational overhead.}
+
+% All nine performance-test Model Comparisons completed successfully. Increasing the input from 241 to 481 and then 921 observations caused the total comparison time to increase approximately in proportion to the input size. The largest comparison used 921 observations, 44 features, and three Saved Models and completed in less than 43 seconds.
+
+% The Generic Detection Runtime approached the use of one CPU core during the largest comparisons, while its memory increase was smaller. This suggests that CPU capacity would probably become the first constraint if the tested comparison workload continued to grow. CGNN also required considerably more training and comparison time than Isolation Forest and LOF.
+
+% The application-scaling configurations remained healthy with up to 29 application pods, but the additional replicas were mostly idle. The NaaVRE query timings were also collected from only one short run. These results therefore describe the tested EC2 and Minikube environment and do not establish production capacity or multi-node scalability.
+
+% C5 is supported only within these tested bounds. The measurements identify the main resource pattern, but they are not a general scalability claim.
+
+% \paragraph{Overall evaluation result.}
+
+% Taken together, the evaluation shows that CloudSentinel provides a functioning and traceable experimental workflow for collecting metric data, training detectors, comparing results, reusing recent input, and executing RCA. Its strongest contribution is the connection and traceability between these stages.
+
+% The evaluation does not show that every detector generalises to new operational contexts or that RCA automatically identifies the correct cause. It also does not demonstrate zero-configuration portability, independent usability, multi-node scalability, or production readiness. These limitations define the boundary of the claims made about the redesigned framework.
+
+
+\subsection{Summary by evaluation criterion}
+
+There are 7 areas of evaluation and whilst a successful test of the workflow doesn’t necessarily mean accurate detectors and RCA methods were used, it also doesn’t guarantee that the framework can be used successfully in any other environments. Below is a summary of the evidence for each criterion.
+
+\paragraph{C1: end-to-end experimental workflow adequacy.}
+
+The strongest evidence for this criterion comes from the Functional Test. We were able to gather monitoring data from the Data Catalogue, train our detectors and have saved models for use in model comparisons. This means we can track back what dataset and models scores were calculated from and shows that the data gathering to model comparison portion is all connected and no manual movement of models and datasets were needed. The Live Monitoring had some mixed evidence. We were able to gather recent data from CloudSentinel, run the detectors, trigger from the configuration and run the RCA methods. However, the chosen detector had already flagged the normal phase as anomalous, meaning there wasn’t a clear reaction at the start of the known faults. The Live Monitoring came to an end when the pod replacements caused a temporary null. The NaaVRE test showed that an external data source can be modified to form a dataset in the Data Catalogue and use the correct recent input window. However, we didn’t test training, detections and RCA on known NaaVRE incidents. From the expert walk-throughs we saw that participants generally knew what each part of the framework was doing but weren’t always sure where to start or how everything was connected into one workflow. Overall this criterion was partly met. We were able to show that the main parts of the workflow can all be used together however there were issues with the live workflow and some issues with how the full workflow is explained to users.
+
+\paragraph{C2: RCA workflow adequacy and interpretability.}
+
+We were able to run our RCA methods with CloudSentinel and save the rankings, configurations, inputs and failure reasons. This allows us to know whether an RCA method failed or couldn’t be run due to no input being available. The known fault Online Boutique test didn’t give any evidence of accurate diagnosis. CausalRCA didn’t consistently give high rankings for the known impacted metrics. BARO was also skipped as there was no usable normal baseline. In the RCAEval benchmark BARO performed much better with the known time of fault occurrence. In 23 out of the 25 cases the impacted service was within the top 3. However, this was conditional as we knew the correct time of change.
+
+From the expert walk-throughs we saw that one of the most useful aspects was having the anomaly detection along with a probable cause. This provides strong evidence for interpretation but not accuracy. This criterion was conditionally met. We were able to show that the framework can run the RCA methods, save the correct information and provide an understandable output. However, there wasn’t consistent evidence for accurate automated diagnosis.
+
+\paragraph{C3: portability and deployment ease.}
+
+The scaling of the application showed that we were able to continue gathering the same features in the new Data Catalogue design. As the Online Boutique scaled from 11 pods to 29 pods and the front end pods changed names, the queries used stable patterns for the application components rather than full temporary pod names. The RCAEval test showed that we were able to gather historical data from a different microservice application. However, the original files were too long (over 100 columns) and had missing values so would need a preparation step documented. The NaaVRE test provided some evidence of portability. After a small modification to the Grafana response we were able to use the standard Data Catalogue format and recent input format. However, metric selection and specific configuration for the source was still required. CloudSentinel wasn’t deployed in the NaaVRE application and we weren’t able to add a second Minikube worker node so couldn’t test multi-node deployments. From the expert walk-throughs we saw that there could be issues with the required configuration and manual entries which could be problematic for users looking to use the framework. Overall this criterion had some mixed evidence. We were able to show that the framework can be used with different data sources and pod names. However there isn’t automatic portability and we couldn’t show that it was easy to deploy across multiple live clusters.
+
+\paragraph{C4: configurability, reproducibility, and extensibility.}
+
+This criterion had the strongest evidence. We were able to track back the connections between the datasets, partitions, models, detector configurations, feature order, labels, model comparisons, recent input recipes and RCA results. We were also able to reproduce the precision, recall and F1 scores exactly as they were stored by repeating the scoring. The CGNN, Isolation Forest and external LOF detector all had the same training and comparison process showing that the common detector interface can support different implementations. However, the LOF detector had already been added prior to the evaluation. This doesn’t show how much effort it would take an independent developer to add an entirely new detector. The Robustness view highlighted an important factor. Whilst the models can technically handle the same feature structure, they may not perform usefully in a different workload context. This highlights why it’s important to keep track of the dataset context and model. Whilst we haven’t fully achieved reproducibility, we weren’t always able to save the software versions, container image versions and host resources for each experiment. From the expert walk-throughs we saw that the parameter names and robustness terms still need a better explanation. Overall this criterion was well met with the experiment tracking and extension interfaces. However, some environment provenance and usability details weren’t included.
+
+\paragraph{C5: operational overhead.}
+
+All 9 Model Comparisons in the performance tests ran successfully. The increase in input data from 241 to 481 and finally 921 increased the total time taken to run the comparison roughly proportional to the increase in input size. The largest comparison had 921 observations, 44 features and 3 saved models and took under 43 seconds. The Generic Detection Runtime almost used 1 core of CPU in the largest comparisons. There was a smaller increase in memory. This would likely be the first limitation when increasing the comparison workload further. The CGNN also had significantly longer training and comparison times compared to Isolation Forest and LOF. The scaling of the application configurations were still healthy with up to 29 application pods. However, the extra replicas weren’t really doing anything. The timing of the NaaVRE queries came from just one short run. Overall this criterion was only met within these limits. We can see what the main resource pattern would be but it doesn’t claim to be scalable.
+
+\paragraph{Overall evaluation result.}
+
+Overall the evaluation shows that the CloudSentinel framework provides a working and traceable framework for gathering metric data, training detectors, comparing results, using recent inputs and running RCA. The biggest benefit of the framework is how it connects and tracks the processes. However, it doesn’t show that all detectors will generalise to new operational situations, or that the RCA will automatically find the correct cause. It also doesn’t show that it can be used with no configuration, independently, scale across multiple nodes or be ready for production use. This shows the limitations of what claims can be made about the redesigned framework.
+

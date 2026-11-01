@@ -1,0 +1,6267 @@
+{
+  "ts-auth-service_cpu": {
+    "isolation-forest": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8756226178101179,
+            "f1": 0.9194915254237289,
+            "false_negative": 47,
+            "false_positive": 29,
+            "false_positive_rate": 0.15104166666666663,
+            "precision": 0.937365010799136,
+            "recall": 0.9022869022869023,
+            "true_negative": 163,
+            "true_positive": 434
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8600409303534304,
+            "f1": 0.8980477223427333,
+            "false_negative": 67,
+            "false_positive": 27,
+            "false_positive_rate": 0.140625,
+            "precision": 0.9387755102040817,
+            "recall": 0.8607068607068608,
+            "true_negative": 165,
+            "true_positive": 414
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8407506063756064,
+            "f1": 0.8980891719745223,
+            "false_negative": 58,
+            "false_positive": 38,
+            "false_positive_rate": 0.19791666666666663,
+            "precision": 0.9175704989154013,
+            "recall": 0.8794178794178794,
+            "true_negative": 154,
+            "true_positive": 423
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.840718121968122,
+            "f1": 0.9096573208722741,
+            "false_negative": 43,
+            "false_positive": 44,
+            "false_positive_rate": 0.22916666666666663,
+            "precision": 0.9087136929460581,
+            "recall": 0.9106029106029107,
+            "true_negative": 148,
+            "true_positive": 438
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8257049116424117,
+            "f1": 0.8703296703296703,
+            "false_negative": 85,
+            "false_positive": 33,
+            "false_positive_rate": 0.171875,
+            "precision": 0.9230769230769231,
+            "recall": 0.8232848232848233,
+            "true_negative": 159,
+            "true_positive": 396
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8245463011088011,
+            "f1": 0.9127789046653144,
+            "false_negative": 31,
+            "false_positive": 55,
+            "false_positive_rate": 0.28645833333333337,
+            "precision": 0.8910891089108911,
+            "recall": 0.9355509355509356,
+            "true_negative": 137,
+            "true_positive": 450
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8063821032571032,
+            "f1": 0.8832807570977919,
+            "false_negative": 61,
+            "false_positive": 50,
+            "false_positive_rate": 0.26041666666666663,
+            "precision": 0.8936170212765957,
+            "recall": 0.8731808731808732,
+            "true_negative": 142,
+            "true_positive": 420
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8010546604296604,
+            "f1": 0.9223300970873787,
+            "false_negative": 6,
+            "false_positive": 74,
+            "false_positive_rate": 0.38541666666666663,
+            "precision": 0.8652094717668488,
+            "recall": 0.9875259875259875,
+            "true_negative": 118,
+            "true_positive": 475
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7939622314622314,
+            "f1": 0.8473451327433629,
+            "false_negative": 98,
+            "false_positive": 40,
+            "false_positive_rate": 0.20833333333333337,
+            "precision": 0.9054373522458629,
+            "recall": 0.7962577962577962,
+            "true_negative": 152,
+            "true_positive": 383
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7803404365904366,
+            "f1": 0.8740894901144641,
+            "false_negative": 61,
+            "false_positive": 60,
+            "false_positive_rate": 0.3125,
+            "precision": 0.875,
+            "recall": 0.8731808731808732,
+            "true_negative": 132,
+            "true_positive": 420
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7664100398475399,
+            "f1": 0.814982973893303,
+            "false_negative": 122,
+            "false_positive": 41,
+            "false_positive_rate": 0.21354166666666663,
+            "precision": 0.8975,
+            "recall": 0.7463617463617463,
+            "true_negative": 151,
+            "true_positive": 359
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7656683125433126,
+            "f1": 0.9003906250000001,
+            "false_negative": 20,
+            "false_positive": 82,
+            "false_positive_rate": 0.42708333333333337,
+            "precision": 0.848987108655617,
+            "recall": 0.9584199584199584,
+            "true_negative": 110,
+            "true_positive": 461
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7620029885654886,
+            "f1": 0.905587668593449,
+            "false_negative": 11,
+            "false_positive": 87,
+            "false_positive_rate": 0.453125,
+            "precision": 0.8438061041292639,
+            "recall": 0.9771309771309772,
+            "true_negative": 105,
+            "true_positive": 470
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7619921604296604,
+            "f1": 0.9090909090909092,
+            "false_negative": 6,
+            "false_positive": 89,
+            "false_positive_rate": 0.46354166666666663,
+            "precision": 0.8421985815602837,
+            "recall": 0.9875259875259875,
+            "true_negative": 103,
+            "true_positive": 475
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7559933731808732,
+            "f1": 0.8112994350282486,
+            "false_negative": 122,
+            "false_positive": 45,
+            "false_positive_rate": 0.234375,
+            "precision": 0.8886138613861386,
+            "recall": 0.7463617463617463,
+            "true_negative": 147,
+            "true_positive": 359
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7421875,
+            "f1": 0.9066918001885015,
+            "false_negative": 0,
+            "false_positive": 99,
+            "false_positive_rate": 0.515625,
+            "precision": 0.8293103448275863,
+            "recall": 1.0,
+            "true_negative": 93,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6770779192654193,
+            "f1": 0.6454183266932271,
+            "false_negative": 238,
+            "false_positive": 29,
+            "false_positive_rate": 0.15104166666666663,
+            "precision": 0.8933823529411765,
+            "recall": 0.5051975051975052,
+            "true_negative": 163,
+            "true_positive": 243
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6692708333333334,
+            "f1": 0.8833792470156107,
+            "false_negative": 0,
+            "false_positive": 127,
+            "false_positive_rate": 0.6614583333333333,
+            "precision": 0.7911184210526315,
+            "recall": 1.0,
+            "true_negative": 65,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6682313322938324,
+            "f1": 0.8823529411764707,
+            "false_negative": 1,
+            "false_positive": 127,
+            "false_positive_rate": 0.6614583333333333,
+            "precision": 0.7907742998352554,
+            "recall": 0.997920997920998,
+            "true_negative": 65,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6526063322938324,
+            "f1": 0.8775137111517367,
+            "false_negative": 1,
+            "false_positive": 133,
+            "false_positive_rate": 0.6927083333333333,
+            "precision": 0.7830342577487766,
+            "recall": 0.997920997920998,
+            "true_negative": 59,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6510416666666666,
+            "f1": 0.8777372262773722,
+            "false_negative": 0,
+            "false_positive": 134,
+            "false_positive_rate": 0.6979166666666667,
+            "precision": 0.7821138211382114,
+            "recall": 1.0,
+            "true_negative": 58,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5286458333333334,
+            "f1": 0.8416447944007,
+            "false_negative": 0,
+            "false_positive": 181,
+            "false_positive_rate": 0.9427083333333334,
+            "precision": 0.7265861027190332,
+            "recall": 1.0,
+            "true_negative": 11,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5286458333333334,
+            "f1": 0.8416447944007,
+            "false_negative": 0,
+            "false_positive": 181,
+            "false_positive_rate": 0.9427083333333334,
+            "precision": 0.7265861027190332,
+            "recall": 1.0,
+            "true_negative": 11,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.8756226178101179,
+          "f1": 0.9194915254237289,
+          "false_negative": 47,
+          "false_positive": 29,
+          "false_positive_rate": 0.15104166666666663,
+          "precision": 0.937365010799136,
+          "recall": 0.9022869022869023,
+          "true_negative": 163,
+          "true_positive": 434
+        },
+        "parameters": {
+          "bootstrap": false,
+          "contamination": 0.02,
+          "max_features": 1.0,
+          "max_samples": "auto",
+          "n_estimators": 300,
+          "n_jobs": 1,
+          "random_state": 42
+        }
+      }
+    },
+    "local-outlier-factor": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8411458333333333,
+            "f1": 0.9403714565004888,
+            "false_negative": 0,
+            "false_positive": 61,
+            "false_positive_rate": 0.31770833333333337,
+            "precision": 0.8874538745387454,
+            "recall": 1.0,
+            "true_negative": 131,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8177083333333333,
+            "f1": 0.9321705426356589,
+            "false_negative": 0,
+            "false_positive": 70,
+            "false_positive_rate": 0.36458333333333337,
+            "precision": 0.8729582577132486,
+            "recall": 1.0,
+            "true_negative": 122,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7890625,
+            "f1": 0.922339405560882,
+            "false_negative": 0,
+            "false_positive": 81,
+            "false_positive_rate": 0.421875,
+            "precision": 0.8558718861209964,
+            "recall": 1.0,
+            "true_negative": 111,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7890625,
+            "f1": 0.922339405560882,
+            "false_negative": 0,
+            "false_positive": 81,
+            "false_positive_rate": 0.421875,
+            "precision": 0.8558718861209964,
+            "recall": 1.0,
+            "true_negative": 111,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.734375,
+            "f1": 0.9041353383458647,
+            "false_negative": 0,
+            "false_positive": 102,
+            "false_positive_rate": 0.53125,
+            "precision": 0.8250428816466552,
+            "recall": 1.0,
+            "true_negative": 90,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6666666666666666,
+            "f1": 0.8825688073394495,
+            "false_negative": 0,
+            "false_positive": 128,
+            "false_positive_rate": 0.6666666666666667,
+            "precision": 0.7898193760262726,
+            "recall": 1.0,
+            "true_negative": 64,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5989583333333334,
+            "f1": 0.8620071684587813,
+            "false_negative": 0,
+            "false_positive": 154,
+            "false_positive_rate": 0.8020833333333334,
+            "precision": 0.75748031496063,
+            "recall": 1.0,
+            "true_negative": 38,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5807291666666666,
+            "f1": 0.8566340160284951,
+            "false_negative": 0,
+            "false_positive": 161,
+            "false_positive_rate": 0.8385416666666666,
+            "precision": 0.7492211838006231,
+            "recall": 1.0,
+            "true_negative": 31,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5807291666666666,
+            "f1": 0.8566340160284951,
+            "false_negative": 0,
+            "false_positive": 161,
+            "false_positive_rate": 0.8385416666666666,
+            "precision": 0.7492211838006231,
+            "recall": 1.0,
+            "true_negative": 31,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5598958333333334,
+            "f1": 0.8505747126436781,
+            "false_negative": 0,
+            "false_positive": 169,
+            "false_positive_rate": 0.8802083333333334,
+            "precision": 0.74,
+            "recall": 1.0,
+            "true_negative": 23,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5572916666666666,
+            "f1": 0.8498233215547703,
+            "false_negative": 0,
+            "false_positive": 170,
+            "false_positive_rate": 0.8854166666666666,
+            "precision": 0.738863287250384,
+            "recall": 1.0,
+            "true_negative": 22,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5494791666666666,
+            "f1": 0.8475770925110132,
+            "false_negative": 0,
+            "false_positive": 173,
+            "false_positive_rate": 0.9010416666666666,
+            "precision": 0.735474006116208,
+            "recall": 1.0,
+            "true_negative": 19,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5416666666666666,
+            "f1": 0.8453427065026362,
+            "false_negative": 0,
+            "false_positive": 176,
+            "false_positive_rate": 0.9166666666666666,
+            "precision": 0.7321156773211568,
+            "recall": 1.0,
+            "true_negative": 16,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5416666666666666,
+            "f1": 0.8453427065026362,
+            "false_negative": 0,
+            "false_positive": 176,
+            "false_positive_rate": 0.9166666666666666,
+            "precision": 0.7321156773211568,
+            "recall": 1.0,
+            "true_negative": 16,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5390625,
+            "f1": 0.8446005267778753,
+            "false_negative": 0,
+            "false_positive": 177,
+            "false_positive_rate": 0.921875,
+            "precision": 0.7310030395136778,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5390625,
+            "f1": 0.8446005267778753,
+            "false_negative": 0,
+            "false_positive": 177,
+            "false_positive_rate": 0.921875,
+            "precision": 0.7310030395136778,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5364583333333334,
+            "f1": 0.8438596491228071,
+            "false_negative": 0,
+            "false_positive": 178,
+            "false_positive_rate": 0.9270833333333334,
+            "precision": 0.7298937784522003,
+            "recall": 1.0,
+            "true_negative": 14,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5338541666666666,
+            "f1": 0.8431200701139351,
+            "false_negative": 0,
+            "false_positive": 179,
+            "false_positive_rate": 0.9322916666666666,
+            "precision": 0.7287878787878788,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5338541666666666,
+            "f1": 0.8431200701139351,
+            "false_negative": 0,
+            "false_positive": 179,
+            "false_positive_rate": 0.9322916666666666,
+            "precision": 0.7287878787878788,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8423817863397548,
+            "false_negative": 0,
+            "false_positive": 180,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7276853252647504,
+            "recall": 1.0,
+            "true_negative": 12,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8423817863397548,
+            "false_negative": 0,
+            "false_positive": 180,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7276853252647504,
+            "recall": 1.0,
+            "true_negative": 12,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5286458333333334,
+            "f1": 0.8416447944007,
+            "false_negative": 0,
+            "false_positive": 181,
+            "false_positive_rate": 0.9427083333333334,
+            "precision": 0.7265861027190332,
+            "recall": 1.0,
+            "true_negative": 11,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5234375,
+            "f1": 0.8401746724890831,
+            "false_negative": 0,
+            "false_positive": 183,
+            "false_positive_rate": 0.953125,
+            "precision": 0.7243975903614458,
+            "recall": 1.0,
+            "true_negative": 9,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5234375,
+            "f1": 0.8401746724890831,
+            "false_negative": 0,
+            "false_positive": 183,
+            "false_positive_rate": 0.953125,
+            "precision": 0.7243975903614458,
+            "recall": 1.0,
+            "true_negative": 9,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.8411458333333333,
+          "f1": 0.9403714565004888,
+          "false_negative": 0,
+          "false_positive": 61,
+          "false_positive_rate": 0.31770833333333337,
+          "precision": 0.8874538745387454,
+          "recall": 1.0,
+          "true_negative": 131,
+          "true_positive": 481
+        },
+        "parameters": {
+          "algorithm": "auto",
+          "contamination": "auto",
+          "leaf_size": 30,
+          "metric": "manhattan",
+          "n_neighbors": 50,
+          "p": 2
+        }
+      }
+    }
+  },
+  "ts-order-service_delay": {
+    "isolation-forest": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.818877772002772,
+            "f1": 0.8893572181243414,
+            "false_negative": 59,
+            "false_positive": 46,
+            "false_positive_rate": 0.23958333333333337,
+            "precision": 0.9017094017094017,
+            "recall": 0.8773388773388774,
+            "true_negative": 146,
+            "true_positive": 422
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8057919698544699,
+            "f1": 0.9076305220883535,
+            "false_negative": 29,
+            "false_positive": 63,
+            "false_positive_rate": 0.328125,
+            "precision": 0.8776699029126214,
+            "recall": 0.9397089397089398,
+            "true_negative": 129,
+            "true_positive": 452
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8053209459459459,
+            "f1": 0.8900414937759337,
+            "false_negative": 52,
+            "false_positive": 54,
+            "false_positive_rate": 0.28125,
+            "precision": 0.8881987577639752,
+            "recall": 0.8918918918918919,
+            "true_negative": 138,
+            "true_positive": 429
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8042164760914761,
+            "f1": 0.9114427860696518,
+            "false_negative": 23,
+            "false_positive": 66,
+            "false_positive_rate": 0.34375,
+            "precision": 0.8740458015267175,
+            "recall": 0.9521829521829522,
+            "true_negative": 126,
+            "true_positive": 458
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7943033177408177,
+            "f1": 0.9137254901960783,
+            "false_negative": 15,
+            "false_positive": 73,
+            "false_positive_rate": 0.38020833333333337,
+            "precision": 0.8645640074211502,
+            "recall": 0.9688149688149689,
+            "true_negative": 119,
+            "true_positive": 466
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7870376386001386,
+            "f1": 0.9025844930417496,
+            "false_negative": 27,
+            "false_positive": 71,
+            "false_positive_rate": 0.36979166666666663,
+            "precision": 0.8647619047619047,
+            "recall": 0.9438669438669439,
+            "true_negative": 121,
+            "true_positive": 454
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7802754677754677,
+            "f1": 0.8973080757726819,
+            "false_negative": 31,
+            "false_positive": 72,
+            "false_positive_rate": 0.375,
+            "precision": 0.8620689655172413,
+            "recall": 0.9355509355509356,
+            "true_negative": 120,
+            "true_positive": 450
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.764114475051975,
+            "f1": 0.8969578017664377,
+            "false_negative": 24,
+            "false_positive": 81,
+            "false_positive_rate": 0.421875,
+            "precision": 0.8494423791821561,
+            "recall": 0.9501039501039501,
+            "true_negative": 111,
+            "true_positive": 457
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7432594854469854,
+            "f1": 0.8972142170989434,
+            "false_negative": 14,
+            "false_positive": 93,
+            "false_positive_rate": 0.484375,
+            "precision": 0.8339285714285715,
+            "recall": 0.9708939708939709,
+            "true_negative": 99,
+            "true_positive": 467
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7390906531531531,
+            "f1": 0.896551724137931,
+            "false_negative": 13,
+            "false_positive": 95,
+            "false_positive_rate": 0.49479166666666663,
+            "precision": 0.8312611012433393,
+            "recall": 0.972972972972973,
+            "true_negative": 97,
+            "true_positive": 468
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7302169958419958,
+            "f1": 0.9,
+            "false_negative": 4,
+            "false_positive": 102,
+            "false_positive_rate": 0.53125,
+            "precision": 0.8238341968911918,
+            "recall": 0.9916839916839917,
+            "true_negative": 90,
+            "true_positive": 477
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7244943260568261,
+            "f1": 0.8960302457466918,
+            "false_negative": 7,
+            "false_positive": 103,
+            "false_positive_rate": 0.5364583333333333,
+            "precision": 0.8214904679376083,
+            "recall": 0.9854469854469855,
+            "true_negative": 89,
+            "true_positive": 474
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7244943260568261,
+            "f1": 0.8960302457466918,
+            "false_negative": 7,
+            "false_positive": 103,
+            "false_positive_rate": 0.5364583333333333,
+            "precision": 0.8214904679376083,
+            "recall": 0.9854469854469855,
+            "true_negative": 89,
+            "true_positive": 474
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7119878291753292,
+            "f1": 0.8940955951265229,
+            "false_negative": 4,
+            "false_positive": 109,
+            "false_positive_rate": 0.5677083333333333,
+            "precision": 0.8139931740614335,
+            "recall": 0.9916839916839917,
+            "true_negative": 83,
+            "true_positive": 477
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7015711625086625,
+            "f1": 0.8907563025210085,
+            "false_negative": 4,
+            "false_positive": 113,
+            "false_positive_rate": 0.5885416666666667,
+            "precision": 0.8084745762711865,
+            "recall": 0.9916839916839917,
+            "true_negative": 79,
+            "true_positive": 477
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6974023302148302,
+            "f1": 0.8901303538175047,
+            "false_negative": 3,
+            "false_positive": 115,
+            "false_positive_rate": 0.5989583333333333,
+            "precision": 0.806070826306914,
+            "recall": 0.9937629937629938,
+            "true_negative": 77,
+            "true_positive": 478
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6974023302148302,
+            "f1": 0.8901303538175047,
+            "false_negative": 3,
+            "false_positive": 115,
+            "false_positive_rate": 0.5989583333333333,
+            "precision": 0.806070826306914,
+            "recall": 0.9937629937629938,
+            "true_negative": 77,
+            "true_positive": 478
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6760438322938324,
+            "f1": 0.8847926267281105,
+            "false_negative": 1,
+            "false_positive": 124,
+            "false_positive_rate": 0.6458333333333333,
+            "precision": 0.7947019867549668,
+            "recall": 0.997920997920998,
+            "true_negative": 68,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6682313322938324,
+            "f1": 0.8823529411764707,
+            "false_negative": 1,
+            "false_positive": 127,
+            "false_positive_rate": 0.6614583333333333,
+            "precision": 0.7907742998352554,
+            "recall": 0.997920997920998,
+            "true_negative": 65,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6614583333333334,
+            "f1": 0.880952380952381,
+            "false_negative": 0,
+            "false_positive": 130,
+            "false_positive_rate": 0.6770833333333333,
+            "precision": 0.7872340425531915,
+            "recall": 1.0,
+            "true_negative": 62,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6484375,
+            "f1": 0.8769371011850502,
+            "false_negative": 0,
+            "false_positive": 135,
+            "false_positive_rate": 0.703125,
+            "precision": 0.7808441558441559,
+            "recall": 1.0,
+            "true_negative": 57,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8394415357766143,
+            "false_negative": 0,
+            "false_positive": 184,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7233082706766917,
+            "recall": 1.0,
+            "true_negative": 8,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.818877772002772,
+          "f1": 0.8893572181243414,
+          "false_negative": 59,
+          "false_positive": 46,
+          "false_positive_rate": 0.23958333333333337,
+          "precision": 0.9017094017094017,
+          "recall": 0.8773388773388774,
+          "true_negative": 146,
+          "true_positive": 422
+        },
+        "parameters": {
+          "bootstrap": true,
+          "contamination": 0.01,
+          "max_features": 1.0,
+          "max_samples": "auto",
+          "n_estimators": 300,
+          "n_jobs": 1,
+          "random_state": 42
+        }
+      }
+    },
+    "local-outlier-factor": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8203449844074844,
+            "f1": 0.9227722772277228,
+            "false_negative": 15,
+            "false_positive": 63,
+            "false_positive_rate": 0.328125,
+            "precision": 0.8809073724007561,
+            "recall": 0.9688149688149689,
+            "true_negative": 129,
+            "true_positive": 466
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7531509875259875,
+            "f1": 0.9019230769230769,
+            "false_negative": 12,
+            "false_positive": 90,
+            "false_positive_rate": 0.46875,
+            "precision": 0.8389982110912343,
+            "recall": 0.975051975051975,
+            "true_negative": 102,
+            "true_positive": 469
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7239691614691615,
+            "f1": 0.8972667295004714,
+            "false_negative": 5,
+            "false_positive": 104,
+            "false_positive_rate": 0.5416666666666667,
+            "precision": 0.8206896551724138,
+            "recall": 0.9896049896049897,
+            "true_negative": 88,
+            "true_positive": 476
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7047004937629937,
+            "f1": 0.8903467666354266,
+            "false_negative": 6,
+            "false_positive": 111,
+            "false_positive_rate": 0.578125,
+            "precision": 0.810580204778157,
+            "recall": 0.9875259875259875,
+            "true_negative": 81,
+            "true_positive": 475
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6666666666666666,
+            "f1": 0.8825688073394495,
+            "false_negative": 0,
+            "false_positive": 128,
+            "false_positive_rate": 0.6666666666666667,
+            "precision": 0.7898193760262726,
+            "recall": 1.0,
+            "true_negative": 64,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.578125,
+            "f1": 0.8558718861209964,
+            "false_negative": 0,
+            "false_positive": 162,
+            "false_positive_rate": 0.84375,
+            "precision": 0.7480559875583204,
+            "recall": 1.0,
+            "true_negative": 30,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5703125,
+            "f1": 0.8535936113575865,
+            "false_negative": 0,
+            "false_positive": 165,
+            "false_positive_rate": 0.859375,
+            "precision": 0.7445820433436533,
+            "recall": 1.0,
+            "true_negative": 27,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5598958333333334,
+            "f1": 0.8505747126436781,
+            "false_negative": 0,
+            "false_positive": 169,
+            "false_positive_rate": 0.8802083333333334,
+            "precision": 0.74,
+            "recall": 1.0,
+            "true_negative": 23,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5572916666666666,
+            "f1": 0.8498233215547703,
+            "false_negative": 0,
+            "false_positive": 170,
+            "false_positive_rate": 0.8854166666666666,
+            "precision": 0.738863287250384,
+            "recall": 1.0,
+            "true_negative": 22,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8483245149911817,
+            "false_negative": 0,
+            "false_positive": 172,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.7366003062787136,
+            "recall": 1.0,
+            "true_negative": 20,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.546875,
+            "f1": 0.8468309859154929,
+            "false_negative": 0,
+            "false_positive": 174,
+            "false_positive_rate": 0.90625,
+            "precision": 0.7343511450381679,
+            "recall": 1.0,
+            "true_negative": 18,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5338541666666666,
+            "f1": 0.8431200701139351,
+            "false_negative": 0,
+            "false_positive": 179,
+            "false_positive_rate": 0.9322916666666666,
+            "precision": 0.7287878787878788,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5338541666666666,
+            "f1": 0.8431200701139351,
+            "false_negative": 0,
+            "false_positive": 179,
+            "false_positive_rate": 0.9322916666666666,
+            "precision": 0.7287878787878788,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5286458333333334,
+            "f1": 0.8416447944007,
+            "false_negative": 0,
+            "false_positive": 181,
+            "false_positive_rate": 0.9427083333333334,
+            "precision": 0.7265861027190332,
+            "recall": 1.0,
+            "true_negative": 11,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5260416666666666,
+            "f1": 0.8409090909090908,
+            "false_negative": 0,
+            "false_positive": 182,
+            "false_positive_rate": 0.9479166666666666,
+            "precision": 0.7254901960784313,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8394415357766143,
+            "false_negative": 0,
+            "false_positive": 184,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7233082706766917,
+            "recall": 1.0,
+            "true_negative": 8,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5130208333333334,
+            "f1": 0.8372497824194952,
+            "false_negative": 0,
+            "false_positive": 187,
+            "false_positive_rate": 0.9739583333333334,
+            "precision": 0.7200598802395209,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5052083333333334,
+            "f1": 0.8350694444444445,
+            "false_negative": 0,
+            "false_positive": 190,
+            "false_positive_rate": 0.9895833333333334,
+            "precision": 0.7168405365126677,
+            "recall": 1.0,
+            "true_negative": 2,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5052083333333334,
+            "f1": 0.8350694444444445,
+            "false_negative": 0,
+            "false_positive": 190,
+            "false_positive_rate": 0.9895833333333334,
+            "precision": 0.7168405365126677,
+            "recall": 1.0,
+            "true_negative": 2,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.8203449844074844,
+          "f1": 0.9227722772277228,
+          "false_negative": 15,
+          "false_positive": 63,
+          "false_positive_rate": 0.328125,
+          "precision": 0.8809073724007561,
+          "recall": 0.9688149688149689,
+          "true_negative": 129,
+          "true_positive": 466
+        },
+        "parameters": {
+          "algorithm": "auto",
+          "contamination": "auto",
+          "leaf_size": 30,
+          "metric": "manhattan",
+          "n_neighbors": 50,
+          "p": 2
+        }
+      }
+    }
+  },
+  "ts-route-service_disk": {
+    "isolation-forest": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6652816251154201,
+            "f1": 0.8812729498164015,
+            "false_negative": 1,
+            "false_positive": 96,
+            "false_positive_rate": 0.6666666666666667,
+            "precision": 0.7894736842105263,
+            "recall": 0.997229916897507,
+            "true_negative": 48,
+            "true_positive": 360
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.653479916897507,
+            "f1": 0.8766788766788767,
+            "false_negative": 2,
+            "false_positive": 99,
+            "false_positive_rate": 0.6875,
+            "precision": 0.7838427947598253,
+            "recall": 0.9944598337950139,
+            "true_negative": 45,
+            "true_positive": 359
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6458333333333334,
+            "f1": 0.8762135922330098,
+            "false_negative": 0,
+            "false_positive": 102,
+            "false_positive_rate": 0.7083333333333333,
+            "precision": 0.7796976241900648,
+            "recall": 1.0,
+            "true_negative": 42,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.625,
+            "f1": 0.8698795180722891,
+            "false_negative": 0,
+            "false_positive": 108,
+            "false_positive_rate": 0.75,
+            "precision": 0.7697228144989339,
+            "recall": 1.0,
+            "true_negative": 36,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6145833333333334,
+            "f1": 0.8667466986794718,
+            "false_negative": 0,
+            "false_positive": 111,
+            "false_positive_rate": 0.7708333333333334,
+            "precision": 0.7648305084745762,
+            "recall": 1.0,
+            "true_negative": 33,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6111111111111112,
+            "f1": 0.8657074340527577,
+            "false_negative": 0,
+            "false_positive": 112,
+            "false_positive_rate": 0.7777777777777778,
+            "precision": 0.7632135306553911,
+            "recall": 1.0,
+            "true_negative": 32,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.59375,
+            "f1": 0.8605482717520859,
+            "false_negative": 0,
+            "false_positive": 117,
+            "false_positive_rate": 0.8125,
+            "precision": 0.7552301255230126,
+            "recall": 1.0,
+            "true_negative": 27,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5833333333333334,
+            "f1": 0.8574821852731591,
+            "false_negative": 0,
+            "false_positive": 120,
+            "false_positive_rate": 0.8333333333333334,
+            "precision": 0.7505197505197505,
+            "recall": 1.0,
+            "true_negative": 24,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5763888888888888,
+            "f1": 0.8554502369668247,
+            "false_negative": 0,
+            "false_positive": 122,
+            "false_positive_rate": 0.8472222222222222,
+            "precision": 0.7474120082815735,
+            "recall": 1.0,
+            "true_negative": 22,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5625,
+            "f1": 0.8514150943396227,
+            "false_negative": 0,
+            "false_positive": 126,
+            "false_positive_rate": 0.875,
+            "precision": 0.7412731006160165,
+            "recall": 1.0,
+            "true_negative": 18,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5555555555555556,
+            "f1": 0.8494117647058824,
+            "false_negative": 0,
+            "false_positive": 128,
+            "false_positive_rate": 0.8888888888888888,
+            "precision": 0.7382413087934561,
+            "recall": 1.0,
+            "true_negative": 16,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5451388888888888,
+            "f1": 0.8464243845252051,
+            "false_negative": 0,
+            "false_positive": 131,
+            "false_positive_rate": 0.9097222222222222,
+            "precision": 0.733739837398374,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8424737456242707,
+            "false_negative": 0,
+            "false_positive": 135,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7278225806451613,
+            "recall": 1.0,
+            "true_negative": 9,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5277777777777778,
+            "f1": 0.8414918414918415,
+            "false_negative": 0,
+            "false_positive": 136,
+            "false_positive_rate": 0.9444444444444444,
+            "precision": 0.7263581488933601,
+            "recall": 1.0,
+            "true_negative": 8,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8395348837209302,
+            "false_negative": 0,
+            "false_positive": 138,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7234468937875751,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8395348837209302,
+            "false_negative": 0,
+            "false_positive": 138,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7234468937875751,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8395348837209302,
+            "false_negative": 0,
+            "false_positive": 138,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7234468937875751,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5173611111111112,
+            "f1": 0.8385598141695703,
+            "false_negative": 0,
+            "false_positive": 139,
+            "false_positive_rate": 0.9652777777777778,
+            "precision": 0.722,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8366164542294322,
+            "false_negative": 0,
+            "false_positive": 141,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.7191235059760956,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8337182448036952,
+            "false_negative": 0,
+            "false_positive": 144,
+            "false_positive_rate": 1.0,
+            "precision": 0.7148514851485148,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8337182448036952,
+            "false_negative": 0,
+            "false_positive": 144,
+            "false_positive_rate": 1.0,
+            "precision": 0.7148514851485148,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8337182448036952,
+            "false_negative": 0,
+            "false_positive": 144,
+            "false_positive_rate": 1.0,
+            "precision": 0.7148514851485148,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 361
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.6652816251154201,
+          "f1": 0.8812729498164015,
+          "false_negative": 1,
+          "false_positive": 96,
+          "false_positive_rate": 0.6666666666666667,
+          "precision": 0.7894736842105263,
+          "recall": 0.997229916897507,
+          "true_negative": 48,
+          "true_positive": 360
+        },
+        "parameters": {
+          "bootstrap": true,
+          "contamination": 0.01,
+          "max_features": 1.0,
+          "max_samples": "auto",
+          "n_estimators": 300,
+          "n_jobs": 1,
+          "random_state": 42
+        }
+      }
+    },
+    "local-outlier-factor": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5833333333333334,
+            "f1": 0.8574821852731591,
+            "false_negative": 0,
+            "false_positive": 120,
+            "false_positive_rate": 0.8333333333333334,
+            "precision": 0.7505197505197505,
+            "recall": 1.0,
+            "true_negative": 24,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5833333333333334,
+            "f1": 0.8574821852731591,
+            "false_negative": 0,
+            "false_positive": 120,
+            "false_positive_rate": 0.8333333333333334,
+            "precision": 0.7505197505197505,
+            "recall": 1.0,
+            "true_negative": 24,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5729166666666666,
+            "f1": 0.8544378698224852,
+            "false_negative": 0,
+            "false_positive": 123,
+            "false_positive_rate": 0.8541666666666666,
+            "precision": 0.7458677685950413,
+            "recall": 1.0,
+            "true_negative": 21,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8484136310223267,
+            "false_negative": 0,
+            "false_positive": 129,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.736734693877551,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5451388888888888,
+            "f1": 0.8464243845252051,
+            "false_negative": 0,
+            "false_positive": 131,
+            "false_positive_rate": 0.9097222222222222,
+            "precision": 0.733739837398374,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5451388888888888,
+            "f1": 0.8464243845252051,
+            "false_negative": 0,
+            "false_positive": 131,
+            "false_positive_rate": 0.9097222222222222,
+            "precision": 0.733739837398374,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5451388888888888,
+            "f1": 0.8464243845252051,
+            "false_negative": 0,
+            "false_positive": 131,
+            "false_positive_rate": 0.9097222222222222,
+            "precision": 0.733739837398374,
+            "recall": 1.0,
+            "true_negative": 13,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5416666666666666,
+            "f1": 0.8454332552693208,
+            "false_negative": 0,
+            "false_positive": 132,
+            "false_positive_rate": 0.9166666666666666,
+            "precision": 0.7322515212981744,
+            "recall": 1.0,
+            "true_negative": 12,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5416666666666666,
+            "f1": 0.8454332552693208,
+            "false_negative": 0,
+            "false_positive": 132,
+            "false_positive_rate": 0.9166666666666666,
+            "precision": 0.7322515212981744,
+            "recall": 1.0,
+            "true_negative": 12,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5347222222222222,
+            "f1": 0.8434579439252337,
+            "false_negative": 0,
+            "false_positive": 134,
+            "false_positive_rate": 0.9305555555555556,
+            "precision": 0.7292929292929293,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5347222222222222,
+            "f1": 0.8434579439252337,
+            "false_negative": 0,
+            "false_positive": 134,
+            "false_positive_rate": 0.9305555555555556,
+            "precision": 0.7292929292929293,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5347222222222222,
+            "f1": 0.8434579439252337,
+            "false_negative": 0,
+            "false_positive": 134,
+            "false_positive_rate": 0.9305555555555556,
+            "precision": 0.7292929292929293,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5347222222222222,
+            "f1": 0.8434579439252337,
+            "false_negative": 0,
+            "false_positive": 134,
+            "false_positive_rate": 0.9305555555555556,
+            "precision": 0.7292929292929293,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8424737456242707,
+            "false_negative": 0,
+            "false_positive": 135,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7278225806451613,
+            "recall": 1.0,
+            "true_negative": 9,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8424737456242707,
+            "false_negative": 0,
+            "false_positive": 135,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7278225806451613,
+            "recall": 1.0,
+            "true_negative": 9,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8424737456242707,
+            "false_negative": 0,
+            "false_positive": 135,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7278225806451613,
+            "recall": 1.0,
+            "true_negative": 9,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5243055555555556,
+            "f1": 0.8405122235157159,
+            "false_negative": 0,
+            "false_positive": 137,
+            "false_positive_rate": 0.9513888888888888,
+            "precision": 0.7248995983935743,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5243055555555556,
+            "f1": 0.8405122235157159,
+            "false_negative": 0,
+            "false_positive": 137,
+            "false_positive_rate": 0.9513888888888888,
+            "precision": 0.7248995983935743,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8395348837209302,
+            "false_negative": 0,
+            "false_positive": 138,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7234468937875751,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8395348837209302,
+            "false_negative": 0,
+            "false_positive": 138,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7234468937875751,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8395348837209302,
+            "false_negative": 0,
+            "false_positive": 138,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7234468937875751,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5173611111111112,
+            "f1": 0.8385598141695703,
+            "false_negative": 0,
+            "false_positive": 139,
+            "false_positive_rate": 0.9652777777777778,
+            "precision": 0.722,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5138888888888888,
+            "f1": 0.8375870069605569,
+            "false_negative": 0,
+            "false_positive": 140,
+            "false_positive_rate": 0.9722222222222222,
+            "precision": 0.720558882235529,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5069444444444444,
+            "f1": 0.8356481481481481,
+            "false_negative": 0,
+            "false_positive": 142,
+            "false_positive_rate": 0.9861111111111112,
+            "precision": 0.7176938369781312,
+            "recall": 1.0,
+            "true_negative": 2,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5034722222222222,
+            "f1": 0.8346820809248554,
+            "false_negative": 0,
+            "false_positive": 143,
+            "false_positive_rate": 0.9930555555555556,
+            "precision": 0.7162698412698413,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 361
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.5833333333333334,
+          "f1": 0.8574821852731591,
+          "false_negative": 0,
+          "false_positive": 120,
+          "false_positive_rate": 0.8333333333333334,
+          "precision": 0.7505197505197505,
+          "recall": 1.0,
+          "true_negative": 24,
+          "true_positive": 361
+        },
+        "parameters": {
+          "algorithm": "auto",
+          "contamination": "auto",
+          "leaf_size": 30,
+          "metric": "manhattan",
+          "n_neighbors": 35,
+          "p": 2
+        }
+      }
+    }
+  },
+  "ts-train-service_loss": {
+    "isolation-forest": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.807870971933472,
+            "f1": 0.9098196392785571,
+            "false_negative": 27,
+            "false_positive": 63,
+            "false_positive_rate": 0.328125,
+            "precision": 0.8781431334622823,
+            "recall": 0.9438669438669439,
+            "true_negative": 129,
+            "true_positive": 454
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7828471500346501,
+            "f1": 0.9090909090909091,
+            "false_negative": 16,
+            "false_positive": 77,
+            "false_positive_rate": 0.40104166666666663,
+            "precision": 0.8579335793357934,
+            "recall": 0.9667359667359667,
+            "true_negative": 115,
+            "true_positive": 465
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7745311417186418,
+            "f1": 0.9004926108374384,
+            "false_negative": 24,
+            "false_positive": 77,
+            "false_positive_rate": 0.40104166666666663,
+            "precision": 0.8558052434456929,
+            "recall": 0.9501039501039501,
+            "true_negative": 115,
+            "true_positive": 457
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7338823198198199,
+            "f1": 0.8948374760994264,
+            "false_negative": 13,
+            "false_positive": 97,
+            "false_positive_rate": 0.5052083333333333,
+            "precision": 0.8283185840707965,
+            "recall": 0.972972972972973,
+            "true_negative": 95,
+            "true_positive": 468
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7307638167013167,
+            "f1": 0.8916586768935763,
+            "false_negative": 16,
+            "false_positive": 97,
+            "false_positive_rate": 0.5052083333333333,
+            "precision": 0.8274021352313167,
+            "recall": 0.9667359667359667,
+            "true_negative": 95,
+            "true_positive": 465
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.730227823977824,
+            "f1": 0.8964862298195632,
+            "false_negative": 9,
+            "false_positive": 100,
+            "false_positive_rate": 0.5208333333333333,
+            "precision": 0.8251748251748252,
+            "recall": 0.9812889812889813,
+            "true_negative": 92,
+            "true_positive": 472
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7286739864864865,
+            "f1": 0.8931297709923663,
+            "false_negative": 13,
+            "false_positive": 99,
+            "false_positive_rate": 0.515625,
+            "precision": 0.8253968253968254,
+            "recall": 0.972972972972973,
+            "true_negative": 93,
+            "true_positive": 468
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7182573198198199,
+            "f1": 0.8897338403041826,
+            "false_negative": 13,
+            "false_positive": 103,
+            "false_positive_rate": 0.5364583333333333,
+            "precision": 0.819614711033275,
+            "recall": 0.972972972972973,
+            "true_negative": 89,
+            "true_positive": 468
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7182573198198199,
+            "f1": 0.8897338403041826,
+            "false_negative": 13,
+            "false_positive": 103,
+            "false_positive_rate": 0.5364583333333333,
+            "precision": 0.819614711033275,
+            "recall": 0.972972972972973,
+            "true_negative": 89,
+            "true_positive": 468
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7057508229383229,
+            "f1": 0.8878416588124411,
+            "false_negative": 10,
+            "false_positive": 109,
+            "false_positive_rate": 0.5677083333333333,
+            "precision": 0.8120689655172414,
+            "recall": 0.9792099792099792,
+            "true_negative": 83,
+            "true_positive": 471
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7036718208593209,
+            "f1": 0.8857412653446647,
+            "false_negative": 12,
+            "false_positive": 109,
+            "false_positive_rate": 0.5677083333333333,
+            "precision": 0.8114186851211073,
+            "recall": 0.975051975051975,
+            "true_negative": 83,
+            "true_positive": 469
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.684381496881497,
+            "f1": 0.886005560704356,
+            "false_negative": 3,
+            "false_positive": 120,
+            "false_positive_rate": 0.625,
+            "precision": 0.7993311036789298,
+            "recall": 0.9937629937629938,
+            "true_negative": 72,
+            "true_positive": 478
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6745008229383229,
+            "f1": 0.8779123951537745,
+            "false_negative": 10,
+            "false_positive": 121,
+            "false_positive_rate": 0.6302083333333333,
+            "precision": 0.7956081081081081,
+            "recall": 0.9792099792099792,
+            "true_negative": 71,
+            "true_positive": 471
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6593901593901594,
+            "f1": 0.8753462603878117,
+            "false_negative": 7,
+            "false_positive": 128,
+            "false_positive_rate": 0.6666666666666667,
+            "precision": 0.7873754152823921,
+            "recall": 0.9854469854469855,
+            "true_negative": 64,
+            "true_positive": 474
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6557356635481636,
+            "f1": 0.8770642201834863,
+            "false_negative": 3,
+            "false_positive": 131,
+            "false_positive_rate": 0.6822916666666667,
+            "precision": 0.7848932676518884,
+            "recall": 0.9937629937629938,
+            "true_negative": 61,
+            "true_positive": 478
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6484591562716563,
+            "f1": 0.8698060941828255,
+            "false_negative": 10,
+            "false_positive": 131,
+            "false_positive_rate": 0.6822916666666667,
+            "precision": 0.782392026578073,
+            "recall": 0.9792099792099792,
+            "true_negative": 61,
+            "true_positive": 471
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6448046604296604,
+            "f1": 0.871559633027523,
+            "false_negative": 6,
+            "false_positive": 134,
+            "false_positive_rate": 0.6979166666666667,
+            "precision": 0.7799671592775042,
+            "recall": 0.9875259875259875,
+            "true_negative": 58,
+            "true_positive": 475
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6432399948024948,
+            "f1": 0.8717948717948718,
+            "false_negative": 5,
+            "false_positive": 135,
+            "false_positive_rate": 0.703125,
+            "precision": 0.779050736497545,
+            "recall": 0.9896049896049897,
+            "true_negative": 57,
+            "true_positive": 476
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6359526593901594,
+            "f1": 0.868131868131868,
+            "false_negative": 7,
+            "false_positive": 137,
+            "false_positive_rate": 0.7135416666666667,
+            "precision": 0.7757774140752864,
+            "recall": 0.9854469854469855,
+            "true_negative": 55,
+            "true_positive": 474
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.623960498960499,
+            "f1": 0.8687782805429866,
+            "false_negative": 1,
+            "false_positive": 144,
+            "false_positive_rate": 0.75,
+            "precision": 0.7692307692307693,
+            "recall": 0.997920997920998,
+            "true_negative": 48,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5974044958419958,
+            "f1": 0.8586858685868587,
+            "false_negative": 4,
+            "false_positive": 153,
+            "false_positive_rate": 0.796875,
+            "precision": 0.7571428571428571,
+            "recall": 0.9916839916839917,
+            "true_negative": 39,
+            "true_positive": 477
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5260416666666666,
+            "f1": 0.8409090909090908,
+            "false_negative": 0,
+            "false_positive": 182,
+            "false_positive_rate": 0.9479166666666666,
+            "precision": 0.7254901960784313,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.807870971933472,
+          "f1": 0.9098196392785571,
+          "false_negative": 27,
+          "false_positive": 63,
+          "false_positive_rate": 0.328125,
+          "precision": 0.8781431334622823,
+          "recall": 0.9438669438669439,
+          "true_negative": 129,
+          "true_positive": 454
+        },
+        "parameters": {
+          "bootstrap": true,
+          "contamination": 0.01,
+          "max_features": 0.75,
+          "max_samples": "auto",
+          "n_estimators": 300,
+          "n_jobs": 1,
+          "random_state": 42
+        }
+      }
+    },
+    "local-outlier-factor": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7286739864864865,
+            "f1": 0.8931297709923663,
+            "false_negative": 13,
+            "false_positive": 99,
+            "false_positive_rate": 0.515625,
+            "precision": 0.8253968253968254,
+            "recall": 0.972972972972973,
+            "true_negative": 93,
+            "true_positive": 468
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6844031531531531,
+            "f1": 0.8788732394366198,
+            "false_negative": 13,
+            "false_positive": 116,
+            "false_positive_rate": 0.6041666666666667,
+            "precision": 0.8013698630136986,
+            "recall": 0.972972972972973,
+            "true_negative": 76,
+            "true_positive": 468
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6505489864864865,
+            "f1": 0.8682745825602969,
+            "false_negative": 13,
+            "false_positive": 129,
+            "false_positive_rate": 0.671875,
+            "precision": 0.7839195979899497,
+            "recall": 0.972972972972973,
+            "true_negative": 63,
+            "true_positive": 468
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6375281531531531,
+            "f1": 0.8642659279778393,
+            "false_negative": 13,
+            "false_positive": 134,
+            "false_positive_rate": 0.6979166666666667,
+            "precision": 0.7774086378737541,
+            "recall": 0.972972972972973,
+            "true_negative": 58,
+            "true_positive": 468
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5995051541926542,
+            "f1": 0.8535031847133758,
+            "false_negative": 12,
+            "false_positive": 149,
+            "false_positive_rate": 0.7760416666666666,
+            "precision": 0.7588996763754046,
+            "recall": 0.975051975051975,
+            "true_negative": 43,
+            "true_positive": 469
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5781358281358282,
+            "f1": 0.8522829006266787,
+            "false_negative": 5,
+            "false_positive": 160,
+            "false_positive_rate": 0.8333333333333334,
+            "precision": 0.7484276729559748,
+            "recall": 0.9896049896049897,
+            "true_negative": 32,
+            "true_positive": 476
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5734418312543312,
+            "f1": 0.8530721282279609,
+            "false_negative": 2,
+            "false_positive": 163,
+            "false_positive_rate": 0.8489583333333334,
+            "precision": 0.7461059190031153,
+            "recall": 0.9958419958419958,
+            "true_negative": 29,
+            "true_positive": 479
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8483245149911817,
+            "false_negative": 0,
+            "false_positive": 172,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.7366003062787136,
+            "recall": 1.0,
+            "true_negative": 20,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.544795997920998,
+            "f1": 0.8447971781305115,
+            "false_negative": 2,
+            "false_positive": 174,
+            "false_positive_rate": 0.90625,
+            "precision": 0.7335375191424196,
+            "recall": 0.9958419958419958,
+            "true_negative": 18,
+            "true_positive": 479
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5442708333333334,
+            "f1": 0.8460861917326297,
+            "false_negative": 0,
+            "false_positive": 175,
+            "false_positive_rate": 0.9114583333333334,
+            "precision": 0.7332317073170732,
+            "recall": 1.0,
+            "true_negative": 17,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5442708333333334,
+            "f1": 0.8460861917326297,
+            "false_negative": 0,
+            "false_positive": 175,
+            "false_positive_rate": 0.9114583333333334,
+            "precision": 0.7332317073170732,
+            "recall": 1.0,
+            "true_negative": 17,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.53125,
+            "f1": 0.8423817863397548,
+            "false_negative": 0,
+            "false_positive": 180,
+            "false_positive_rate": 0.9375,
+            "precision": 0.7276853252647504,
+            "recall": 1.0,
+            "true_negative": 12,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5286458333333334,
+            "f1": 0.8416447944007,
+            "false_negative": 0,
+            "false_positive": 181,
+            "false_positive_rate": 0.9427083333333334,
+            "precision": 0.7265861027190332,
+            "recall": 1.0,
+            "true_negative": 11,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5260416666666666,
+            "f1": 0.8409090909090908,
+            "false_negative": 0,
+            "false_positive": 182,
+            "false_positive_rate": 0.9479166666666666,
+            "precision": 0.7254901960784313,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5260416666666666,
+            "f1": 0.8409090909090908,
+            "false_negative": 0,
+            "false_positive": 182,
+            "false_positive_rate": 0.9479166666666666,
+            "precision": 0.7254901960784313,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5208333333333334,
+            "f1": 0.8394415357766143,
+            "false_negative": 0,
+            "false_positive": 184,
+            "false_positive_rate": 0.9583333333333334,
+            "precision": 0.7233082706766917,
+            "recall": 1.0,
+            "true_negative": 8,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5130208333333334,
+            "f1": 0.8372497824194952,
+            "false_negative": 0,
+            "false_positive": 187,
+            "false_positive_rate": 0.9739583333333334,
+            "precision": 0.7200598802395209,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5130208333333334,
+            "f1": 0.8372497824194952,
+            "false_negative": 0,
+            "false_positive": 187,
+            "false_positive_rate": 0.9739583333333334,
+            "precision": 0.7200598802395209,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5078125,
+            "f1": 0.8357949609035621,
+            "false_negative": 0,
+            "false_positive": 189,
+            "false_positive_rate": 0.984375,
+            "precision": 0.7179104477611941,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5078125,
+            "f1": 0.8357949609035621,
+            "false_negative": 0,
+            "false_positive": 189,
+            "false_positive_rate": 0.984375,
+            "precision": 0.7179104477611941,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5078125,
+            "f1": 0.8357949609035621,
+            "false_negative": 0,
+            "false_positive": 189,
+            "false_positive_rate": 0.984375,
+            "precision": 0.7179104477611941,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.7286739864864865,
+          "f1": 0.8931297709923663,
+          "false_negative": 13,
+          "false_positive": 99,
+          "false_positive_rate": 0.515625,
+          "precision": 0.8253968253968254,
+          "recall": 0.972972972972973,
+          "true_negative": 93,
+          "true_positive": 468
+        },
+        "parameters": {
+          "algorithm": "auto",
+          "contamination": "auto",
+          "leaf_size": 30,
+          "metric": "manhattan",
+          "n_neighbors": 50,
+          "p": 2
+        }
+      }
+    }
+  },
+  "ts-travel-service_mem": {
+    "isolation-forest": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.8078276593901594,
+            "f1": 0.9239766081871345,
+            "false_negative": 7,
+            "false_positive": 71,
+            "false_positive_rate": 0.36979166666666663,
+            "precision": 0.8697247706422019,
+            "recall": 0.9854469854469855,
+            "true_negative": 121,
+            "true_positive": 474
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7666753291753292,
+            "f1": 0.9120458891013384,
+            "false_negative": 4,
+            "false_positive": 88,
+            "false_positive_rate": 0.45833333333333337,
+            "precision": 0.8442477876106195,
+            "recall": 0.9916839916839917,
+            "true_negative": 104,
+            "true_positive": 477
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7349109927234927,
+            "f1": 0.8994307400379506,
+            "false_negative": 7,
+            "false_positive": 99,
+            "false_positive_rate": 0.515625,
+            "precision": 0.8272251308900523,
+            "recall": 0.9854469854469855,
+            "true_negative": 93,
+            "true_positive": 474
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7338606635481636,
+            "f1": 0.9018867924528302,
+            "false_negative": 3,
+            "false_positive": 101,
+            "false_positive_rate": 0.5260416666666667,
+            "precision": 0.8255613126079447,
+            "recall": 0.9937629937629938,
+            "true_negative": 91,
+            "true_positive": 478
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6974023302148302,
+            "f1": 0.8901303538175047,
+            "false_negative": 3,
+            "false_positive": 115,
+            "false_positive_rate": 0.5989583333333333,
+            "precision": 0.806070826306914,
+            "recall": 0.9937629937629938,
+            "true_negative": 77,
+            "true_positive": 478
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.694272998960499,
+            "f1": 0.8905380333951763,
+            "false_negative": 1,
+            "false_positive": 117,
+            "false_positive_rate": 0.609375,
+            "precision": 0.8040201005025126,
+            "recall": 0.997920997920998,
+            "true_negative": 75,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6875,
+            "f1": 0.8890942698706099,
+            "false_negative": 0,
+            "false_positive": 120,
+            "false_positive_rate": 0.625,
+            "precision": 0.800332778702163,
+            "recall": 1.0,
+            "true_negative": 72,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.671875,
+            "f1": 0.8841911764705882,
+            "false_negative": 0,
+            "false_positive": 126,
+            "false_positive_rate": 0.65625,
+            "precision": 0.7924217462932455,
+            "recall": 1.0,
+            "true_negative": 66,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6510416666666666,
+            "f1": 0.8777372262773722,
+            "false_negative": 0,
+            "false_positive": 134,
+            "false_positive_rate": 0.6979166666666667,
+            "precision": 0.7821138211382114,
+            "recall": 1.0,
+            "true_negative": 58,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6447938322938324,
+            "f1": 0.8751139471285324,
+            "false_negative": 1,
+            "false_positive": 136,
+            "false_positive_rate": 0.7083333333333333,
+            "precision": 0.7792207792207793,
+            "recall": 0.997920997920998,
+            "true_negative": 56,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.625,
+            "f1": 0.8698010849909583,
+            "false_negative": 0,
+            "false_positive": 144,
+            "false_positive_rate": 0.75,
+            "precision": 0.7696,
+            "recall": 1.0,
+            "true_negative": 48,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.622920997920998,
+            "f1": 0.8677536231884059,
+            "false_negative": 2,
+            "false_positive": 144,
+            "false_positive_rate": 0.75,
+            "precision": 0.7688603531300161,
+            "recall": 0.9958419958419958,
+            "true_negative": 48,
+            "true_positive": 479
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.01,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6223958333333334,
+            "f1": 0.8690153568202349,
+            "false_negative": 0,
+            "false_positive": 145,
+            "false_positive_rate": 0.7552083333333334,
+            "precision": 0.768370607028754,
+            "recall": 1.0,
+            "true_negative": 47,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.608335498960499,
+            "f1": 0.8640864086408641,
+            "false_negative": 1,
+            "false_positive": 150,
+            "false_positive_rate": 0.78125,
+            "precision": 0.7619047619047619,
+            "recall": 0.997920997920998,
+            "true_negative": 42,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5989583333333334,
+            "f1": 0.8620071684587813,
+            "false_negative": 0,
+            "false_positive": 154,
+            "false_positive_rate": 0.8020833333333334,
+            "precision": 0.75748031496063,
+            "recall": 1.0,
+            "true_negative": 38,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.59375,
+            "f1": 0.8604651162790697,
+            "false_negative": 0,
+            "false_positive": 156,
+            "false_positive_rate": 0.8125,
+            "precision": 0.7551020408163265,
+            "recall": 1.0,
+            "true_negative": 36,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5885416666666666,
+            "f1": 0.8589285714285714,
+            "false_negative": 0,
+            "false_positive": 158,
+            "false_positive_rate": 0.8229166666666666,
+            "precision": 0.7527386541471048,
+            "recall": 1.0,
+            "true_negative": 34,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.02,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.569272998960499,
+            "f1": 0.852575488454707,
+            "false_negative": 1,
+            "false_positive": 165,
+            "false_positive_rate": 0.859375,
+            "precision": 0.7441860465116279,
+            "recall": 0.997920997920998,
+            "true_negative": 27,
+            "true_positive": 480
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5598958333333334,
+            "f1": 0.8505747126436781,
+            "false_negative": 0,
+            "false_positive": 169,
+            "false_positive_rate": 0.8802083333333334,
+            "precision": 0.74,
+            "recall": 1.0,
+            "true_negative": 23,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5520833333333334,
+            "f1": 0.8483245149911817,
+            "false_negative": 0,
+            "false_positive": 172,
+            "false_positive_rate": 0.8958333333333334,
+            "precision": 0.7366003062787136,
+            "recall": 1.0,
+            "true_negative": 20,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5390625,
+            "f1": 0.8446005267778753,
+            "false_negative": 0,
+            "false_positive": 177,
+            "false_positive_rate": 0.921875,
+            "precision": 0.7310030395136778,
+            "recall": 1.0,
+            "true_negative": 15,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": false,
+            "contamination": 0.05,
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.5,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 0.75,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "bootstrap": true,
+            "contamination": "auto",
+            "max_features": 1.0,
+            "max_samples": "auto",
+            "n_estimators": 300,
+            "n_jobs": 1,
+            "random_state": 42
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.8078276593901594,
+          "f1": 0.9239766081871345,
+          "false_negative": 7,
+          "false_positive": 71,
+          "false_positive_rate": 0.36979166666666663,
+          "precision": 0.8697247706422019,
+          "recall": 0.9854469854469855,
+          "true_negative": 121,
+          "true_positive": 474
+        },
+        "parameters": {
+          "bootstrap": true,
+          "contamination": 0.01,
+          "max_features": 1.0,
+          "max_samples": "auto",
+          "n_estimators": 300,
+          "n_jobs": 1,
+          "random_state": 42
+        }
+      }
+    },
+    "local-outlier-factor": {
+      "candidates": [
+        {
+          "metrics": {
+            "balanced_accuracy": 0.7864583333333333,
+            "f1": 0.921455938697318,
+            "false_negative": 0,
+            "false_positive": 82,
+            "false_positive_rate": 0.42708333333333337,
+            "precision": 0.8543516873889876,
+            "recall": 1.0,
+            "true_negative": 110,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.65625,
+            "f1": 0.8793418647166361,
+            "false_negative": 0,
+            "false_positive": 132,
+            "false_positive_rate": 0.6875,
+            "precision": 0.7846655791190864,
+            "recall": 1.0,
+            "true_negative": 60,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6432291666666666,
+            "f1": 0.8753412192902639,
+            "false_negative": 0,
+            "false_positive": 137,
+            "false_positive_rate": 0.7135416666666667,
+            "precision": 0.7783171521035599,
+            "recall": 1.0,
+            "true_negative": 55,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.6067708333333334,
+            "f1": 0.8643306379155435,
+            "false_negative": 0,
+            "false_positive": 151,
+            "false_positive_rate": 0.7864583333333334,
+            "precision": 0.7610759493670886,
+            "recall": 1.0,
+            "true_negative": 41,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.578125,
+            "f1": 0.8558718861209964,
+            "false_negative": 0,
+            "false_positive": 162,
+            "false_positive_rate": 0.84375,
+            "precision": 0.7480559875583204,
+            "recall": 1.0,
+            "true_negative": 30,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.546875,
+            "f1": 0.8468309859154929,
+            "false_negative": 0,
+            "false_positive": 174,
+            "false_positive_rate": 0.90625,
+            "precision": 0.7343511450381679,
+            "recall": 1.0,
+            "true_negative": 18,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5260416666666666,
+            "f1": 0.8409090909090908,
+            "false_negative": 0,
+            "false_positive": 182,
+            "false_positive_rate": 0.9479166666666666,
+            "precision": 0.7254901960784313,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5260416666666666,
+            "f1": 0.8409090909090908,
+            "false_negative": 0,
+            "false_positive": 182,
+            "false_positive_rate": 0.9479166666666666,
+            "precision": 0.7254901960784313,
+            "recall": 1.0,
+            "true_negative": 10,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": "auto",
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5182291666666666,
+            "f1": 0.8387096774193548,
+            "false_negative": 0,
+            "false_positive": 185,
+            "false_positive_rate": 0.9635416666666666,
+            "precision": 0.7222222222222222,
+            "recall": 1.0,
+            "true_negative": 7,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.515625,
+            "f1": 0.8379790940766552,
+            "false_negative": 0,
+            "false_positive": 186,
+            "false_positive_rate": 0.96875,
+            "precision": 0.7211394302848576,
+            "recall": 1.0,
+            "true_negative": 6,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5130208333333334,
+            "f1": 0.8372497824194952,
+            "false_negative": 0,
+            "false_positive": 187,
+            "false_positive_rate": 0.9739583333333334,
+            "precision": 0.7200598802395209,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5130208333333334,
+            "f1": 0.8372497824194952,
+            "false_negative": 0,
+            "false_positive": 187,
+            "false_positive_rate": 0.9739583333333334,
+            "precision": 0.7200598802395209,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5130208333333334,
+            "f1": 0.8372497824194952,
+            "false_negative": 0,
+            "false_positive": 187,
+            "false_positive_rate": 0.9739583333333334,
+            "precision": 0.7200598802395209,
+            "recall": 1.0,
+            "true_negative": 5,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5104166666666666,
+            "f1": 0.8365217391304348,
+            "false_negative": 0,
+            "false_positive": 188,
+            "false_positive_rate": 0.9791666666666666,
+            "precision": 0.71898355754858,
+            "recall": 1.0,
+            "true_negative": 4,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 20,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5078125,
+            "f1": 0.8357949609035621,
+            "false_negative": 0,
+            "false_positive": 189,
+            "false_positive_rate": 0.984375,
+            "precision": 0.7179104477611941,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5078125,
+            "f1": 0.8357949609035621,
+            "false_negative": 0,
+            "false_positive": 189,
+            "false_positive_rate": 0.984375,
+            "precision": 0.7179104477611941,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5078125,
+            "f1": 0.8357949609035621,
+            "false_negative": 0,
+            "false_positive": 189,
+            "false_positive_rate": 0.984375,
+            "precision": 0.7179104477611941,
+            "recall": 1.0,
+            "true_negative": 3,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 10,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5052083333333334,
+            "f1": 0.8350694444444445,
+            "false_negative": 0,
+            "false_positive": 190,
+            "false_positive_rate": 0.9895833333333334,
+            "precision": 0.7168405365126677,
+            "recall": 1.0,
+            "true_negative": 2,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.01,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.02,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5026041666666666,
+            "f1": 0.834345186470078,
+            "false_negative": 0,
+            "false_positive": 191,
+            "false_positive_rate": 0.9947916666666666,
+            "precision": 0.7157738095238095,
+            "recall": 1.0,
+            "true_negative": 1,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 35,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "minkowski",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        },
+        {
+          "metrics": {
+            "balanced_accuracy": 0.5,
+            "f1": 0.8336221837088388,
+            "false_negative": 0,
+            "false_positive": 192,
+            "false_positive_rate": 1.0,
+            "precision": 0.7147102526002972,
+            "recall": 1.0,
+            "true_negative": 0,
+            "true_positive": 481
+          },
+          "parameters": {
+            "algorithm": "auto",
+            "contamination": 0.05,
+            "leaf_size": 30,
+            "metric": "manhattan",
+            "n_neighbors": 50,
+            "p": 2
+          }
+        }
+      ],
+      "selected": {
+        "metrics": {
+          "balanced_accuracy": 0.7864583333333333,
+          "f1": 0.921455938697318,
+          "false_negative": 0,
+          "false_positive": 82,
+          "false_positive_rate": 0.42708333333333337,
+          "precision": 0.8543516873889876,
+          "recall": 1.0,
+          "true_negative": 110,
+          "true_positive": 481
+        },
+        "parameters": {
+          "algorithm": "auto",
+          "contamination": "auto",
+          "leaf_size": 30,
+          "metric": "manhattan",
+          "n_neighbors": 50,
+          "p": 2
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+\chapter{Framework Evaluation and Design Requirements}
+\label{ch:framework_evaluation_and_design_requirements}
+This chapter evaluates the Online Boutique baseline case against the criteria defined in Section~5.5. The purpose is to assess the extent to which CloudSentinel currently supports a deployable, configurable, and operator-usable AIOps workflow. The resulting limitations are translated into design requirements for an improvement to the framework.
+
+\section{C1: End-to-end experimental workflow adequacy}
+CloudSentinel was successfully connected to Prometheus data from Online Boutique. It could retrieve monitoring data, calculate a live anomaly percentage, and trigger RCA when the configured RCA threshold was exceeded. In both CPU-stress scenarios, the live percentage increased during the injected disturbance. This shows that the anomaly-detection workflow could operate as part of the deployed CloudSentinel framework.
+
+However, the live output was difficult to interpret. The interface displayed a percentage, but did not explain that this value represented the proportion of scoreable timestamps in the current monitoring iteration that crossed the stored anomaly threshold. It also did not clearly show which timestamps, metrics, or time window contributed to a specific value. In the single-pod scenario, the displayed session timestamps also appeared offset from the recorded experiment time.
+
+The manual replay results did not establish reliable timestamp-level detection under the stored model configuration. In the single-pod scenario, none of the 101 fault-labelled timestamps were detected at the stored threshold. In the multi-pod scenario, manual replay produced a recall of 0.012 and an F1-score of 0.025. These results should not be treated as general performance claims about the embedded detector.
+
+The main limitation is that CloudSentinel does not use one consistent preprocessing path. Training uses a scaler fitted on the training data, while detection-only requests fit a new scaler to the submitted data window. As a result, the stored anomaly threshold can be applied to differently scaled input during live monitoring and manual replay. CloudSentinel therefore satisfies C1 at the level of workflow execution, but the consistency and interpretability of its anomaly output remain limited.
+
+\section{C2: RCA workflow adequacy and interpretability}
+CloudSentinel successfully triggered RCA after the live anomaly percentage exceeded the configured threshold. In both CPU-stress scenarios, the RCA rankings included some metrics related to the affected services. This shows that the framework can progress from monitoring data to anomaly indication and RCA output.
+
+However, the diagnostic value of the output was limited. In the single-pod scenario, paymentservice-related metrics appeared inconsistently across rankings, while direct paymentservice CPU usage was not reliably prioritised. In the multi-pod scenario, the rankings were spread across affected, related, and apparently unrelated metrics.
+
+Unfortunately, it is difficult to use the multi-pod scenario to validate reconstruction of a real causal chain, because CPU stress was injected independently into multiple pods. It can only show whether CloudSentinel represents affected components during a distributed disturbance.
+
+The RCA output also required substantial manual interpretation. Results were presented as ranked metrics, but did not clearly explain the affected service, the operational meaning of the metric, the relevant time interval, or why the metric was considered a possible root cause.  Furthermore, instead of clear names, the metrics in the accompanying visualization were identified by numbered 'indices', representing their column number in the originally-fed input data, which makes it harder to identify which metric is which. CloudSentinel therefore satisfies C2 at the level of RCA triggering, but only partly satisfies it in terms of reliable localisation and operator-oriented interpretation.
+
+\section{C3: Portability and deployment ease}
+The Online Boutique case shows that CloudSentinel can be adapted to a new Kubernetes microservice application, but not with minimal effort. Deployment required changes to the Prometheus endpoint and monitored namespace. In addition, the original datasets, examples, metric assumptions, and service identities did not transfer directly from SMD and Sock Shop to Online Boutique.
+
+A working setup required application-specific metric selection, Prometheus queries, metric mappings, custom export and preprocessing scripts, and newly constructed training, testing, and label arrays. These activities are evidence that portability is currently possible but engineering-intensive. The framework does not yet provide a lightweight onboarding path for a new application.
+
+% [NOTE: The NaaVRE case could provide more evidence about portability when it is evaluaed]
+
+\section{C4: Configurability, reproducibility, and extensibility}
+The baseline workflow required substantial manual intervention. Relevant metrics had to be selected and reshaped; timestamps had to be aligned; training, testing, and label arrays had to be created; and environment-specific endpoint, namespace, and metric configuration had to be adjusted. The trained model and live-monitoring configuration also required manual checking and handling.
+
+Configuration was not consistently managed as one coherent deployment state. Changes made through the interface did not always propagate to the components that performed monitoring or inference. This makes successful runs difficult to reproduce and increases the risk that training, live monitoring, and manual evaluation use different settings.
+
+The baseline evaluation also does not demonstrate that anomaly detection or RCA components can be replaced easily. The observed coupling between data preparation, feature representations, trained model artefacts, thresholds, and execution configuration suggests that CloudSentinel lacks an explicit component contract for pluggable analytics modules. C4 is therefore only partly satisfied: the framework is configurable through manual adaptation, but it is not yet easily configurable, reproducible, or demonstrably extensible.
+
+The separate handling of trained models, preprocessing behaviour, and live-monitoring configuration also increases the risk that a user cannot determine which exact configuration produced a displayed result.
+
+\section{C5: Operational overhead}
+% C5 cannot yet be assessed conclusively. CloudSentinel was executed in a constrained local Minikube environment, but no systematic comparison of CPU and memory use during idle and active operation was completed for the baseline. The available observations are insufficient to support a reliable quantitative overhead claim.
+
+% This does not mean that operational overhead is unimportant. It remains a requirement for a production-oriented framework. A focused idle-versus-active measurement should be added if time allows, and any future evaluation of an improved framework should report its local resource use using the same measurement approach.
+
+\section{Derived design requirements}
+The baseline findings lead to the following design requirements for an improved CloudSentinel framework.
+
+\textbf{DR1: Consistent preprocessing and threshold use.}
+The framework should store the preprocessing parameters used during training and reuse them during live monitoring and manual evaluation. It should also make the active threshold and its relation to the processed input explicit.
+
+\textbf{DR2: Declarative and versioned environment configuration.} Prometheus endpoints, namespaces, metric mappings, selected entities, preprocessing settings, and model references should be stored in an explicit configuration artefact. A configuration should be sufficient to reproduce a workflow without relying on undocumented interface state or manual changes.
+
+\textbf{DR3: Reliable configuration propagation.} Changes to a configuration should be applied consistently to the components responsible for data collection, monitoring, inference, and RCA. The active configuration should be visible to the user.
+
+\textbf{DR4: Explicit analytics-component interfaces.} The framework should define clear input, output, and metadata contracts for anomaly detection and RCA components. This is required before components can be replaced or extended without changing unrelated parts of the workflow.
+
+\textbf{DR5: Operator-oriented diagnostic context.} Live-monitoring and RCA outputs should identify the relevant service and metric, explain what an anomaly indication represents, and link the result to supporting time-series context. This should reduce the need to manually combine CloudSentinel output with unrelated dashboard views.
+
+\section{Candidate improvements and selection rationale}
+The baseline evaluation identifies several possible improvement directions. A final implementation choice should address one ore multiple clear observed limitations, be feasible within the available project time, and permit a meaningful before-and-after evaluation.
+
+One candidate is to improve the live-monitoring interface and RCA presentation. This could clarify the meaning of the displayed anomaly percentage, show the active time window and threshold, identify the affected service and metric, and provide direct links or context for supporting Prometheus or Grafana data. This direction directly addresses DR5 and parts of C1 and C2. It is relatively bounded in scope and can be evaluated through traceability and interpretability of the resulting workflow.
+
+A second candidate is to introduce a component interface for anomaly detection and/or RCA methods. This would address DR4 and the extensibility aspect of C4. To make this a credible contribution, the implementation should include at least one concrete adapter or alternative component; defining an interface without demonstrating its use would provide limited evidence of actual pluggability. This direction is architecturally relevant, but its scope and evaluation effort may be higher.
+
+A third candidate is to improve configuration and preprocessing management. For example, the framework could persist training-time scalers and feature metadata, use them during inference, and store environment-specific mappings in a versioned configuration file. This would directly address DR1--DR3 and the most concrete consistency problems found in the baseline. It may be the strongest option if the goal is to improve reproducibility and reliability of the existing workflow.
+
+The improvement is selected after considering these alternatives against three questions: which limitations are most strongly supported by the baseline evidence, which changes can be implemented and evaluated within the remaining timeframe, and which changes produces the clearest software-engineering contribution. Once selected, the final rationale and implementation plan are presented in Chapter~9.
+
+
+% ------------------------------------------------
+% With the design and experiments done, and the results presented, now comes the most important part of your research: analysis.
+% In this chapter you discuss the implications of your results, and how they answer your research questions.
+% Be sure to cover in your analysis:
+% \begin{itemize}
+%     \item \emph{Validation:} how do you know that the results you got (and the conclusions you drawing from them) are true,
+%     \item \emph{Evaluation:} how well is your system performing.
+% \end{itemize}

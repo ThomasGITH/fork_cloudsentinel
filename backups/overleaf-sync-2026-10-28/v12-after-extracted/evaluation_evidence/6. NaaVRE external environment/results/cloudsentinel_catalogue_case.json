@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "case": "NaaVRE read-only portability and live-input smoke test",
+  "completed_at_utc": "2026-10-26T01:19:18.962268Z",
+  "dataset": {
+    "dataset_id": "naavre-portability-20261026-011717",
+    "window": {
+      "start": "2026-10-25T01:17:17Z",
+      "end": "2026-10-26T01:17:17Z"
+    },
+    "sampling_interval_seconds": 65,
+    "status": "available",
+    "observation_count": 1330,
+    "feature_count": 5,
+    "feature_names": [
+      "cpu_utilisation",
+      "disk_io_utilisation",
+      "network_receive_bytes",
+      "network_transmit_bytes",
+      "memory_utilisation"
+    ],
+    "feature_order_sha256": "1f4b72aad8c17a1297b69130b78cb2f752dbc2420d5a11ed0ec2ee77f85d24b2",
+    "missing_values": {
+      "by_feature": {
+        "cpu_utilisation|instance=k8s-staging-1": 0,
+        "disk_io_utilisation|instance=k8s-staging-1": 0,
+        "memory_utilisation|instance=k8s-staging-1": 0,
+        "network_receive_bytes|instance=k8s-staging-1": 0,
+        "network_transmit_bytes|instance=k8s-staging-1": 0
+      },
+      "total": 0
+    },
+    "labels_available": false,
+    "artifact_checksums": {
+      "canonical/feature_matrix.csv": "8e7a5fdcc5f6711f7cc7c8f3378b92e0323fa93817c0d8033da05f488b0a4b78",
+      "canonical/observations.csv": "6a75c3f34cbd5b265357c189f6e7f621d104f00a6245024364b62898ee9b8e5f",
+      "live_input_recipe.json": "0402c3cf2831763d46ece45777b023619e2172f33c8ac6b38fa25a500d90d285",
+      "provenance.json": "ae636f6e33e709eb2bcfbda714563d0c0af90bcd9247ede8b6817c4e04f22e07",
+      "schema.json": "2b3dc63f9a24ce7ab5a3b220f18e72f374aa4c02185d7cc063f5933e397a9e0d"
+    },
+    "live_input_recipe_sha256": "562e76cd43fdc0d2ede80bbd3072e886e8b7fad9f34a6b8c16415e99c5264406"
+  },
+  "catalogue_fetch": {
+    "transport": "grafana-datasource-proxy",
+    "query_count": 5,
+    "total_series": 5,
+    "total_samples": 6650,
+    "mean_request_duration_seconds": 0.0825,
+    "maximum_request_duration_seconds": 0.0922
+  },
+  "live_input": {
+    "window": {
+      "start": "2026-10-26T01:03:18Z",
+      "end": "2026-10-26T01:18:18Z"
+    },
+    "observation_count": 14,
+    "feature_order_matches_catalogue": true,
+    "missing_values": 0,
+    "fetch_diagnostics": {
+      "query_count": 5,
+      "fetch_duration_seconds": 0.374779,
+      "source_latest_timestamp": "2026-10-26T01:17:23Z",
+      "source_freshness_seconds": 55.0,
+      "missing_value_count": 0
+    }
+  },
+  "code_boundary": {
+    "branch": "codex/naavre-grafana-proxy",
+    "main_branch_changed": false,
+    "adapter_scope": "evaluation-only"
+  },
+  "interpretation_limits": [
+    "The telemetry has no confirmed incident timestamps or row labels.",
+    "The case tests data-source portability and live-input compatibility.",
+    "It does not establish anomaly-detection or RCA accuracy.",
+    "CloudSentinel was not deployed inside NaaVRE."
+  ]
+}

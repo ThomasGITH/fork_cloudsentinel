@@ -1,0 +1,75 @@
+\chapter{Framework Evaluation and Design Requirements}
+\label{ch:framework_evaluation_and_design_requirements}
+This chapter interprets the baseline results from Chapter~7 using the five criteria from Chapter~5. Each section starts with the practical conclusion for one criterion and then explains the supporting evidence and its limit. The final sections translate the observed problems into requirements for the redesign.
+
+\section{C1: End-to-end experimental workflow adequacy}
+Conclusion for C1 (end-to-end experimental workflow adequacy): the original workflow could run from Prometheus data to anomaly detection and root-cause analysis (RCA), but its results were not consistent or easy to interpret. CloudSentinel retrieved Online Boutique monitoring data, calculated a Live Monitoring anomaly percentage, and started RCA when the configured trigger was crossed. The percentage increased during both CPU-stress scenarios.
+
+The interface did not explain that the percentage represented the share of evaluated timestamps in the current window that crossed the model's anomaly cut-off. It also did not clearly identify the contributing timestamps, metrics, or time window. In the single-pod scenario, the displayed session time appeared to differ from the recorded experiment time.
+
+Manual replay also did not show reliable detection for the saved model configuration. The detector missed all 101 labelled fault timestamps in the single-pod scenario. In the multi-pod scenario, it found only 1.2\% of the labelled fault timestamps, producing an F1 score of 0.025. These two scenarios are not broad claims about the detector algorithm; they describe this model, data preparation, and environment.
+
+An important cause is inconsistent input scaling. Training determines its scale from the training data, while a later detection request determines a new scale from its own input window. The saved anomaly cut-off can therefore be applied to differently represented values. C1 (end-to-end experimental workflow adequacy) is supported at the level of workflow execution, but not as evidence of consistent or reliable anomaly output.
+
+\section{C2: RCA workflow adequacy and interpretability}
+Conclusion for C2 (RCA workflow adequacy and interpretability): CloudSentinel could start RCA and display rankings, but those rankings did not reliably localise the injected fault. In both CPU-stress scenarios, some metrics from affected services appeared in the output. This confirms execution of the RCA step, not correctness of its diagnosis.
+
+However, the diagnostic value of the output was limited. In the single-pod scenario, paymentservice-related metrics appeared inconsistently across rankings, while direct paymentservice CPU usage was not reliably prioritised. In the multi-pod scenario, the rankings were spread across affected, related, and apparently unrelated metrics.
+
+The multi-pod scenario cannot validate reconstruction of a real causal chain because CPU stress was injected independently into several pods. It can only show whether affected components appear during a distributed disturbance.
+
+The RCA output also required substantial manual interpretation. It presented ranked metrics without clearly explaining the affected service, the operational meaning of each metric, the relevant time period, or why a metric was considered important. The accompanying graph used column numbers instead of clear metric names. C2 (RCA workflow adequacy and interpretability) is therefore supported for RCA execution, but only partly for localisation and operator-oriented interpretation.
+
+\section{C3: Portability and deployment ease}
+Conclusion for C3 (portability and deployment ease): CloudSentinel could be adapted to Online Boutique, but the process required substantial application-specific work. Deployment required changes to the Prometheus address and monitored Kubernetes namespace. The original datasets, examples, expected metrics, and service names did not transfer directly from SMD and Sock Shop.
+
+A working setup also required new Prometheus queries, metric mappings, export and preparation scripts, training data, test data, and labels. C3 (portability and deployment ease) is therefore supported only in the limited sense that adaptation was possible. The original framework did not provide a lightweight onboarding path.
+
+\section{C4: Configurability, reproducibility, and extensibility}
+Conclusion for C4 (configurability, reproducibility, and extensibility): the original framework was configurable through manual adaptation, but a completed experiment was difficult to reproduce and extensibility was not demonstrated. Metrics had to be selected and reshaped, timestamps aligned, datasets and labels created, and environment-specific settings adjusted. The trained model and Live Monitoring configuration also required manual checking.
+
+Configuration was not managed as one coherent deployment state. Changes made through the interface did not always reach the services that performed monitoring or ran the model. This made successful runs difficult to repeat and increased the risk that training, Live Monitoring, and manual evaluation used different settings.
+
+The baseline evaluation did not show that anomaly-detection or RCA methods could be replaced easily. Data preparation, feature order, trained models, anomaly cut-offs, and execution settings depended on each other without a clear shared interface. C4 (configurability, reproducibility, and extensibility) is therefore only partly supported.
+
+Because models, input preparation, and Live Monitoring settings were handled separately, a user could not easily determine which exact configuration produced a displayed result.
+
+\section{C5: Operational overhead}
+% C5 cannot yet be assessed conclusively. CloudSentinel was executed in a constrained local Minikube environment, but no systematic comparison of CPU and memory use during idle and active operation was completed for the baseline. The available observations are insufficient to support a reliable quantitative overhead claim.
+
+% This does not mean that operational overhead is unimportant. It remains a requirement for a production-oriented framework. A focused idle-versus-active measurement should be added if time allows, and any future evaluation of an improved framework should report its local resource use using the same measurement approach.
+
+\section{Derived design requirements}
+The baseline findings lead to the following design requirements for an improved CloudSentinel framework.
+
+\textbf{DR1: Consistent input preparation and anomaly cut-off use.}
+The framework should store how training data was prepared and reuse the same settings during Live Monitoring and later evaluation. It should also show which anomaly cut-off is active and how it is applied.
+
+\textbf{DR2: Explicit and versioned environment configuration.} Prometheus addresses, namespaces, metric mappings, selected services, data-preparation settings, and model references should be stored together. The saved configuration should contain enough information to repeat a workflow without undocumented interface state or manual changes.
+
+\textbf{DR3: Reliable configuration propagation.} Configuration changes should reach every service responsible for data collection, monitoring, model execution, and RCA. The active configuration should be visible to the user.
+
+\textbf{DR4: Explicit interfaces for anomaly detection and RCA.} The framework should define what data, results, and descriptive information each method must accept and return. This is needed before a method can be replaced or extended without changing unrelated workflow steps.
+
+\textbf{DR5: Understandable diagnostic context.} Live Monitoring and RCA output should identify the relevant service and metric, explain what an anomaly indication means, and link it to the supporting time-series data. This should reduce the need to combine CloudSentinel and external dashboard information manually.
+
+\section{Candidate improvements and selection rationale}
+The baseline evaluation identifies several possible improvement directions. The selected redesign should address one or more observed limitations, remain feasible within the project, and allow a meaningful evaluation.
+
+One candidate is to improve Live Monitoring and the presentation of RCA results. The interface could explain the anomaly percentage, show the active time window and trigger, identify the affected service and metric, and link to supporting Prometheus or Grafana data. This direction addresses DR5 and parts of C1 (the end-to-end workflow) and C2 (the RCA workflow). It can be evaluated by checking whether a result is easier to trace and interpret.
+
+A second candidate is to introduce a shared interface for anomaly-detection and RCA methods. This would address DR4 and the extensibility part of C4 (configurability, reproducibility, and extensibility). The interface would need to be demonstrated with at least one additional method. Defining it without using it would provide little evidence that methods can actually be exchanged.
+
+A third candidate is to improve configuration and input preparation. The framework could save the value ranges and feature information used during training, reuse them when running the model, and store environment-specific mappings in a versioned configuration file. This would directly address DR1--DR3 and the clearest consistency problems in the baseline.
+
+The alternatives were compared using three questions: which problems were best supported by the baseline evidence, which changes could be implemented and evaluated within the project, and which changes offered the clearest software-engineering contribution. Chapter~9 presents the selected combination and its implementation.
+
+
+% ------------------------------------------------
+% With the design and experiments done, and the results presented, now comes the most important part of your research: analysis.
+% In this chapter you discuss the implications of your results, and how they answer your research questions.
+% Be sure to cover in your analysis:
+% \begin{itemize}
+%     \item \emph{Validation:} how do you know that the results you got (and the conclusions you drawing from them) are true,
+%     \item \emph{Evaluation:} how well is your system performing.
+% \end{itemize}

@@ -1,0 +1,145 @@
+\chapter{Requirements and Evaluation Criteria for an Experimental AIOps Workflow}%
+\label{ch:requirements_for_framework}
+This chapter translates the activities and challenges investigated for RQ1 into requirements for an end-to-end experimental AIOps workflow, thereby addressing RQ2. The primary users considered are researchers and technically oriented AIOps practitioners who want to prepare data, integrate and compare methods, inspect results, and validate selected methods against live telemetry. The workflow may also inform operational exploration in companies, but it is not intended to replace a production observability or incident-management platform.
+
+In this thesis, generalisability refers to the extent to which the workflow can be applied to different datasets, workload contexts, detector implementations, and Kubernetes environments with limited additional configuration and engineering effort. It does not mean that results obtained in one experiment automatically generalise to every production system.
+
+\section{Requirements Elicitation}
+The requirements are derived from three complementary sources: (1) activities and pain points reported for researchers and AIOps practitioners, (2) gaps and design considerations identified in AIOps, anomaly-detection, and RCA literature and tooling, and (3) the documented and observed limitations of the original CloudSentinel workflow. These sources are used together: CloudSentinel provides a concrete case, but the requirements are framed around the broader experimental work rather than around repairing one product for its own sake.
+
+% OLD NOTES:
+% Bron 1: bedrijf / operator needs (RCA pain points).
+% Bron 2: beperkingen van CloudSentinel (hoofdstuk 4).
+% Bron 3: literatuur-gaps (generaliseerbaarheid, usablity, ML integration).
+
+Researchers and practitioners work in a landscape in which Kubernetes-based applications are already monitored through tools such as Prometheus and Grafana or commercial observability platforms. Their experimental work nevertheless spans several places: selecting and exporting telemetry, constructing labels and partitions, configuring algorithms, preserving trained artefacts, comparing results, and interpreting detections or RCA output. Operational practitioners additionally move between dashboards, logs, traces, and ad-hoc tools during incident analysis. The shared problem is not a complete absence of tools, but the effort required to connect data, experimental context, algorithm execution, and resulting evidence.
+
+The CloudSentinel baseline provides empirical detail about these problems. As discussed in Chapters~4, 7, and 8, the original framework demonstrates that machine-learning-based anomaly detection and RCA can be connected to Kubernetes and Prometheus. At the same time, dataset preparation, configuration, training, model handling, monitoring, and interpretation are split across scripts and specialised paths. Reusing the framework in a new environment exposes hidden assumptions and non-trivial manual work. The baseline evaluation therefore contributes evidence to RQ1 and helps prioritise the workflow requirements for RQ2. It is not used as proof that every AIOps platform has the same limitations.
+
+Finally, the broader AIOps and RCA literature motivates generalisable architectures, reproducible experiments, comparable evaluation contexts, pluggable algorithms, and careful integration between machine learning and operational workflows.
+
+By combining these perspectives, this chapter defines functional, non-functional, and interaction requirements for the experimental workflow. It then retains five measurable evaluation criteria that are used for both the baseline analysis and the evaluation of the implemented workflow, with their role made explicit in Chapter~6.
+
+\subsection{Traceability from RQ1 to requirements}
+
+Table~\ref{tab:rq1-rq2-traceability} makes the transition from RQ1 to RQ2 explicit. The requirements are not derived from CloudSentinel alone: each row combines the activity synthesis in Chapter~\ref{ch:background} with evidence from the predecessor and baseline cases. The final column identifies which evaluation criterion can later test the corresponding design response.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Traceability from experimental activities to requirements and evaluation criteria.}
+    \label{tab:rq1-rq2-traceability}
+    \begin{tabularx}{\textwidth}{p{2.7cm} X p{2.4cm} X}
+        \toprule
+        RQ1 activity & Main evidence and challenge & RQ2 requirements & Evaluation relevance \\
+        \midrule
+        Connect and inspect telemetry & Observability tools expose signals, but queries, entities, endpoints, and time windows remain environment-specific & FR1, NFR1 & C1 (end-to-end workflow adequacy); C3 (portability and deployment ease) \\
+        Create and partition datasets & Benchmark literature shows that labels, anomaly types, preprocessing, and splits affect results & FR1, FR4 & C1 (end-to-end workflow adequacy); C4 (configurability, reproducibility, and extensibility) \\
+        Integrate and configure methods & AD and RCA implementations expose different inputs, parameters, outputs, and lifecycle operations & FR3, NFR1 & C4 (configurability, reproducibility, and extensibility) \\
+        Train and preserve artefacts & Experiment-tracking practice requires runs, parameters, datasets, results, and model artefacts to remain linked & FR2, NFR3 & C1 (end-to-end workflow adequacy); C4 (configurability, reproducibility, and extensibility) \\
+        Compare operational contexts & AD benchmarks show that performance varies across datasets, anomaly types, and corruption conditions & FR4 & C1 (end-to-end workflow adequacy); C4 (configurability, reproducibility, and extensibility) \\
+        Validate on live telemetry & Offline evaluation and live inference may otherwise use different models or preprocessing paths & FR2, FR5, NFR2 & C1 (end-to-end workflow adequacy); C5 (operational overhead) \\
+        Interpret RCA evidence & RCA output depends on the trigger time, evidence modality, affected entity, and scoring method & FR3, FR5 & C2 (RCA workflow adequacy and interpretability); C4 (configurability, reproducibility, and extensibility) \\
+        Repeat or transfer an experiment & The predecessor and baseline cases expose environment-specific deployment, mapping, and configuration assumptions & NFR1, NFR3 & C3 (portability and deployment ease); C4 (configurability, reproducibility, and extensibility) \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+This mapping is a design rationale, not yet evidence that the implementation satisfies the requirements. Satisfaction is assessed through the evaluation plan in Chapter~6 and the results reported in later chapters.
+
+\section{Functional Requirements}
+The functional requirements describe the capabilities needed to move from input data to inspectable detection and diagnosis evidence without losing the context of the experiment.
+
+% OPGESOMT:
+% FR1: ondersteuning van anomaly detection over K8s metrics/logs.
+% FR2: ondersteuning voor RCA via context-visualisatie.
+% FR3: pluggable algoritme-interface (input/output specificatie).
+
+% It should suppose all sorts of telemetry sources (ties into generizability too) (e.g. naast metrics ook logs en traces bijv.)
+First, the workflow must support the ingestion, preparation, and management of telemetry datasets (FR1). Users should be able to select relevant entities and time windows, record the operational context of a dataset, and create training and test partitions without losing the relationship to the source data. The workflow should preserve enough metadata to explain which data, labels, preprocessing choices, and partitions were used in an experiment.
+
+% Visualisation/explaination mechanisms of the RCA process (e.g. making graphs/diagrams)
+Second, the workflow must support the training, storage, and later use of anomaly-detection models (FR2). A training run should remain connected to its detector, parameters, input partition, results, and produced model artefact. The same artefact should be available for comparison and live validation so that an experiment does not silently switch to a different model between stages.
+
+% Pluggability for the AI algorithms
+Third, the workflow should expose pluggable interfaces with clear input, output, and lifecycle contracts for anomaly-detection and RCA methods (FR3). New methods should be addable without rewriting the rest of the platform. The contracts should describe how data and context are passed to a method, how training and loading are performed, how detections or root causes are returned, and which metadata must be retained. This supports extensibility while making different implementations easier to execute under comparable conditions.
+
+Fourth, the workflow must support controlled comparison across models and operational contexts (FR4). It should let users compare several saved models on shared evaluation data, report familiar detection metrics where labels permit this, and make performance variation across contexts visible. The comparison should retain the identity of the model, dataset, partition, algorithm, and evaluation conditions so that an apparently better result can be interpreted rather than accepted without context.
+
+Fifth, the workflow must connect offline experimentation to live validation and RCA evidence (FR5). Users should be able to move from a prepared dataset to training and comparison, select a stored model, validate it against recent telemetry, and inspect any resulting RCA output. Each stage should make the next meaningful action clear and preserve a traceable link to the preceding artefacts. The workflow should present anomaly and RCA results together with their time range, source, configuration, and relevant service or metric context.
+
+Together, these functional requirements describe a data-to-diagnosis lifecycle rather than a collection of isolated anomaly-detection and RCA functions.
+
+\section{Non-Functional Requirements}
+Beyond functionality, the experimental workflow must satisfy non-functional requirements related to generalisability, resource usage, and reproducible deployment.
+
+% OPGESOMT:
+% NFR1: generaliseerbaar over verschillende omgevingen via mapping-config.
+% NFR2: redelijk resourcegebruik (geen onacceptabele overhead).
+% NFR3: reproduceerbaar deploymentproces (VM, container images, etc.).
+
+
+% NFR1: het moet generalizeerbaar zijn, niet hardcoded
+A first non-functional requirement concerns generalisability across datasets, workload contexts, detector implementations, and Kubernetes environments (NFR1). The workflow should not be tightly coupled to one dataset or demo application. Prometheus connections, namespaces, metric selection, dataset context, and algorithm-specific settings should therefore be configurable rather than hidden in source code. Generalisability here means that a new case can be attempted without redesigning the workflow; it does not imply that a model trained in one environment will perform equally well in another.
+
+% NFR2: Het AIOps framework mag zelf niet te veel resources opzuigen
+A second non-functional requirement is that the framework must operate with reasonable resource consumption and avoid unacceptable overhead on the monitored environment (NFR2). AIOps components that consume excessive CPU, memory or network bandwidth can interfere with normal operation and are unlikely to be acceptable in production. Therefore, the framework should be designed with efficiency in mind, for example by supporting sampling or aggregation where appropriate, by allowing the deployment of models at different resource tiers, and by monitoring its own overhead. Performance evaluations should explicitly consider the additional load introduced by the framework.
+
+% NFR3: goed/reproduceerbaar deployment proces (via Helm, VM, container images, etc.)
+A third non-functional requirement relates to the reproducibility and manageability of deployment (NFR3). To be usable in practice and comparable across studies, the framework must be deployable in a reproducible way, for example via container images, Helm charts or other infrastructure-as-code artefacts that encapsulate all required components. This is particularly important in the research context of this thesis: a reproducible deployment process enables experiments to be repeated and extended on different clusters (e.g. the original SMD/Sock Shop environment versus the Online Boutique environment) while reducing the risk that observed differences are caused by undocumented installation or configuration differences.
+
+These non-functional requirements define the quality attributes needed for the workflow to be practically usable as an experimental instrument and for its results to be interpreted responsibly.
+
+\section{Interaction and Workflow Requirements}
+Because the primary users in this study are researchers and technically oriented practitioners, the interface must support experimental work without hiding the operational meaning of the data.
+
+% Alles moet bij elkaar worden gebracht: anomaly alerts, RCA resultaten en de context (i.e. welke services, metrics, recente veranderingen, etc.)
+A central interaction requirement is that the system should make the experimental sequence visible and reduce avoidable context switches. Dataset preparation, training, comparison, live validation, and RCA should remain distinct activities, but the interface should connect them through clear continuation actions and shared experiment context. Links to specialised tools such as Prometheus and Grafana remain useful when deeper telemetry inspection is needed.
+
+% Documentatie o.a. is erg belangrijk
+Configuration should combine sensible guidance with access to technical detail. Users need to understand which data is used, which model and parameters are active, how a comparison was constructed, and why monitoring or RCA was triggered. Guided forms and validation can handle common cases, while detector manifests and adapter contracts retain the flexibility needed for custom research methods.
+
+% Potential feedback mechanisms
+Finally, the workflow should make it possible to inspect, interpret, and, where appropriate, validate anomaly and RCA outputs. More advanced feedback loops and continuous learning mechanisms are relevant directions for future work, but are outside the main scope of the present evaluation.
+
+\section{RQ2 synthesis}
+
+RQ2 asks what an end-to-end experimental workflow requires. The evidence above leads to a bounded answer. The workflow must: (1) connect telemetry to datasets with recorded operational context; (2) preserve links between partitions, configurations, training runs, results, and model artefacts; (3) provide explicit contracts for interchangeable AD and RCA methods; (4) support comparison across common data and different workload contexts; (5) reuse identifiable artefacts during live validation and retain RCA provenance; and (6) remain configurable, reproducibly deployable, and reasonably lightweight when transferred to another Kubernetes environment. The interface should connect these stages without hiding the underlying data, parameters, and limitations.
+
+FR1--FR5 express the required workflow capabilities, while NFR1--NFR3 constrain transferability, overhead, and reproducibility. The interaction requirements explain how these capabilities should be presented to the intended research and technical-practitioner audience. Together they form the design target implemented through CloudSentinel in response to RQ3.
+
+\section{Measurable evaluation criteria}
+This thesis evaluates the workflow implemented through CloudSentinel. The criteria below operationalise RQ4 and focus on whether the prototype supports the intended experimental lifecycle. Quantitative measurements are used where they answer a specific question, while several workflow qualities require structured qualitative observations.
+
+The first criterion, \textit{end-to-end experimental workflow adequacy} (C1), assesses whether a user can move through dataset creation and partitioning, model training, saved-model selection, comparison, live validation, and follow-up analysis. Relevant evidence includes successful completion of these stages, continuity between them, and whether their inputs and outputs remain inspectable.
+
+The second criterion, \textit{RCA workflow adequacy and interpretability} (C2), assesses whether the workflow can trigger RCA after an anomaly indication and preserve enough evidence to interpret the result. Evidence includes whether RCA is triggered, whether the output represents the affected service or metric, which provenance is retained, and how much additional interpretation is required. In controlled scenarios, the known intervention target can be used as a reference.
+
+The third criterion, \textit{portability and deployment ease} (C3), assesses the effort required to adapt CloudSentinel to a new environment. This includes deployment steps, changes to Prometheus endpoints or namespaces, metric mappings, data format adjustments, and technical blockers encountered during onboarding. This criterion evaluates whether the framework can be transferred beyond its original evaluation environment without extensive re-engineering.
+
+The fourth criterion, \textit{configurability, reproducibility, and extensibility} (C4), assesses how much manual work is required to configure and repeat an experiment, whether its context and artefacts can be traced, and how strongly its components are coupled. Relevant observations include custom scripts, configuration changes, provenance records, repeated execution, model-artefact handling, and the effort needed to add or replace anomaly-detection and RCA methods.
+
+The fifth criterion, \textit{operational overhead} (C5), assesses the local resource usage introduced by CloudSentinel. CPU and memory consumption are observed while the framework is idle and while it performs relevant tasks such as training, inference, or monitoring. These observations are interpreted cautiously, as the local experimental environment does not represent a production-scale deployment.
+
+This study does not attempt to establish which anomaly-detection or RCA algorithm is generally best. Algorithm outputs are assessed insofar as they enable or constrain the experimental workflow. Precision, recall, and F1-score are retained as diagnostic results when their calculation path can be verified, and comparisons are interpreted within their recorded dataset and workload context.
+
+Together, these criteria provide the basis for the evaluation design and analysis in the following chapters.
+
+
+\section{Evaluation evidence index}
+\label{app:evaluation-evidence}
+
+The raw evidence is stored in the \texttt{evaluation\_evidence} directory. Its numbered subdirectories follow the same order as the evaluation sections in Chapter~9:
+
+\begin{description}
+
+    \item[1.] \textbf{Dataset management, training, comparison, and detector integration.} The shared environment setup for evaluations 1--4, regression-test and functional-retest output, an independent score check, and the retained workflow run bundle.
+    \item[2.] \textbf{Performance and resource use.} Timing, CPU, and memory measurements for the selected workload sizes.
+    \item[3.] \textbf{Application scaling and changing pod identities.} Kubernetes state snapshots, frontend checks, Prometheus query results, Data Catalogue fetches, and the unsuccessful second-worker attempt.
+    \item[4.] \textbf{Known-fault tests in Online Boutique.} Fault timings, telemetry verification, monitoring-session output, and RCA details.
+    \item[5.] \textbf{RCAEval Train Ticket benchmark.} The frozen protocol, selected cases, feature profile, detector results, RCA rankings, and source hashes.
+    \item[6.] \textbf{NaaVRE external environment.} The read-only collection protocol, scripts, and retained aggregate results. Credentials and raw operational telemetry are not included.
+    \item[7.] \textbf{User evaluation.} Reserved for the anonymised protocol, notes, coding results, and summary after the remaining sessions have been processed.
+\end{description}
+
+This structure keeps the raw technical detail available for inspection while the main evaluation chapter presents only the evidence needed to understand each result.

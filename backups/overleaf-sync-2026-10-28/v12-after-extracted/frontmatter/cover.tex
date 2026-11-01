@@ -1,0 +1,18 @@
+\thispagestyle{empty}
+\makeatletter
+% half-title page
+\vspace*{\fill}
+\begin{flushright}
+  {\HUGE\sffamily{}\@title\par\vskip 0.5em}
+  \rule{\textwidth}{4pt}\par\vskip 0.5em\textit{\Large{\@subtitle}}
+  \par
+  \vfill
+  \if@hascoverpicture
+     \@coverpicture
+  \fi
+  \vfill
+  {\Large \@author \par}
+\end{flushright}
+\vspace*{\fill}
+\makeatother
+\cleardoublepage{}

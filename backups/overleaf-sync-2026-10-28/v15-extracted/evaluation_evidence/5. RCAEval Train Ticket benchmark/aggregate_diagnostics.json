@@ -1,0 +1,91 @@
+{
+  "case_count": 25,
+  "created_at": "2026-10-25T19:49:19.867006Z",
+  "fault_counts": {
+    "cpu": 5,
+    "delay": 5,
+    "disk": 5,
+    "loss": 5,
+    "mem": 5
+  },
+  "feature_count": 100,
+  "isolation_forest": {
+    "f1": {
+      "maximum": 0.9486404833836858,
+      "mean": 0.8591228650679844,
+      "median": 0.851063829787234,
+      "minimum": 0.7716981132075472
+    },
+    "fit_seconds": {
+      "maximum": 0.4393048960000012,
+      "mean": 0.17907448448000005,
+      "median": 0.15280822599999944,
+      "minimum": 0.12911504799999918
+    },
+    "precision": {
+      "maximum": 0.919921875,
+      "mean": 0.7718703545578048,
+      "median": 0.7539184952978056,
+      "minimum": 0.7063903281519862
+    },
+    "predict_seconds": {
+      "maximum": 0.055641568999998725,
+      "mean": 0.013546912880000015,
+      "median": 0.011135310000000231,
+      "minimum": 0.009211878999998646
+    },
+    "recall": {
+      "maximum": 1.0,
+      "mean": 0.9721731618684527,
+      "median": 0.9889196675900277,
+      "minimum": 0.8503118503118503
+    }
+  },
+  "local_outlier_factor": {
+    "f1": {
+      "maximum": 0.9968717413972888,
+      "mean": 0.8681956243008899,
+      "median": 0.8581623550401427,
+      "minimum": 0.442225392296719
+    },
+    "fit_seconds": {
+      "maximum": 0.09839606000000067,
+      "mean": 0.013226104760000102,
+      "median": 0.0037390799999998947,
+      "minimum": 0.002331278999999853
+    },
+    "precision": {
+      "maximum": 1.0,
+      "mean": 0.7984347089452076,
+      "median": 0.7515625,
+      "minimum": 0.7045454545454546
+    },
+    "predict_seconds": {
+      "maximum": 0.08367237100000047,
+      "mean": 0.008860901520000138,
+      "median": 0.003854292999999842,
+      "minimum": 0.002487891000000353
+    },
+    "recall": {
+      "maximum": 1.0,
+      "mean": 0.9692054295932412,
+      "median": 1.0,
+      "minimum": 0.32224532224532226
+    }
+  },
+  "protocol_version": "cloudsentinel-rcaeval-train-ticket/v1",
+  "repetition_counts": {
+    "1": 5,
+    "2": 5,
+    "3": 5,
+    "4": 5,
+    "5": 5
+  },
+  "root_service_counts": {
+    "ts-auth-service": 5,
+    "ts-order-service": 5,
+    "ts-route-service": 5,
+    "ts-train-service": 5,
+    "ts-travel-service": 5
+  }
+}

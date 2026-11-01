@@ -1,0 +1,40 @@
+{
+  "run_name": "Evaluation H9 F2-F5 2026-10-22",
+  "dataset": {
+    "source": "catalogue",
+    "dataset_id": "ds_317be8f795914aaaa95be455f457ba8e",
+    "version": 8,
+    "partition_id": "partition-41d83a42121a46a1bfe2a0e0535be512"
+  },
+  "detectors": [
+    {
+      "detector_id": "cgnn",
+      "parameters": {
+        "epochs": 5,
+        "lookback": 100,
+        "bs": 256,
+        "use_cuda": false,
+        "feature_importance": false,
+        "log_tensorboard": false,
+        "comment": "H9 functional evaluation 2026-10-22"
+      }
+    },
+    {
+      "detector_id": "isolation-forest",
+      "parameters": {
+        "n_estimators": 100,
+        "random_state": 42,
+        "n_jobs": 1
+      }
+    },
+    {
+      "detector_id": "local-outlier-factor",
+      "parameters": {
+        "n_neighbors": 20,
+        "metric": "minkowski",
+        "p": 2
+      }
+    }
+  ]
+}
+

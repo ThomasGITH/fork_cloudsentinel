@@ -1,0 +1,40 @@
+F4 traceability audit
+
+Starting point:
+- comparison-30e17f28be2b47088614f54c4798aae3
+
+Found directly in the comparison record:
+- evaluation dataset/version/partition and workload context;
+- evaluation feature order and its SHA-256 identity;
+- exact Saved Model IDs and detector versions;
+- pinned model artifact IDs, artifact formats, and manifest SHA-256 values;
+- model creation times and training dataset provenance snapshots;
+- per-model status, runtime, observation/prediction/anomaly counts, metrics,
+  lead-time status, and the bounded timeline.
+
+Found by following each Saved Model ID:
+- full training parameters;
+- TrainingRun ID and child ID;
+- detector source (built-in/external), runtime profile, and version;
+- training snapshot ID and checksum;
+- training dataset/version/partition, label source, partition checksum, and
+  feature-order hash;
+- inference readiness, live-input recipe identity, and training-time evaluation.
+
+Found by following the Data Catalogue record:
+- resolved PromQL queries, sampling interval, requested time range, target pods,
+  source-artifact hashes, validation result, and incident/label derivation.
+
+Not found in the public comparison/model provenance itself:
+- repository commit and deployed container-image digests;
+- host/cluster resource conditions;
+- raw model bytes and server filesystem paths (intentionally omitted);
+- an unbounded prediction/score export. The public timeline is bounded to 1,000
+  points, although all predictions were present in this 921-observation case;
+- a single self-contained record with all of the above. Training parameters and
+  resolved queries require following the model and dataset references.
+
+Result: the data-to-model-to-comparison chain was reconstructable without access
+to private storage paths, but complete experiment reproduction still requires the
+separately captured software/deployment setup record.
+

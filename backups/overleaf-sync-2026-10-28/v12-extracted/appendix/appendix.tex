@@ -1,0 +1,30 @@
+\appendix
+
+\chapter{Appendix}
+\label{ch:appendix}
+
+The appendix contains supplementary material that supports the
+methodology and results presented in this thesis. This includes the
+custom scripts used for Prometheus data collection, preprocessing,
+labelling, and offline evaluation.
+
+\section{Data-collection and evaluation scripts}
+\label{app:scripts}
+
+\subsection{Prometheus data collection and preprocessing}
+
+\lstinputlisting[
+    language=Python,
+    caption={Script used to collect Prometheus metrics, prepare training
+    and testing arrays, and generate ground-truth labels.},
+    label={lst:collect-training-data}
+]{figures/appendix/collect_training_data.py}
+
+\subsection{Offline prediction analysis}
+
+\lstinputlisting[
+    language=Python,
+    caption={Script used to align CloudSentinel prediction outputs with
+    timestamps and ground-truth labels and calculate evaluation metrics.},
+    label={lst:calculate-stats}
+]{figures/appendix/calculate_stats.py}

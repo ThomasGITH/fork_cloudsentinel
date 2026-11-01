@@ -1,0 +1,49 @@
+{
+  "cgnn_parameters": {
+    "bs": 64,
+    "dropout": 0.4,
+    "epochs": 20,
+    "feature_importance": false,
+    "init_lr": 0.001,
+    "log_tensorboard": false,
+    "lookback": 100,
+    "shuffle_dataset": true,
+    "use_cuda": true,
+    "val_split": 0.15
+  },
+  "feature_profile": "rcaeval-re1-tt-shared-100/v1",
+  "pairs": [
+    {
+      "fault": "cpu",
+      "held_out_test_repetition": 1,
+      "service": "ts-auth-service",
+      "validation_repetition": 2
+    },
+    {
+      "fault": "delay",
+      "held_out_test_repetition": 3,
+      "service": "ts-order-service",
+      "validation_repetition": 4
+    },
+    {
+      "fault": "disk",
+      "held_out_test_repetition": 5,
+      "service": "ts-route-service",
+      "validation_repetition": 1
+    },
+    {
+      "fault": "loss",
+      "held_out_test_repetition": 2,
+      "service": "ts-train-service",
+      "validation_repetition": 3
+    },
+    {
+      "fault": "mem",
+      "held_out_test_repetition": 4,
+      "service": "ts-travel-service",
+      "validation_repetition": 5
+    }
+  ],
+  "protocol_version": "cloudsentinel-rcaeval-calibrated-pairs/v2",
+  "selection_fixed_before_deployed_run": true
+}

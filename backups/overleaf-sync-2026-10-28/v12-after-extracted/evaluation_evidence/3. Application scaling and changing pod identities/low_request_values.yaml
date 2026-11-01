@@ -1,0 +1,63 @@
+# Resource override used only for the isolated topology-scaling evaluation.
+# The EC2 host has four vCPUs and already runs CloudSentinel plus the original
+# Online Boutique deployment. These lower scheduler reservations allow the
+# second deployment to be placed without changing its CPU limits.
+adService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 180Mi
+
+cartService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+
+currencyService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+
+emailService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+frontend:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+loadGenerator:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 256Mi
+
+paymentService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+
+productCatalogService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+recommendationService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 220Mi
+
+shippingService:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi

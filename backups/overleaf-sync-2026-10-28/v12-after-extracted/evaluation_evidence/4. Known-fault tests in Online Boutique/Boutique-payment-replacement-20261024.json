@@ -1,0 +1,2683 @@
+{
+  "baseline": [
+    {
+      "cycles": {
+        "items": [
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:56.237899Z",
+            "completed_at": "2026-10-24T18:17:56.224630Z",
+            "cycle_id": "cycle_cfebb48a4857079f17888bd2b057cc49",
+            "inference_window": {
+              "end": "2026-10-24T18:17:55Z",
+              "observation_count": 48,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "2ed0b5f02184a2bf67693f0ed63bf8c97644056e7e29fbcc4ab03c069c0aa623",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:55Z",
+              "start": "2026-10-24T18:17:55Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:55Z",
+              "start": "2026-10-24T18:07:55Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "next_reanalysis_not_before": "2026-10-24T18:18:08.963209Z",
+              "reason": "RCA reanalysis is rate-limited for this episode.",
+              "reason_code": "reanalysis_interval_not_elapsed",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_interval",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "5229f63ca1d15ffeb34ee3cb1cb6f1e5e394b282dbb6d7017faea94009d440c1",
+            "started_at": "2026-10-24T18:17:55.920285Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:40.893231Z",
+            "completed_at": "2026-10-24T18:17:40.880596Z",
+            "cycle_id": "cycle_4a8c5e82f63aa9465779c21248e70e5e",
+            "inference_window": {
+              "end": "2026-10-24T18:17:40Z",
+              "observation_count": 47,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "82408759b2cb9bb604e0d1c66bf72eeccaf36ae6096ca95a0699b199f3276c17",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:40Z",
+              "start": "2026-10-24T18:17:40Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:40Z",
+              "start": "2026-10-24T18:07:40Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "3ac51082174feca01f78da1775e62a123213babf62057911cd65dc87b01a890f",
+            "started_at": "2026-10-24T18:17:40.484115Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:25.451203Z",
+            "completed_at": "2026-10-24T18:17:25.432672Z",
+            "cycle_id": "cycle_a813d21679f59942bb79017bc3d6c91c",
+            "inference_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "observation_count": 46,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "0d56502d2940156cbf7f87fd2270ec05550c973e215129c2ff931c6eddb1f442",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:17:10Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:07:25Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "5475e19994dae089f284e389749157d1a3d31ba951d5669d811eb679eff47669",
+            "started_at": "2026-10-24T18:17:25.070618Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:10.034814Z",
+            "completed_at": "2026-10-24T18:17:10.017717Z",
+            "cycle_id": "cycle_20ae94cb7d312bcc51fcfac3514ca1ec",
+            "inference_window": {
+              "end": "2026-10-24T18:17:09Z",
+              "observation_count": 44,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "e55e52151b7ffffd25091c1fcf91854f8e628a50f10cfb14dd6fbad535d5793d",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:09Z",
+              "start": "2026-10-24T18:17:09Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:09Z",
+              "start": "2026-10-24T18:07:09Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "d5e9ff4c99dd650a031fd6672259d4f840824087018dde14547ea3ef993fd11e",
+            "started_at": "2026-10-24T18:17:09.479090Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:54.438297Z",
+            "completed_at": "2026-10-24T18:16:54.420091Z",
+            "cycle_id": "cycle_18920d4c2321d9a90d13d00dd8a988d2",
+            "inference_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "observation_count": 43,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "1ca86cd3d4fbd399b8a966d680d558f5a62dd66b25ffc7b9d5cfc9822f3f7022",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:16:39Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:06:54Z"
+            },
+            "rca_trigger": {
+              "episode_state": "triggered",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "e113b18bcee4e44b5d0e298160c9097b2db46bb916cde975f285b660288c89b6",
+            "started_at": "2026-10-24T18:16:54.015314Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 41,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:38.943877Z",
+            "completed_at": "2026-10-24T18:16:38.931809Z",
+            "cycle_id": "cycle_4e817ddab528a43a34e181de0e6d80c3",
+            "inference_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "5b28374398f725368c281532bf584a6dcdf4a7397d243f0ec6c80d22df81cb02",
+            "prediction_count": 41,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "first_analysis",
+              "episode_attempt_budget": 6,
+              "episode_state": "triggered",
+              "execution_attempt_number": 1,
+              "previous_run_id": null,
+              "reason_code": "first_analysis_started",
+              "run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "started",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "c5ee869ccc11596ee017ed050a0bc547946725b24d291d5106b30340c76c21f6",
+            "started_at": "2026-10-24T18:16:38.618357Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": []
+          }
+        ],
+        "page": 1,
+        "page_size": 50,
+        "pages": 1,
+        "total": 6,
+        "truncated": false
+      },
+      "provenance": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "recipe_contract": "cloudsentinel.live-input/v1",
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15
+      },
+      "rca_runs": {
+        "items": [
+          {
+            "algorithm": {
+              "configuration_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+              "id": "cloudsentinel.causal-rca/legacy-v1"
+            },
+            "analysis_input_sha256": "72c9a29668ffb3fd6b1f5e759b8a9cced853c2475cff273de9aebde8be01e0d9",
+            "analysis_kind": "first_analysis",
+            "analysis_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "requested_seconds": 600,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "completed_at": "2026-10-24T18:17:50.333093Z",
+            "context_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "cooldown_until": "2026-10-24T18:18:08.931809Z",
+            "created_at": "2026-10-24T18:16:38.959691Z",
+            "cycle_id": "cycle_4e817ddab528a43a34e181de0e6d80c3",
+            "dispatch_status": "submitted",
+            "episode_attempt_budget": 6,
+            "episode_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+            "execution_attempt_number": 1,
+            "feature_count": 44,
+            "feature_identity": {
+              "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+              "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d"
+            },
+            "graph_count": 1,
+            "input_sha256": "76258bc1cc684929dcc1532dc56efc15aea7346d867db651cfbe1f3230528df1",
+            "intent_created_at": "2026-10-24T18:16:38.963209Z",
+            "method": "cloudsentinel.causal-rca/legacy-v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "new_observation_count": 41,
+            "observation_count": 41,
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "f627dd968ad844a6064db704e8c4d1380c3c55e621b101eb6f1fcc881a086632",
+              "contract": "cloudsentinel.crca-minmax/v1"
+            },
+            "previous_analysis_end": null,
+            "previous_run_id": null,
+            "ranking_count": 44,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "result_sha256": "0c5885ed17c4a553823bb68f2605903015c2d65b30df5ba3902cf738f271ddc0",
+            "run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+            "session_id": "monitor_5f5bf0741be6473589498f5734bbddf1",
+            "started_at": "2026-10-24T18:16:39.002623Z",
+            "status": "completed",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "updated_at": "2026-10-24T18:17:50.333116Z"
+          }
+        ],
+        "page": 1,
+        "page_size": 20,
+        "pages": 1,
+        "total": 1,
+        "truncated": false
+      },
+      "session": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+        "buffered_observations": 48,
+        "created_at": "2026-10-24T18:16:38.587930Z",
+        "cycle_count": 6,
+        "detector_id": "isolation-forest",
+        "detector_version": "1.0.0",
+        "display_name": "Payment pod replacement - CausalRCA",
+        "error": null,
+        "execution_state": "available",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "iteration": 6,
+        "last_successful_update": "2026-10-24T18:17:56.237899Z",
+        "latest_cycle": {
+          "anomaly_count": 1,
+          "anomaly_percentage": 100.0,
+          "artifact_identity": {
+            "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+            "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+          },
+          "committed_at": "2026-10-24T18:17:56.237899Z",
+          "completed_at": "2026-10-24T18:17:56.224630Z",
+          "cycle_id": "cycle_cfebb48a4857079f17888bd2b057cc49",
+          "inference_window": {
+            "end": "2026-10-24T18:17:55Z",
+            "observation_count": 48,
+            "start": "2026-10-24T18:06:38Z"
+          },
+          "input_sha256": "2ed0b5f02184a2bf67693f0ed63bf8c97644056e7e29fbcc4ab03c069c0aa623",
+          "prediction_count": 1,
+          "prediction_window": {
+            "end": "2026-10-24T18:17:55Z",
+            "start": "2026-10-24T18:17:55Z"
+          },
+          "query_window": {
+            "end": "2026-10-24T18:17:55Z",
+            "start": "2026-10-24T18:07:55Z"
+          },
+          "result_sha256": "5229f63ca1d15ffeb34ee3cb1cb6f1e5e394b282dbb6d7017faea94009d440c1",
+          "started_at": "2026-10-24T18:17:55.920285Z",
+          "status": "completed",
+          "warmup_observations": 0,
+          "warnings": [
+            "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+          ]
+        },
+        "latest_result": {
+          "anomaly_count": 1,
+          "anomaly_percentage": 100.0,
+          "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+          "prediction_count": 1,
+          "status": "success",
+          "warmup_observations": 0
+        },
+        "missing_values": 0,
+        "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "poll_interval_seconds": 15,
+        "rca": {
+          "active_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+          "algorithm_config_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+          "algorithm_id": "cloudsentinel.causal-rca/legacy-v1",
+          "analysis_window_seconds": 600,
+          "attempt_count": 1,
+          "contract": "cloudsentinel.monitoring-rca/v1",
+          "cooldown_seconds": 90,
+          "cooldown_until": "2026-10-24T18:18:08.931809Z",
+          "enabled": true,
+          "episode_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+          "episode_state": "running_suppressed",
+          "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+          "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+          "input_contract": "cloudsentinel.crca-input/v1",
+          "last_analysis_end": "2026-10-24T18:16:38Z",
+          "last_input_sha256": "72c9a29668ffb3fd6b1f5e759b8a9cced853c2475cff273de9aebde8be01e0d9",
+          "last_intent_at": "2026-10-24T18:16:38.963209Z",
+          "last_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+          "last_triggered_at": "2026-10-24T18:16:38.931809Z",
+          "max_attempts_per_episode": 6,
+          "method": "cloudsentinel.causal-rca/legacy-v1",
+          "minimum_baseline_observations": 0,
+          "minimum_features": 2,
+          "minimum_observations": 2,
+          "minimum_post_change_observations": 0,
+          "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+          "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
+          "readiness": {
+            "reason": null,
+            "reason_code": null,
+            "status": "ready"
+          },
+          "reanalysis_min_interval_seconds": 90,
+          "reanalysis_min_new_observations": 4,
+          "reanalyze_within_episode": true,
+          "recovered_at": null,
+          "threshold_percentage": 50.0
+        },
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15,
+        "session_id": "monitor_5f5bf0741be6473589498f5734bbddf1",
+        "started_at": "2026-10-24T18:16:38.587930Z",
+        "status": "active",
+        "updated_at": "2026-10-24T18:17:56.274101Z",
+        "warmup_observations": 0,
+        "warnings": [
+          "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+        ],
+        "window_seconds": 600
+      }
+    },
+    {
+      "cycles": {
+        "items": [
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:56.840797Z",
+            "completed_at": "2026-10-24T18:17:56.827035Z",
+            "cycle_id": "cycle_41cc1520e0b56940aae81c3394b0009a",
+            "inference_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "observation_count": 48,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "419f27d387f7cb665a28f97dc495fabcac35d627bfc8c0196fef7145875d7de9",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "start": "2026-10-24T18:17:56Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "start": "2026-10-24T18:07:56Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_2365a178bfa6a3a4123dc94c7b643fae",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "cd42d33301bacc996cc3e20943d42e8a9ef2d11ae4dd451a31880ca35b07cf77",
+            "started_at": "2026-10-24T18:17:56.537521Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:41.489172Z",
+            "completed_at": "2026-10-24T18:17:41.472933Z",
+            "cycle_id": "cycle_6ac5aec067a084051a868832c4f13d61",
+            "inference_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "observation_count": 47,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "277d2ffbce45ab51e0583ad9d94dded3a1bf24d31b7438f1543889ea702e4026",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "start": "2026-10-24T18:17:26Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "start": "2026-10-24T18:07:41Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_b35825d1c3edffdb19da703dc6c0f40f",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "1efdec8e94d226a2a940fb408a144565e7f475d1c4ad7ef0d74cb0cbcfeb9821",
+            "started_at": "2026-10-24T18:17:41.044860Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:25.998556Z",
+            "completed_at": "2026-10-24T18:17:25.985828Z",
+            "cycle_id": "cycle_a36f82d2262c112f291ff0b9e012f30e",
+            "inference_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "observation_count": 45,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "5c036e5720441faaea98ffb501d6a9eab69aa62b01921e104fe7a1ea47492fcb",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:17:25Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:07:25Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_7f599115b8db1ad13a3b36053f7dd964",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "f6dc62fb1fb7590c98bb496e1c49cdc8a79d573927563953c18f1f5473be79f6",
+            "started_at": "2026-10-24T18:17:25.648063Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:10.610229Z",
+            "completed_at": "2026-10-24T18:17:10.596190Z",
+            "cycle_id": "cycle_32f0c1f74a89336ce93db23c699c6a0b",
+            "inference_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "observation_count": 44,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "e514cbb38087f51278d222d5af1157337219169a5d6e7fa5d641c7968d55284c",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "start": "2026-10-24T18:16:55Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "start": "2026-10-24T18:07:10Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_ba8fbf9f527dc404f0360f14128db81a",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "e3de66dc1da94dcd70625620e9bcca94a685189457e56e0128f5858eb9be458c",
+            "started_at": "2026-10-24T18:17:10.162481Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:55.119578Z",
+            "completed_at": "2026-10-24T18:16:55.105670Z",
+            "cycle_id": "cycle_00ea31c134fcba110abcfc722ba4d760",
+            "inference_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "observation_count": 42,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "737b6ba1f140f495d44a12f333de1236c603df3801b27f0ffa3f18742cbd3b67",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:16:54Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:06:54Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_17a720d5a6680f259eef194d5a0db98a",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "ab3c9d450802cc2a9c8867d89fbf39442b3b4d570da1b0b33c7e44a44644a28b",
+            "started_at": "2026-10-24T18:16:54.581004Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 1 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 41,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:39.534702Z",
+            "completed_at": "2026-10-24T18:16:39.517573Z",
+            "cycle_id": "cycle_d0f466c3221ac0e4dc7660500038317f",
+            "inference_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "2969e10063b7f75c56384e5a6ea02441080a21191d169761daf693b9507096bd",
+            "prediction_count": 41,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_602e7a6f491981f644d70e08a100048d",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "361e571d2c7f94932ffadee42941cdb84c5202c24e91ea2e49f9e39679ea53de",
+            "started_at": "2026-10-24T18:16:39.012993Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": []
+          }
+        ],
+        "page": 1,
+        "page_size": 50,
+        "pages": 1,
+        "total": 6,
+        "truncated": false
+      },
+      "provenance": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "recipe_contract": "cloudsentinel.live-input/v1",
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15
+      },
+      "rca_runs": {
+        "items": [
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:56.859648Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "observation_count": 48,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:56.858118Z",
+            "cycle_id": "cycle_41cc1520e0b56940aae81c3394b0009a",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_2365a178bfa6a3a4123dc94c7b643fae",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "start": "2026-10-24T18:17:56Z"
+            },
+            "updated_at": "2026-10-24T18:17:56.858139Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:41.515742Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "observation_count": 47,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:41.512526Z",
+            "cycle_id": "cycle_6ac5aec067a084051a868832c4f13d61",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_b35825d1c3edffdb19da703dc6c0f40f",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "start": "2026-10-24T18:17:26Z"
+            },
+            "updated_at": "2026-10-24T18:17:41.512554Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:26.016635Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "observation_count": 45,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:26.015012Z",
+            "cycle_id": "cycle_a36f82d2262c112f291ff0b9e012f30e",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_7f599115b8db1ad13a3b36053f7dd964",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:17:25Z"
+            },
+            "updated_at": "2026-10-24T18:17:26.015034Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:10.628058Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "observation_count": 44,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:10.626425Z",
+            "cycle_id": "cycle_32f0c1f74a89336ce93db23c699c6a0b",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_ba8fbf9f527dc404f0360f14128db81a",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "start": "2026-10-24T18:16:55Z"
+            },
+            "updated_at": "2026-10-24T18:17:10.626446Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:16:55.141980Z",
+            "context_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "observation_count": 42,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:16:55.138645Z",
+            "cycle_id": "cycle_00ea31c134fcba110abcfc722ba4d760",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_17a720d5a6680f259eef194d5a0db98a",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:16:54Z"
+            },
+            "updated_at": "2026-10-24T18:16:55.138681Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:16:39.557479Z",
+            "context_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:16:39.553908Z",
+            "cycle_id": "cycle_d0f466c3221ac0e4dc7660500038317f",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_602e7a6f491981f644d70e08a100048d",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "updated_at": "2026-10-24T18:16:39.553963Z"
+          }
+        ],
+        "page": 1,
+        "page_size": 20,
+        "pages": 1,
+        "total": 6,
+        "truncated": false
+      },
+      "session": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+        "buffered_observations": 48,
+        "created_at": "2026-10-24T18:16:38.655232Z",
+        "cycle_count": 6,
+        "detector_id": "isolation-forest",
+        "detector_version": "1.0.0",
+        "display_name": "Payment pod replacement - BARO",
+        "error": null,
+        "execution_state": "available",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "iteration": 6,
+        "last_successful_update": "2026-10-24T18:17:56.840797Z",
+        "latest_cycle": {
+          "anomaly_count": 1,
+          "anomaly_percentage": 100.0,
+          "artifact_identity": {
+            "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+            "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+          },
+          "committed_at": "2026-10-24T18:17:56.840797Z",
+          "completed_at": "2026-10-24T18:17:56.827035Z",
+          "cycle_id": "cycle_41cc1520e0b56940aae81c3394b0009a",
+          "inference_window": {
+            "end": "2026-10-24T18:17:56Z",
+            "observation_count": 48,
+            "start": "2026-10-24T18:06:39Z"
+          },
+          "input_sha256": "419f27d387f7cb665a28f97dc495fabcac35d627bfc8c0196fef7145875d7de9",
+          "prediction_count": 1,
+          "prediction_window": {
+            "end": "2026-10-24T18:17:56Z",
+            "start": "2026-10-24T18:17:56Z"
+          },
+          "query_window": {
+            "end": "2026-10-24T18:17:56Z",
+            "start": "2026-10-24T18:07:56Z"
+          },
+          "result_sha256": "cd42d33301bacc996cc3e20943d42e8a9ef2d11ae4dd451a31880ca35b07cf77",
+          "started_at": "2026-10-24T18:17:56.537521Z",
+          "status": "completed",
+          "warmup_observations": 0,
+          "warnings": [
+            "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+          ]
+        },
+        "latest_result": {
+          "anomaly_count": 1,
+          "anomaly_percentage": 100.0,
+          "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+          "prediction_count": 1,
+          "status": "success",
+          "warmup_observations": 0
+        },
+        "missing_values": 0,
+        "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "poll_interval_seconds": 15,
+        "rca": {
+          "active_run_id": null,
+          "algorithm_config_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+          "algorithm_id": "cloudsentinel.baro-robust-scorer/v1",
+          "analysis_window_seconds": 600,
+          "attempt_count": 0,
+          "contract": "cloudsentinel.monitoring-rca/v1",
+          "cooldown_seconds": 90,
+          "cooldown_until": null,
+          "enabled": true,
+          "episode_id": null,
+          "episode_state": "armed",
+          "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+          "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+          "input_contract": "cloudsentinel.baro-input/v1",
+          "last_analysis_end": null,
+          "last_input_sha256": null,
+          "last_intent_at": null,
+          "last_run_id": null,
+          "max_attempts_per_episode": 6,
+          "method": "cloudsentinel.baro-robust-scorer/v1",
+          "minimum_baseline_observations": 2,
+          "minimum_features": 2,
+          "minimum_observations": 4,
+          "minimum_post_change_observations": 2,
+          "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+          "preprocessing_contract": "cloudsentinel.baro-robust-scorer-raw/v1",
+          "readiness": {
+            "reason": null,
+            "reason_code": null,
+            "status": "ready"
+          },
+          "reanalysis_min_interval_seconds": 90,
+          "reanalysis_min_new_observations": 4,
+          "reanalyze_within_episode": true,
+          "recovered_at": null,
+          "threshold_percentage": 50.0
+        },
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15,
+        "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+        "started_at": "2026-10-24T18:16:38.655232Z",
+        "status": "active",
+        "updated_at": "2026-10-24T18:17:56.877351Z",
+        "warmup_observations": 0,
+        "warnings": [
+          "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+        ],
+        "window_seconds": 600
+      }
+    }
+  ],
+  "completed_at": "2026-10-24T18:21:28.068021Z",
+  "fault": {
+    "after": {
+      "creation_timestamp": "2026-10-24T18:18:14Z",
+      "ready": "True",
+      "restart_count": 0,
+      "uid": "256ede41-d3dd-4f92-b5da-160b5c60200c"
+    },
+    "apply": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "pod/paymentservice created"
+    },
+    "before": {
+      "creation_timestamp": "2026-07-20T13:33:47Z",
+      "ready": "True",
+      "restart_count": 20,
+      "uid": "1fca3e8e-38c8-42d5-8e6d-cd9b29737a04"
+    },
+    "delete": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "pod \"paymentservice\" deleted from default namespace"
+    },
+    "ended_at": "2026-10-24T18:18:28.032615Z",
+    "id": "B3-POD-REPLACEMENT",
+    "started_at": "2026-10-24T18:18:08.790366Z",
+    "target": "paymentservice"
+  },
+  "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+  "schema_version": 1,
+  "session_results": [
+    {
+      "cycles": {
+        "items": [
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:18:27.040290Z",
+            "completed_at": "2026-10-24T18:18:27.019327Z",
+            "cycle_id": "cycle_b10b6a6b334f19d6228667423627abbd",
+            "inference_window": {
+              "end": "2026-10-24T18:18:26Z",
+              "observation_count": 51,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "efdc453819c260046f1ab531d0b1534228c2d0a790b6f4c3fc2a2269296d6037",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:18:26Z",
+              "start": "2026-10-24T18:18:26Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:18:26Z",
+              "start": "2026-10-24T18:08:26Z"
+            },
+            "rca_trigger": {
+              "episode_state": "triggered",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_d162c106945e28dc440d4f1d183aa5bf",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "b7cb30dc661e762c2049f958267076b9809d0ca90ee45bd21437981b47001176",
+            "started_at": "2026-10-24T18:18:26.675721Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:18:11.598208Z",
+            "completed_at": "2026-10-24T18:18:11.585768Z",
+            "cycle_id": "cycle_b4c17bf999650ac7e6e814d893c892d7",
+            "inference_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "observation_count": 50,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "aae58befa7f4f598c8cd214a319819a7095e003f393eab156879ca7388ba803f",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "start": "2026-10-24T18:17:56Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "start": "2026-10-24T18:08:11Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "reanalysis",
+              "episode_attempt_budget": 6,
+              "episode_state": "triggered",
+              "execution_attempt_number": 2,
+              "new_observation_count": 9,
+              "next_reanalysis_not_before": "2026-10-24T18:18:08.963209Z",
+              "previous_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "reason_code": "reanalysis_started",
+              "required_new_observations": 4,
+              "run_id": "rca_d162c106945e28dc440d4f1d183aa5bf",
+              "status": "reanalysis_started",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "5d27f93cd77d2a1a391b6e100043affad5312d05a79d618456d90fb4fa39fc88",
+            "started_at": "2026-10-24T18:18:11.275647Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:56.237899Z",
+            "completed_at": "2026-10-24T18:17:56.224630Z",
+            "cycle_id": "cycle_cfebb48a4857079f17888bd2b057cc49",
+            "inference_window": {
+              "end": "2026-10-24T18:17:55Z",
+              "observation_count": 48,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "2ed0b5f02184a2bf67693f0ed63bf8c97644056e7e29fbcc4ab03c069c0aa623",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:55Z",
+              "start": "2026-10-24T18:17:55Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:55Z",
+              "start": "2026-10-24T18:07:55Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "next_reanalysis_not_before": "2026-10-24T18:18:08.963209Z",
+              "reason": "RCA reanalysis is rate-limited for this episode.",
+              "reason_code": "reanalysis_interval_not_elapsed",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_interval",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "5229f63ca1d15ffeb34ee3cb1cb6f1e5e394b282dbb6d7017faea94009d440c1",
+            "started_at": "2026-10-24T18:17:55.920285Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:40.893231Z",
+            "completed_at": "2026-10-24T18:17:40.880596Z",
+            "cycle_id": "cycle_4a8c5e82f63aa9465779c21248e70e5e",
+            "inference_window": {
+              "end": "2026-10-24T18:17:40Z",
+              "observation_count": 47,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "82408759b2cb9bb604e0d1c66bf72eeccaf36ae6096ca95a0699b199f3276c17",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:40Z",
+              "start": "2026-10-24T18:17:40Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:40Z",
+              "start": "2026-10-24T18:07:40Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "3ac51082174feca01f78da1775e62a123213babf62057911cd65dc87b01a890f",
+            "started_at": "2026-10-24T18:17:40.484115Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:25.451203Z",
+            "completed_at": "2026-10-24T18:17:25.432672Z",
+            "cycle_id": "cycle_a813d21679f59942bb79017bc3d6c91c",
+            "inference_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "observation_count": 46,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "0d56502d2940156cbf7f87fd2270ec05550c973e215129c2ff931c6eddb1f442",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:17:10Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:07:25Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "5475e19994dae089f284e389749157d1a3d31ba951d5669d811eb679eff47669",
+            "started_at": "2026-10-24T18:17:25.070618Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:10.034814Z",
+            "completed_at": "2026-10-24T18:17:10.017717Z",
+            "cycle_id": "cycle_20ae94cb7d312bcc51fcfac3514ca1ec",
+            "inference_window": {
+              "end": "2026-10-24T18:17:09Z",
+              "observation_count": 44,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "e55e52151b7ffffd25091c1fcf91854f8e628a50f10cfb14dd6fbad535d5793d",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:09Z",
+              "start": "2026-10-24T18:17:09Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:09Z",
+              "start": "2026-10-24T18:07:09Z"
+            },
+            "rca_trigger": {
+              "episode_state": "running_suppressed",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "d5e9ff4c99dd650a031fd6672259d4f840824087018dde14547ea3ef993fd11e",
+            "started_at": "2026-10-24T18:17:09.479090Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:54.438297Z",
+            "completed_at": "2026-10-24T18:16:54.420091Z",
+            "cycle_id": "cycle_18920d4c2321d9a90d13d00dd8a988d2",
+            "inference_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "observation_count": 43,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "1ca86cd3d4fbd399b8a966d680d558f5a62dd66b25ffc7b9d5cfc9822f3f7022",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:16:39Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:06:54Z"
+            },
+            "rca_trigger": {
+              "episode_state": "triggered",
+              "reason": "Another RCA run is already queued or running.",
+              "reason_code": "rca_run_active",
+              "related_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "suppressed_running",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "e113b18bcee4e44b5d0e298160c9097b2db46bb916cde975f285b660288c89b6",
+            "started_at": "2026-10-24T18:16:54.015314Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 41,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:38.943877Z",
+            "completed_at": "2026-10-24T18:16:38.931809Z",
+            "cycle_id": "cycle_4e817ddab528a43a34e181de0e6d80c3",
+            "inference_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "input_sha256": "5b28374398f725368c281532bf584a6dcdf4a7397d243f0ec6c80d22df81cb02",
+            "prediction_count": 41,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "first_analysis",
+              "episode_attempt_budget": 6,
+              "episode_state": "triggered",
+              "execution_attempt_number": 1,
+              "previous_run_id": null,
+              "reason_code": "first_analysis_started",
+              "run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+              "status": "started",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "c5ee869ccc11596ee017ed050a0bc547946725b24d291d5106b30340c76c21f6",
+            "started_at": "2026-10-24T18:16:38.618357Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": []
+          }
+        ],
+        "page": 1,
+        "page_size": 50,
+        "pages": 1,
+        "total": 8,
+        "truncated": false
+      },
+      "provenance": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "recipe_contract": "cloudsentinel.live-input/v1",
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15
+      },
+      "rca_runs": {
+        "items": [
+          {
+            "algorithm": {
+              "configuration_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+              "id": "cloudsentinel.causal-rca/legacy-v1"
+            },
+            "analysis_input_sha256": "7c1a3b7e8ff7c1eee03ef416792474817af1f6e080408d20c5dc2694ad1bfbac",
+            "analysis_kind": "reanalysis",
+            "analysis_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "requested_seconds": 600,
+              "start": "2026-10-24T18:08:23Z"
+            },
+            "completed_at": "2026-10-24T18:19:22.087795Z",
+            "context_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "observation_count": 50,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "cooldown_until": "2026-10-24T18:19:41.585768Z",
+            "created_at": "2026-10-24T18:18:11.614676Z",
+            "cycle_id": "cycle_b4c17bf999650ac7e6e814d893c892d7",
+            "dispatch_status": "submitted",
+            "episode_attempt_budget": 6,
+            "episode_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+            "execution_attempt_number": 2,
+            "feature_count": 44,
+            "feature_identity": {
+              "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+              "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d"
+            },
+            "graph_count": 1,
+            "input_sha256": "b548c2830340f5cdd9464578c302bf2b21784554078dbcde72ba703b38eb2a09",
+            "intent_created_at": "2026-10-24T18:18:11.617911Z",
+            "method": "cloudsentinel.causal-rca/legacy-v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "new_observation_count": 9,
+            "observation_count": 43,
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "f627dd968ad844a6064db704e8c4d1380c3c55e621b101eb6f1fcc881a086632",
+              "contract": "cloudsentinel.crca-minmax/v1"
+            },
+            "previous_analysis_end": "2026-10-24T18:16:38Z",
+            "previous_run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+            "ranking_count": 44,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "result_sha256": "033870983615ad323aee8c35fdbba5a934abf9b52fefa52707c675ea435a8498",
+            "run_id": "rca_d162c106945e28dc440d4f1d183aa5bf",
+            "session_id": "monitor_5f5bf0741be6473589498f5734bbddf1",
+            "started_at": "2026-10-24T18:18:11.668359Z",
+            "status": "completed",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "start": "2026-10-24T18:17:56Z"
+            },
+            "updated_at": "2026-10-24T18:19:22.087820Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+              "id": "cloudsentinel.causal-rca/legacy-v1"
+            },
+            "analysis_input_sha256": "72c9a29668ffb3fd6b1f5e759b8a9cced853c2475cff273de9aebde8be01e0d9",
+            "analysis_kind": "first_analysis",
+            "analysis_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "requested_seconds": 600,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "completed_at": "2026-10-24T18:17:50.333093Z",
+            "context_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "cooldown_until": "2026-10-24T18:18:08.931809Z",
+            "created_at": "2026-10-24T18:16:38.959691Z",
+            "cycle_id": "cycle_4e817ddab528a43a34e181de0e6d80c3",
+            "dispatch_status": "submitted",
+            "episode_attempt_budget": 6,
+            "episode_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+            "execution_attempt_number": 1,
+            "feature_count": 44,
+            "feature_identity": {
+              "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+              "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d"
+            },
+            "graph_count": 1,
+            "input_sha256": "76258bc1cc684929dcc1532dc56efc15aea7346d867db651cfbe1f3230528df1",
+            "intent_created_at": "2026-10-24T18:16:38.963209Z",
+            "method": "cloudsentinel.causal-rca/legacy-v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "new_observation_count": 41,
+            "observation_count": 41,
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "f627dd968ad844a6064db704e8c4d1380c3c55e621b101eb6f1fcc881a086632",
+              "contract": "cloudsentinel.crca-minmax/v1"
+            },
+            "previous_analysis_end": null,
+            "previous_run_id": null,
+            "ranking_count": 44,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "result_sha256": "0c5885ed17c4a553823bb68f2605903015c2d65b30df5ba3902cf738f271ddc0",
+            "run_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+            "session_id": "monitor_5f5bf0741be6473589498f5734bbddf1",
+            "started_at": "2026-10-24T18:16:39.002623Z",
+            "status": "completed",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:16:38Z",
+              "start": "2026-10-24T18:06:38Z"
+            },
+            "updated_at": "2026-10-24T18:17:50.333116Z"
+          }
+        ],
+        "page": 1,
+        "page_size": 20,
+        "pages": 1,
+        "total": 2,
+        "truncated": false
+      },
+      "session": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "buffered_observations": 51,
+        "completed_at": "2026-10-24T18:18:42.177737Z",
+        "created_at": "2026-10-24T18:16:38.587930Z",
+        "cycle_count": 8,
+        "detector_id": "isolation-forest",
+        "detector_version": "1.0.0",
+        "display_name": "Payment pod replacement - CausalRCA",
+        "error": {
+          "message": "live window contains 1 missing values; the pinned policy rejects it",
+          "type": "monitoring_error"
+        },
+        "execution_state": "unavailable",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "last_successful_update": "2026-10-24T18:18:27.040290Z",
+        "latest_cycle": {
+          "anomaly_count": 1,
+          "anomaly_percentage": 100.0,
+          "artifact_identity": {
+            "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+            "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+          },
+          "committed_at": "2026-10-24T18:18:27.040290Z",
+          "completed_at": "2026-10-24T18:18:27.019327Z",
+          "cycle_id": "cycle_b10b6a6b334f19d6228667423627abbd",
+          "inference_window": {
+            "end": "2026-10-24T18:18:26Z",
+            "observation_count": 51,
+            "start": "2026-10-24T18:06:38Z"
+          },
+          "prediction_count": 1,
+          "prediction_window": {
+            "end": "2026-10-24T18:18:26Z",
+            "start": "2026-10-24T18:18:26Z"
+          },
+          "query_window": {
+            "end": "2026-10-24T18:18:26Z",
+            "start": "2026-10-24T18:08:26Z"
+          },
+          "started_at": "2026-10-24T18:18:26.675721Z",
+          "status": "completed",
+          "warmup_observations": 0,
+          "warnings": [
+            "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+          ]
+        },
+        "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "poll_interval_seconds": 15,
+        "rca": {
+          "active_run_id": "rca_d162c106945e28dc440d4f1d183aa5bf",
+          "algorithm_config_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+          "algorithm_id": "cloudsentinel.causal-rca/legacy-v1",
+          "analysis_window_seconds": 600,
+          "attempt_count": 2,
+          "contract": "cloudsentinel.monitoring-rca/v1",
+          "cooldown_seconds": 90,
+          "cooldown_until": "2026-10-24T18:19:41.585768Z",
+          "enabled": true,
+          "episode_id": "rca_6cfb43e8e454711e2e46dfd791fe4583",
+          "episode_state": "running_suppressed",
+          "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+          "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+          "input_contract": "cloudsentinel.crca-input/v1",
+          "last_analysis_end": "2026-10-24T18:18:11Z",
+          "last_input_sha256": "7c1a3b7e8ff7c1eee03ef416792474817af1f6e080408d20c5dc2694ad1bfbac",
+          "last_intent_at": "2026-10-24T18:18:11.617911Z",
+          "last_run_id": "rca_d162c106945e28dc440d4f1d183aa5bf",
+          "last_triggered_at": "2026-10-24T18:18:11.585768Z",
+          "max_attempts_per_episode": 6,
+          "method": "cloudsentinel.causal-rca/legacy-v1",
+          "minimum_baseline_observations": 0,
+          "minimum_features": 2,
+          "minimum_observations": 2,
+          "minimum_post_change_observations": 0,
+          "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+          "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
+          "readiness": {
+            "reason": null,
+            "reason_code": null,
+            "status": "ready"
+          },
+          "reanalysis_min_interval_seconds": 90,
+          "reanalysis_min_new_observations": 4,
+          "reanalyze_within_episode": true,
+          "recovered_at": null,
+          "threshold_percentage": 50.0
+        },
+        "sampling_interval_seconds": 15,
+        "session_id": "monitor_5f5bf0741be6473589498f5734bbddf1",
+        "started_at": "2026-10-24T18:16:38.587930Z",
+        "status": "failed",
+        "updated_at": "2026-10-24T18:18:42.177748Z",
+        "warmup_observations": 0,
+        "warnings": [
+          "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+        ],
+        "window_seconds": 600
+      }
+    },
+    {
+      "cycles": {
+        "items": [
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:18:27.791143Z",
+            "completed_at": "2026-10-24T18:18:27.775212Z",
+            "cycle_id": "cycle_d7d800fb1cdca944a332e4d3dbbbe38c",
+            "inference_window": {
+              "end": "2026-10-24T18:18:27Z",
+              "observation_count": 51,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "ad8d87128ade784003f6b001f5f2b0780112132ae9be5c5ed63d69f3e83ad443",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:18:27Z",
+              "start": "2026-10-24T18:18:12Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:18:27Z",
+              "start": "2026-10-24T18:08:27Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_6127a574a5c54e3fd2e7b34c30d75d07",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "b5cfbc806e8c0d8e82122a170d9d8208da3187773794738bbf5b41e9bdc64d0b",
+            "started_at": "2026-10-24T18:18:27.303857Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:18:12.250119Z",
+            "completed_at": "2026-10-24T18:18:12.237052Z",
+            "cycle_id": "cycle_133e5c8a6fe2ac1bc6392231e712c101",
+            "inference_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "observation_count": 49,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "bb360099a8e899dcda542a044a8122b746bba51f5859ca48caa05263e45f6166",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "start": "2026-10-24T18:18:11Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "start": "2026-10-24T18:08:11Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_4fd885d9bb88d8f89dbee4a11f285e3e",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "910d98029ece0e1f221f16b4e2cf15747f07bbdc03f52ab37c8f1328d7fc6b6e",
+            "started_at": "2026-10-24T18:18:11.879998Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 38 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:56.840797Z",
+            "completed_at": "2026-10-24T18:17:56.827035Z",
+            "cycle_id": "cycle_41cc1520e0b56940aae81c3394b0009a",
+            "inference_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "observation_count": 48,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "419f27d387f7cb665a28f97dc495fabcac35d627bfc8c0196fef7145875d7de9",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "start": "2026-10-24T18:17:56Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "start": "2026-10-24T18:07:56Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_2365a178bfa6a3a4123dc94c7b643fae",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "cd42d33301bacc996cc3e20943d42e8a9ef2d11ae4dd451a31880ca35b07cf77",
+            "started_at": "2026-10-24T18:17:56.537521Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:41.489172Z",
+            "completed_at": "2026-10-24T18:17:41.472933Z",
+            "cycle_id": "cycle_6ac5aec067a084051a868832c4f13d61",
+            "inference_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "observation_count": 47,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "277d2ffbce45ab51e0583ad9d94dded3a1bf24d31b7438f1543889ea702e4026",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "start": "2026-10-24T18:17:26Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "start": "2026-10-24T18:07:41Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_b35825d1c3edffdb19da703dc6c0f40f",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "1efdec8e94d226a2a940fb408a144565e7f475d1c4ad7ef0d74cb0cbcfeb9821",
+            "started_at": "2026-10-24T18:17:41.044860Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:25.998556Z",
+            "completed_at": "2026-10-24T18:17:25.985828Z",
+            "cycle_id": "cycle_a36f82d2262c112f291ff0b9e012f30e",
+            "inference_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "observation_count": 45,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "5c036e5720441faaea98ffb501d6a9eab69aa62b01921e104fe7a1ea47492fcb",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:17:25Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:07:25Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_7f599115b8db1ad13a3b36053f7dd964",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "f6dc62fb1fb7590c98bb496e1c49cdc8a79d573927563953c18f1f5473be79f6",
+            "started_at": "2026-10-24T18:17:25.648063Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 2,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:17:10.610229Z",
+            "completed_at": "2026-10-24T18:17:10.596190Z",
+            "cycle_id": "cycle_32f0c1f74a89336ce93db23c699c6a0b",
+            "inference_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "observation_count": 44,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "e514cbb38087f51278d222d5af1157337219169a5d6e7fa5d641c7968d55284c",
+            "prediction_count": 2,
+            "prediction_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "start": "2026-10-24T18:16:55Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "start": "2026-10-24T18:07:10Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_ba8fbf9f527dc404f0360f14128db81a",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "e3de66dc1da94dcd70625620e9bcca94a685189457e56e0128f5858eb9be458c",
+            "started_at": "2026-10-24T18:17:10.162481Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 1,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:55.119578Z",
+            "completed_at": "2026-10-24T18:16:55.105670Z",
+            "cycle_id": "cycle_00ea31c134fcba110abcfc722ba4d760",
+            "inference_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "observation_count": 42,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "737b6ba1f140f495d44a12f333de1236c603df3801b27f0ffa3f18742cbd3b67",
+            "prediction_count": 1,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:16:54Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:06:54Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_17a720d5a6680f259eef194d5a0db98a",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "ab3c9d450802cc2a9c8867d89fbf39442b3b4d570da1b0b33c7e44a44644a28b",
+            "started_at": "2026-10-24T18:16:54.581004Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": [
+              "Ignored 1 late or revised sample(s) at or before the committed prediction watermark."
+            ]
+          },
+          {
+            "anomaly_count": 41,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+            },
+            "committed_at": "2026-10-24T18:16:39.534702Z",
+            "completed_at": "2026-10-24T18:16:39.517573Z",
+            "cycle_id": "cycle_d0f466c3221ac0e4dc7660500038317f",
+            "inference_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "input_sha256": "2969e10063b7f75c56384e5a6ea02441080a21191d169761daf693b9507096bd",
+            "prediction_count": 41,
+            "prediction_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "preflight_skip",
+              "episode_state": "armed",
+              "execution_attempt_number": 0,
+              "reason": "BARO requires more baseline observations before the detected change point.",
+              "reason_code": "insufficient_baro_baseline",
+              "run_id": "rca_602e7a6f491981f644d70e08a100048d",
+              "status": "skipped",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "361e571d2c7f94932ffadee42941cdb84c5202c24e91ea2e49f9e39679ea53de",
+            "started_at": "2026-10-24T18:16:39.012993Z",
+            "status": "completed",
+            "warmup_observations": 0,
+            "warnings": []
+          }
+        ],
+        "page": 1,
+        "page_size": 50,
+        "pages": 1,
+        "total": 8,
+        "truncated": false
+      },
+      "provenance": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "recipe_contract": "cloudsentinel.live-input/v1",
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15
+      },
+      "rca_runs": {
+        "items": [
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:18:27.817602Z",
+            "context_window": {
+              "end": "2026-10-24T18:18:27Z",
+              "observation_count": 51,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:18:27.814148Z",
+            "cycle_id": "cycle_d7d800fb1cdca944a332e4d3dbbbe38c",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_6127a574a5c54e3fd2e7b34c30d75d07",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:18:27Z",
+              "start": "2026-10-24T18:18:12Z"
+            },
+            "updated_at": "2026-10-24T18:18:27.814182Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:18:12.277628Z",
+            "context_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "observation_count": 49,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:18:12.275065Z",
+            "cycle_id": "cycle_133e5c8a6fe2ac1bc6392231e712c101",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_4fd885d9bb88d8f89dbee4a11f285e3e",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:18:11Z",
+              "start": "2026-10-24T18:18:11Z"
+            },
+            "updated_at": "2026-10-24T18:18:12.275093Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:56.859648Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "observation_count": 48,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:56.858118Z",
+            "cycle_id": "cycle_41cc1520e0b56940aae81c3394b0009a",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_2365a178bfa6a3a4123dc94c7b643fae",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:56Z",
+              "start": "2026-10-24T18:17:56Z"
+            },
+            "updated_at": "2026-10-24T18:17:56.858139Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:41.515742Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "observation_count": 47,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:41.512526Z",
+            "cycle_id": "cycle_6ac5aec067a084051a868832c4f13d61",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_b35825d1c3edffdb19da703dc6c0f40f",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:41Z",
+              "start": "2026-10-24T18:17:26Z"
+            },
+            "updated_at": "2026-10-24T18:17:41.512554Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:26.016635Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "observation_count": 45,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:26.015012Z",
+            "cycle_id": "cycle_a36f82d2262c112f291ff0b9e012f30e",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_7f599115b8db1ad13a3b36053f7dd964",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:25Z",
+              "start": "2026-10-24T18:17:25Z"
+            },
+            "updated_at": "2026-10-24T18:17:26.015034Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:17:10.628058Z",
+            "context_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "observation_count": 44,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:17:10.626425Z",
+            "cycle_id": "cycle_32f0c1f74a89336ce93db23c699c6a0b",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_ba8fbf9f527dc404f0360f14128db81a",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:17:10Z",
+              "start": "2026-10-24T18:16:55Z"
+            },
+            "updated_at": "2026-10-24T18:17:10.626446Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:16:55.141980Z",
+            "context_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "observation_count": 42,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:16:55.138645Z",
+            "cycle_id": "cycle_00ea31c134fcba110abcfc722ba4d760",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_17a720d5a6680f259eef194d5a0db98a",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:16:54Z",
+              "start": "2026-10-24T18:16:54Z"
+            },
+            "updated_at": "2026-10-24T18:16:55.138681Z"
+          },
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_kind": "preflight_skip",
+            "completed_at": "2026-10-24T18:16:39.557479Z",
+            "context_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "observation_count": 41,
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "created_at": "2026-10-24T18:16:39.553908Z",
+            "cycle_id": "cycle_d0f466c3221ac0e4dc7660500038317f",
+            "dispatch_status": "pending",
+            "episode_attempt_budget": 6,
+            "episode_id": null,
+            "execution_attempt_number": 0,
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+              "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+              "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402"
+            },
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_run_id": null,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "run_id": "rca_602e7a6f491981f644d70e08a100048d",
+            "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+            "skip_reason": "BARO requires more baseline observations before the detected change point.",
+            "skip_reason_code": "insufficient_baro_baseline",
+            "status": "skipped",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T18:16:39Z",
+              "start": "2026-10-24T18:06:39Z"
+            },
+            "updated_at": "2026-10-24T18:16:39.553963Z"
+          }
+        ],
+        "page": 1,
+        "page_size": 20,
+        "pages": 1,
+        "total": 8,
+        "truncated": false
+      },
+      "session": {
+        "artifact_format": "sklearn-pipeline-joblib-v1",
+        "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "buffered_observations": 51,
+        "completed_at": "2026-10-24T18:18:42.942505Z",
+        "created_at": "2026-10-24T18:16:38.655232Z",
+        "cycle_count": 8,
+        "detector_id": "isolation-forest",
+        "detector_version": "1.0.0",
+        "display_name": "Payment pod replacement - BARO",
+        "error": {
+          "message": "live window contains 1 missing values; the pinned policy rejects it",
+          "type": "monitoring_error"
+        },
+        "execution_state": "unavailable",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "last_successful_update": "2026-10-24T18:18:27.791143Z",
+        "latest_cycle": {
+          "anomaly_count": 2,
+          "anomaly_percentage": 100.0,
+          "artifact_identity": {
+            "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+            "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77"
+          },
+          "committed_at": "2026-10-24T18:18:27.791143Z",
+          "completed_at": "2026-10-24T18:18:27.775212Z",
+          "cycle_id": "cycle_d7d800fb1cdca944a332e4d3dbbbe38c",
+          "inference_window": {
+            "end": "2026-10-24T18:18:27Z",
+            "observation_count": 51,
+            "start": "2026-10-24T18:06:39Z"
+          },
+          "prediction_count": 2,
+          "prediction_window": {
+            "end": "2026-10-24T18:18:27Z",
+            "start": "2026-10-24T18:18:12Z"
+          },
+          "query_window": {
+            "end": "2026-10-24T18:18:27Z",
+            "start": "2026-10-24T18:08:27Z"
+          },
+          "started_at": "2026-10-24T18:18:27.303857Z",
+          "status": "completed",
+          "warmup_observations": 0,
+          "warnings": [
+            "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+          ]
+        },
+        "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+        "poll_interval_seconds": 15,
+        "rca": {
+          "active_run_id": null,
+          "algorithm_config_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+          "algorithm_id": "cloudsentinel.baro-robust-scorer/v1",
+          "analysis_window_seconds": 600,
+          "attempt_count": 0,
+          "contract": "cloudsentinel.monitoring-rca/v1",
+          "cooldown_seconds": 90,
+          "cooldown_until": null,
+          "enabled": true,
+          "episode_id": null,
+          "episode_state": "armed",
+          "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+          "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+          "input_contract": "cloudsentinel.baro-input/v1",
+          "last_analysis_end": null,
+          "last_input_sha256": null,
+          "last_intent_at": null,
+          "last_run_id": null,
+          "max_attempts_per_episode": 6,
+          "method": "cloudsentinel.baro-robust-scorer/v1",
+          "minimum_baseline_observations": 2,
+          "minimum_features": 2,
+          "minimum_observations": 4,
+          "minimum_post_change_observations": 2,
+          "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+          "preprocessing_contract": "cloudsentinel.baro-robust-scorer-raw/v1",
+          "readiness": {
+            "reason": null,
+            "reason_code": null,
+            "status": "ready"
+          },
+          "reanalysis_min_interval_seconds": 90,
+          "reanalysis_min_new_observations": 4,
+          "reanalyze_within_episode": true,
+          "recovered_at": null,
+          "threshold_percentage": 50.0
+        },
+        "sampling_interval_seconds": 15,
+        "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+        "started_at": "2026-10-24T18:16:38.655232Z",
+        "status": "failed",
+        "updated_at": "2026-10-24T18:18:42.942528Z",
+        "warmup_observations": 0,
+        "warnings": [
+          "Ignored 39 late or revised sample(s) at or before the committed prediction watermark."
+        ],
+        "window_seconds": 600
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "artifact_format": "sklearn-pipeline-joblib-v1",
+      "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+      "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+      "buffered_observations": 0,
+      "created_at": "2026-10-24T18:16:38.587930Z",
+      "detector_id": "isolation-forest",
+      "detector_version": "1.0.0",
+      "display_name": "Payment pod replacement - CausalRCA",
+      "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+      "inference_contract": "cloudsentinel.inference/v1",
+      "iteration": 0,
+      "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+      "poll_interval_seconds": 15,
+      "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+      "sampling_interval_seconds": 15,
+      "session_id": "monitor_5f5bf0741be6473589498f5734bbddf1",
+      "started_at": "2026-10-24T18:16:38.587930Z",
+      "status": "queued",
+      "updated_at": "2026-10-24T18:16:38.616415Z",
+      "window_seconds": 600
+    },
+    {
+      "artifact_format": "sklearn-pipeline-joblib-v1",
+      "artifact_id": "artifact_run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+      "artifact_manifest_sha256": "65d82d3abeed5cd603355a4a061dc860354251f832a5c331b78d7c00a1e4ee77",
+      "buffered_observations": 0,
+      "created_at": "2026-10-24T18:16:38.655232Z",
+      "detector_id": "isolation-forest",
+      "detector_version": "1.0.0",
+      "display_name": "Payment pod replacement - BARO",
+      "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+      "inference_contract": "cloudsentinel.inference/v1",
+      "iteration": 0,
+      "model_id": "run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402",
+      "poll_interval_seconds": 15,
+      "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+      "sampling_interval_seconds": 15,
+      "session_id": "monitor_7834e53bd8d14f79b53380c6edc28b2e",
+      "started_at": "2026-10-24T18:16:38.655232Z",
+      "status": "queued",
+      "updated_at": "2026-10-24T18:16:38.675754Z",
+      "window_seconds": 600
+    }
+  ],
+  "started_at": "2026-10-24T18:16:36.531853Z",
+  "stopped_at": "2026-10-24T18:21:28.118068Z"
+}

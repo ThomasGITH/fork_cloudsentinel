@@ -1,0 +1,52 @@
+{
+  "re1tt_ts-auth-service_cpu_1": {
+    "canonical_sha256": "8546f50de5899f106ebc8080aedc28b68ca1814b02d8f1711562c8fb2736fa0b",
+    "inject_time_sha256": "1b922e31c96d959d595e695a827a7d04033df8d731b31ff6ec5b2958bbd751b1",
+    "metrics_sha256": "15dd9821d1091e525429fd912411fc6202a1b386f284a06ac4ff8e8d5830e4f7"
+  },
+  "re1tt_ts-auth-service_cpu_2": {
+    "canonical_sha256": "5814176f1d420310e9f42d5401598afdb48c00e7024710d61d4a62f53fd3eef8",
+    "inject_time_sha256": "8fdf57c6e1c9ce7e7cf0f8e8a7d43e15a7809de8fb7a407bd05bd28512fa2ddb",
+    "metrics_sha256": "7fbee835ac5a4d998390ef541cb9ba52613f17bc274ce35c4a90d66c66970f3c"
+  },
+  "re1tt_ts-order-service_delay_3": {
+    "canonical_sha256": "fe8bfc396b6e8736fc5aa869f15d8a3f938c03dfb3302d5049529bd133688e14",
+    "inject_time_sha256": "5db3be5688248e7fb90d23f6c36843e1f4b743561ef7a95da06db6e565cb0af9",
+    "metrics_sha256": "094e934afd89c58d1785e5714640c5c5a840d95f630c7b3c37f6dc62b940f50f"
+  },
+  "re1tt_ts-order-service_delay_4": {
+    "canonical_sha256": "cfc6a4e54ef08a0a999edd2860a0ba13125aa3fee350dcb046bde9c0b08be239",
+    "inject_time_sha256": "189d11d0ca3a58e331d0152eeb171a59ff11a1e0d2dfc84a884533f583ef8131",
+    "metrics_sha256": "daf15dfef86c65df577b75f64fa79a5309d54df3af4d9fe5127ad04aea16c10c"
+  },
+  "re1tt_ts-route-service_disk_1": {
+    "canonical_sha256": "7a03048116559edfa86fb3b1dbc516078a8e214491d4242ef8fb5a9d16eb503d",
+    "inject_time_sha256": "99bd011009690207817a0b20892f5108d01949fe5f2e4b212aaedc8e3609ea18",
+    "metrics_sha256": "052c7f9c906ebb414627011cb411856d2399ee4625922af8c803fcbfd4858f7a"
+  },
+  "re1tt_ts-route-service_disk_5": {
+    "canonical_sha256": "400db80da1265f6a96fd5ffa4136cf3b644939b09251cd46d615e02da7003d83",
+    "inject_time_sha256": "8c57098c249ac566e3e64fad935431294f44f2799c7f6c800a2aec5392f1e9bb",
+    "metrics_sha256": "1f4b4a8d40e9af2b76c9309f8291e4b92c1d0bb7e3ff4a90e4af0d608b8b02d9"
+  },
+  "re1tt_ts-train-service_loss_2": {
+    "canonical_sha256": "1d040fc753104eb32cd0cafb6b8d4844894e104a3b05b42d4cccbc1cf1b36c01",
+    "inject_time_sha256": "2bb51ef580c46bc06371ab4873b9d8d70ec67931bc64e1981bc61ccbfba04565",
+    "metrics_sha256": "caec0c86d9ff2cd426d4884dd0f993dc86c6e0df702c7aa5594b7cc5a77672c3"
+  },
+  "re1tt_ts-train-service_loss_3": {
+    "canonical_sha256": "5e0b3e0dbdaa7bf939ca346ef3167a33c7f0ac5efe03e60c3a8e3b6075266762",
+    "inject_time_sha256": "042555ced398958d12f725e0e0719044ed9cf484a2b2772b69b6659cef2d7d2c",
+    "metrics_sha256": "45655e4ddd7fa57109a8da05526339b64753824a8873a2f679a7d70775bfcdd6"
+  },
+  "re1tt_ts-travel-service_mem_4": {
+    "canonical_sha256": "8988b582f388446c16030c31c406653f06591ee2cd783c874ac2938e14e90909",
+    "inject_time_sha256": "091977b0b36fdf798909a37719308cfdbfc6543f5a5adf8b6ed6e57967ebf1c1",
+    "metrics_sha256": "bfe2dea8cfdd011d3f614b331a11fd63291dd4a3d072eebe0440d4c5e23abc4c"
+  },
+  "re1tt_ts-travel-service_mem_5": {
+    "canonical_sha256": "e7a4e241ef28e9299c84279a7162471e4504f68abe83bcaad6489ed39115efb5",
+    "inject_time_sha256": "5f385f5e598a292c50b0692ac7a3cd41f586b16b614cbf03714c8165434a82c4",
+    "metrics_sha256": "b5b0ab534b2f407532e9c78d7f1ca86c326d92bbdb8991f7014283396bec0d77"
+  }
+}

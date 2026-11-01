@@ -1,0 +1,23 @@
+F1 stored-data versus Prometheus spot check
+Run ID: H9-F1-20261022T1455Z
+Executed: 2026-10-22
+
+Dataset: user-eval-normal-operation-20261020, version 1
+Feature: mem_usage|pod=checkoutservice
+Sampling interval: 15 seconds
+Query:
+sum by (pod) (container_memory_usage_bytes{namespace="default", pod!~"loadgenerator-.*", container!="POD", pod!=""})
+
+Timestamp (UTC)              Stored dataset    Prometheus replay   Absolute difference
+2026-10-20T18:05:00Z        20586496.0        20586496            0.0
+2026-10-20T19:00:00Z        20578304.0        20578304            0.0
+2026-10-20T19:55:00Z        20455424.0        20455424            0.0
+
+Method: the values were read from the catalogue's canonical observations artifact.
+The exact stored resolved query was reissued to the same Prometheus source over the
+historical interval with a 15-second step, and the checkoutservice series was selected.
+
+Interpretation boundary: these three exact matches provide a spot check of query,
+timestamp, series mapping, and persistence for one memory feature. They do not prove
+that all 481 rows or all 44 features in the dataset are correct.
+

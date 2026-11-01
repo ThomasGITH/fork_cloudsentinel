@@ -1,0 +1,65 @@
+label=A1
+captured_at=20261026T143402Z
+
+== Nodes ==
+NAME       STATUS   ROLES           AGE    VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION   CONTAINER-RUNTIME
+minikube   Ready    control-plane   131d   v1.35.1   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   7.0.0-1012-aws   docker://29.2.1
+
+== Deployments ==
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                       SELECTOR
+adservice               1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice:v0.10.5               app=adservice
+cartservice             1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/cartservice:v0.10.5             app=cartservice
+currencyservice         1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice:v0.10.5         app=currencyservice
+emailservice            1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/emailservice:v0.10.5            app=emailservice
+frontend                1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/frontend:v0.10.5                app=frontend
+loadgenerator           0/0     0            0           16m   main         us-central1-docker.pkg.dev/google-samples/microservices-demo/loadgenerator:v0.10.5           app=loadgenerator
+paymentservice          1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice:v0.10.5          app=paymentservice
+productcatalogservice   1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice:v0.10.5   app=productcatalogservice
+recommendationservice   1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice:v0.10.5   app=recommendationservice
+redis-cart              1/1     1            1           16m   redis        redis:alpine@sha256:c5e375abb885e6b2021c0377879e4890bf76f9065b8922ffc113f2b226b9fc17         app=redis-cart
+shippingservice         1/1     1            1           16m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice:v0.10.5         app=shippingservice
+
+== Pods ==
+NAME                                     READY   STATUS    RESTARTS   AGE     IP             NODE       NOMINATED NODE   READINESS GATES
+adservice-8684d7c6fb-sghj6               1/1     Running   0          9m50s   10.244.1.230   minikube   <none>           <none>
+cartservice-948d4dd4b-g28l5              1/1     Running   0          9m50s   10.244.1.235   minikube   <none>           <none>
+checkoutservice                          1/1     Running   0          16m     10.244.1.225   minikube   <none>           <none>
+currencyservice-84b6f85765-dj842         1/1     Running   0          9m50s   10.244.1.232   minikube   <none>           <none>
+emailservice-6f9bd444c5-smzn2            1/1     Running   0          2m32s   10.244.1.243   minikube   <none>           <none>
+frontend-74dc5b4b8c-2tqwl                1/1     Running   0          9m50s   10.244.1.239   minikube   <none>           <none>
+paymentservice-5995589779-7r4vg          1/1     Running   0          9m50s   10.244.1.234   minikube   <none>           <none>
+productcatalogservice-85575894dd-lqtdl   1/1     Running   0          9m50s   10.244.1.238   minikube   <none>           <none>
+recommendationservice-5cc897dc8c-rkggb   1/1     Running   0          2m31s   10.244.1.244   minikube   <none>           <none>
+redis-cart-6c4fccc55-zqjzf               1/1     Running   0          16m     10.244.1.228   minikube   <none>           <none>
+shippingservice-f4cd4566-5z5cf           1/1     Running   0          9m50s   10.244.1.236   minikube   <none>           <none>
+
+== Pod resource use ==
+NAME                                     CPU(cores)   MEMORY(bytes)   
+adservice-8684d7c6fb-sghj6               4m           112Mi           
+cartservice-948d4dd4b-g28l5              5m           58Mi            
+checkoutservice                          1m           14Mi            
+currencyservice-84b6f85765-dj842         3m           62Mi            
+emailservice-6f9bd444c5-smzn2            6m           42Mi            
+frontend-74dc5b4b8c-2tqwl                1m           13Mi            
+paymentservice-5995589779-7r4vg          2m           54Mi            
+productcatalogservice-85575894dd-lqtdl   1m           18Mi            
+recommendationservice-5cc897dc8c-rkggb   6m           35Mi            
+redis-cart-6c4fccc55-zqjzf               8m           10Mi            
+shippingservice-f4cd4566-5z5cf           1m           10Mi            
+
+== Node resource use ==
+NAME       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+minikube   1424m        35%      6833Mi          43%         
+
+== Host memory and disk ==
+               total        used        free      shared  buff/cache   available
+Mem:           15782        7217         250        1177        9842        8564
+Swap:              0           0           0
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       387G  251G  137G  65% /
+
+== Frontend smoke test ==
+url=http://192.168.49.2:30469/
+http_status=200 bytes=10499 time_seconds=0.200807
+
+== Prometheus service-oriented query check ==

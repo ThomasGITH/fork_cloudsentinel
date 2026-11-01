@@ -1,0 +1,508 @@
+label=C2
+captured_at=20261026T143850Z
+
+== Nodes ==
+NAME       STATUS   ROLES           AGE    VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION   CONTAINER-RUNTIME
+minikube   Ready    control-plane   131d   v1.35.1   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   7.0.0-1012-aws   docker://29.2.1
+
+== Deployments ==
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                       SELECTOR
+adservice               3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice:v0.10.5               app=adservice
+cartservice             3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/cartservice:v0.10.5             app=cartservice
+currencyservice         3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice:v0.10.5         app=currencyservice
+emailservice            3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/emailservice:v0.10.5            app=emailservice
+frontend                3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/frontend:v0.10.5                app=frontend
+loadgenerator           0/0     0            0           20m   main         us-central1-docker.pkg.dev/google-samples/microservices-demo/loadgenerator:v0.10.5           app=loadgenerator
+paymentservice          3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice:v0.10.5          app=paymentservice
+productcatalogservice   3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice:v0.10.5   app=productcatalogservice
+recommendationservice   3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice:v0.10.5   app=recommendationservice
+redis-cart              1/1     1            1           20m   redis        redis:alpine@sha256:c5e375abb885e6b2021c0377879e4890bf76f9065b8922ffc113f2b226b9fc17         app=redis-cart
+shippingservice         3/3     3            3           20m   server       us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice:v0.10.5         app=shippingservice
+
+== Pods ==
+NAME                                     READY   STATUS    RESTARTS   AGE     IP             NODE       NOMINATED NODE   READINESS GATES
+adservice-8684d7c6fb-j2qxf               1/1     Running   0          79s     10.244.1.255   minikube   <none>           <none>
+adservice-8684d7c6fb-sghj6               1/1     Running   0          14m     10.244.1.230   minikube   <none>           <none>
+adservice-8684d7c6fb-wp54d               1/1     Running   0          79s     10.244.2.0     minikube   <none>           <none>
+cartservice-948d4dd4b-g28l5              1/1     Running   0          14m     10.244.1.235   minikube   <none>           <none>
+cartservice-948d4dd4b-h9wfx              1/1     Running   0          79s     10.244.2.4     minikube   <none>           <none>
+cartservice-948d4dd4b-rxr5n              1/1     Running   0          79s     10.244.2.1     minikube   <none>           <none>
+checkoutservice                          1/1     Running   0          20m     10.244.1.225   minikube   <none>           <none>
+currencyservice-84b6f85765-dj842         1/1     Running   0          14m     10.244.1.232   minikube   <none>           <none>
+currencyservice-84b6f85765-m9dzp         1/1     Running   0          3m6s    10.244.1.254   minikube   <none>           <none>
+currencyservice-84b6f85765-wqw7h         1/1     Running   0          3m6s    10.244.1.253   minikube   <none>           <none>
+emailservice-6f9bd444c5-bl7w9            1/1     Running   0          79s     10.244.2.2     minikube   <none>           <none>
+emailservice-6f9bd444c5-fl892            1/1     Running   0          79s     10.244.2.3     minikube   <none>           <none>
+emailservice-6f9bd444c5-smzn2            1/1     Running   0          7m20s   10.244.1.243   minikube   <none>           <none>
+frontend-74dc5b4b8c-2tqwl                1/1     Running   0          14m     10.244.1.239   minikube   <none>           <none>
+frontend-74dc5b4b8c-mlzvq                1/1     Running   0          3m7s    10.244.1.245   minikube   <none>           <none>
+frontend-74dc5b4b8c-p78vn                1/1     Running   0          3m7s    10.244.1.248   minikube   <none>           <none>
+paymentservice-5995589779-7r4vg          1/1     Running   0          14m     10.244.1.234   minikube   <none>           <none>
+paymentservice-5995589779-q7xmk          1/1     Running   0          3m6s    10.244.1.250   minikube   <none>           <none>
+paymentservice-5995589779-v2485          1/1     Running   0          3m6s    10.244.1.247   minikube   <none>           <none>
+productcatalogservice-85575894dd-fmvzc   1/1     Running   0          3m7s    10.244.1.246   minikube   <none>           <none>
+productcatalogservice-85575894dd-lqtdl   1/1     Running   0          14m     10.244.1.238   minikube   <none>           <none>
+productcatalogservice-85575894dd-p8x7r   1/1     Running   0          3m7s    10.244.1.249   minikube   <none>           <none>
+recommendationservice-5cc897dc8c-5ddxd   1/1     Running   0          79s     10.244.2.5     minikube   <none>           <none>
+recommendationservice-5cc897dc8c-rkggb   1/1     Running   0          7m19s   10.244.1.244   minikube   <none>           <none>
+recommendationservice-5cc897dc8c-wwv46   1/1     Running   0          79s     10.244.2.6     minikube   <none>           <none>
+redis-cart-6c4fccc55-zqjzf               1/1     Running   0          20m     10.244.1.228   minikube   <none>           <none>
+shippingservice-f4cd4566-5z5cf           1/1     Running   0          14m     10.244.1.236   minikube   <none>           <none>
+shippingservice-f4cd4566-sz2l7           1/1     Running   0          3m6s    10.244.1.252   minikube   <none>           <none>
+shippingservice-f4cd4566-xhjt9           1/1     Running   0          3m6s    10.244.1.251   minikube   <none>           <none>
+
+== Pod resource use ==
+NAME                                     CPU(cores)   MEMORY(bytes)   
+adservice-8684d7c6fb-j2qxf               77m          71Mi            
+adservice-8684d7c6fb-sghj6               2m           110Mi           
+adservice-8684d7c6fb-wp54d               76m          75Mi            
+cartservice-948d4dd4b-g28l5              3m           61Mi            
+cartservice-948d4dd4b-h9wfx              51m          24Mi            
+cartservice-948d4dd4b-rxr5n              51m          24Mi            
+checkoutservice                          1m           14Mi            
+currencyservice-84b6f85765-dj842         1m           62Mi            
+currencyservice-84b6f85765-m9dzp         2m           22Mi            
+currencyservice-84b6f85765-wqw7h         2m           22Mi            
+emailservice-6f9bd444c5-bl7w9            50m          35Mi            
+emailservice-6f9bd444c5-fl892            50m          44Mi            
+emailservice-6f9bd444c5-smzn2            3m           38Mi            
+frontend-74dc5b4b8c-2tqwl                1m           13Mi            
+frontend-74dc5b4b8c-mlzvq                1m           4Mi             
+frontend-74dc5b4b8c-p78vn                1m           6Mi             
+paymentservice-5995589779-7r4vg          1m           54Mi            
+paymentservice-5995589779-q7xmk          2m           23Mi            
+paymentservice-5995589779-v2485          2m           23Mi            
+productcatalogservice-85575894dd-fmvzc   1m           6Mi             
+productcatalogservice-85575894dd-lqtdl   1m           18Mi            
+productcatalogservice-85575894dd-p8x7r   1m           6Mi             
+recommendationservice-5cc897dc8c-5ddxd   46m          31Mi            
+recommendationservice-5cc897dc8c-rkggb   3m           33Mi            
+recommendationservice-5cc897dc8c-wwv46   46m          35Mi            
+redis-cart-6c4fccc55-zqjzf               4m           10Mi            
+shippingservice-f4cd4566-5z5cf           1m           11Mi            
+shippingservice-f4cd4566-sz2l7           1m           5Mi             
+shippingservice-f4cd4566-xhjt9           1m           5Mi             
+
+== Node resource use ==
+NAME       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+minikube   1332m        33%      7391Mi          46%         
+
+== Host memory and disk ==
+               total        used        free      shared  buff/cache   available
+Mem:           15782        7832         190        1212        9323        7950
+Swap:              0           0           0
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       387G  251G  137G  65% /
+
+== Frontend smoke test ==
+url=http://192.168.49.2:30469/
+http_status=200 bytes=10499 time_seconds=0.032068
+
+== Prometheus service-oriented query check ==
+{
+  "pod_identities": [
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "checkoutservice"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "redis-cart-6c4fccc55-zqjzf"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "adservice-8684d7c6fb-sghj6"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "frontend-74dc5b4b8c-2tqwl"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "cartservice-948d4dd4b-g28l5"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "productcatalogservice-85575894dd-lqtdl"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "shippingservice-f4cd4566-5z5cf"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "paymentservice-5995589779-7r4vg"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "currencyservice-84b6f85765-dj842"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "emailservice-6f9bd444c5-smzn2"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "recommendationservice-5cc897dc8c-rkggb"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "frontend-74dc5b4b8c-p78vn"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "currencyservice-84b6f85765-wqw7h"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "paymentservice-5995589779-v2485"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "productcatalogservice-85575894dd-fmvzc"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "paymentservice-5995589779-q7xmk"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "currencyservice-84b6f85765-m9dzp"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "shippingservice-f4cd4566-sz2l7"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "frontend-74dc5b4b8c-mlzvq"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "productcatalogservice-85575894dd-p8x7r"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "shippingservice-f4cd4566-xhjt9"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "adservice-8684d7c6fb-j2qxf"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "recommendationservice-5cc897dc8c-wwv46"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "cartservice-948d4dd4b-h9wfx"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "adservice-8684d7c6fb-wp54d"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "recommendationservice-5cc897dc8c-5ddxd"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "emailservice-6f9bd444c5-fl892"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "cartservice-948d4dd4b-rxr5n"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    },
+    {
+      "metric": {
+        "node": "minikube",
+        "pod": "emailservice-6f9bd444c5-bl7w9"
+      },
+      "value": [
+        1793025533.037,
+        "1"
+      ]
+    }
+  ],
+  "pod_identity_query": "count(kube_pod_info{namespace=\"boutique-scale-test\"}) by (pod, node)",
+  "service_aggregates": [
+    {
+      "pod_pattern": "adservice(-.*)?",
+      "service": "adservice",
+      "values": {
+        "cpu_cores": "0.026660834310801698",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"adservice(-.*)?\"}[1m]))",
+        "memory_bytes": "270458880",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"adservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "cartservice(-.*)?",
+      "service": "cartservice",
+      "values": {
+        "cpu_cores": "0.037634569915281565",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"cartservice(-.*)?\"}[1m]))",
+        "memory_bytes": "117211136",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"cartservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "checkoutservice(-.*)?",
+      "service": "checkoutservice",
+      "values": {
+        "cpu_cores": "0.00036807878546866714",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"checkoutservice(-.*)?\"}[1m]))",
+        "memory_bytes": "15306752",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"checkoutservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "currencyservice(-.*)?",
+      "service": "currencyservice",
+      "values": {
+        "cpu_cores": "0.002315513328686201",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"currencyservice(-.*)?\"}[1m]))",
+        "memory_bytes": "114233344",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"currencyservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "emailservice(-.*)?",
+      "service": "emailservice",
+      "values": {
+        "cpu_cores": "0.007391093777566008",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"emailservice(-.*)?\"}[1m]))",
+        "memory_bytes": "126373888",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"emailservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "frontend(-.*)?",
+      "service": "frontend",
+      "values": {
+        "cpu_cores": "0.0014309153748538325",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"frontend(-.*)?\"}[1m]))",
+        "memory_bytes": "26148864",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"frontend(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "paymentservice(-.*)?",
+      "service": "paymentservice",
+      "values": {
+        "cpu_cores": "0.0023777521451990645",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"paymentservice(-.*)?\"}[1m]))",
+        "memory_bytes": "107831296",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"paymentservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "productcatalogservice(-.*)?",
+      "service": "productcatalogservice",
+      "values": {
+        "cpu_cores": "0.001211820627561429",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"productcatalogservice(-.*)?\"}[1m]))",
+        "memory_bytes": "34959360",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"productcatalogservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "recommendationservice(-.*)?",
+      "service": "recommendationservice",
+      "values": {
+        "cpu_cores": "0.0079612509515365",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"recommendationservice(-.*)?\"}[1m]))",
+        "memory_bytes": "107053056",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"recommendationservice(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "redis-cart(-.*)?",
+      "service": "redis-cart",
+      "values": {
+        "cpu_cores": "0.003513445296573144",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"redis-cart(-.*)?\"}[1m]))",
+        "memory_bytes": "10850304",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"redis-cart(-.*)?\"})"
+      }
+    },
+    {
+      "pod_pattern": "shippingservice(-.*)?",
+      "service": "shippingservice",
+      "values": {
+        "cpu_cores": "0.0016906647350508595",
+        "cpu_cores_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"shippingservice(-.*)?\"}[1m]))",
+        "memory_bytes": "24657920",
+        "memory_bytes_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"shippingservice(-.*)?\"})"
+      }
+    }
+  ]
+}

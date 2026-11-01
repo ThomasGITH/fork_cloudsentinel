@@ -1,0 +1,78 @@
+\chapter{Research Design \& Methods}%
+\label{ch:methods}
+This chapter introduces the research approach and general methodology that was used in this study.
+
+\section{Research approach}
+This study follows an evaluative and design-oriented software-engineering approach. It first investigates the activities and challenges involved in experiments with anomaly-detection (AD) and root-cause-analysis (RCA) methods. It then derives workflow requirements, translates these requirements into a software design, and evaluates a working implementation.
+
+CloudSentinel is used as the main case and implementation vehicle. Studying its original workflow provides concrete evidence about the work needed to move from Kubernetes telemetry to training, anomaly detection, and RCA. Redesigning the framework then makes it possible to investigate how the identified activities can be supported as one connected experimental lifecycle. The research questions are therefore broader than CloudSentinel, while the claims about the implemented solution remain bounded by this case.
+
+\section{Research steps}
+The study consists of four related phases.
+
+\subsection{Phase 1: activities and practical challenges}
+
+The first phase addresses RQ1. Activities and challenges are identified from AIOps and RCA literature, existing tooling and workflows, practitioner input, the original CloudSentinel design, and a baseline evaluation in Online Boutique. The baseline evaluation is important here because it exposes the concrete work hidden behind an apparently end-to-end pipeline: deployment, data selection, data preparation, configuration propagation, model handling, live monitoring, RCA triggering, and result interpretation.
+
+A targeted narrative review was used rather than a systematic literature review. Focused searches covered AIOps operational work, microservice observability, AD and RCA benchmarking, experiment tracking, and Kubernetes fault injection. Peer-reviewed publications were preferred for research claims; official documentation was used to describe the current capabilities of representative tools. Sources were included when they exposed an activity, evaluation concern, interface, or provenance need relevant to the data-to-diagnosis lifecycle. The resulting comparison is deliberately representative rather than exhaustive, and therefore supports a scoped workflow argument rather than a claim that no other platform offers similar functions.
+
+The predecessor thesis is treated as a primary source for the original CloudSentinel design, evaluation feedback, and documented limitations. Its literature review provides useful leads, but general claims are traced to the underlying publications where possible. The evidence was organised by workflow stage and then compared with practitioner feedback and observations from reproducing the baseline.
+
+The original framework is reproduced in a controlled Kubernetes environment based on Online Boutique. Minikube hosts the application and Prometheus supplies pod-level monitoring data. Controlled disturbances make it possible to follow the workflow under known conditions. The purpose is not to establish that CloudSentinel's embedded algorithms outperform alternatives. Instead, the evaluation records which activities are supported, which manual steps remain, where information is lost, and which assumptions restrict reuse.
+
+\subsection{Phase 2: workflow requirements}
+
+The second phase addresses RQ2. Findings from Phase~1 are translated into functional, non-functional, and interaction requirements for an experimental AIOps workflow. This translation combines empirical limitations from the baseline case with requirements found in literature and practitioner feedback. The five evaluation criteria introduced in Chapter~5 are also refined here so that the eventual implementation can be evaluated consistently.
+
+The baseline evaluation therefore has two roles. First, it provides empirical evidence for the activities and challenges in RQ1. Second, it helps derive and prioritise the requirements in RQ2. Selected baseline results are later reused as comparison context for RQ4, but they are not treated as an evaluation of a design that did not yet exist.
+
+\subsection{Phase 3: workflow design and implementation}
+
+The third phase addresses RQ3. The requirements are translated into an end-to-end experimental workflow and supporting architecture. This workflow is implemented by redesigning and extending CloudSentinel. The implementation connects dataset acquisition, dataset context and partitioning, detector integration, training, saved-model provenance, comparison across workload contexts, live validation, and RCA evidence.
+
+CloudSentinel is used to instantiate and test the design. Consequently, the software artefact is part of the research contribution, but the intended design knowledge concerns the workflow and its supporting contracts rather than the product name alone.
+
+\subsection{Phase 4: evaluation of the implemented workflow}
+
+The fourth phase addresses RQ4. The implemented workflow is evaluated through functional tests, provenance and repeatability checks, integration of several detector implementations, comparisons across workload contexts, controlled monitoring and RCA scenarios, portability observations, resource measurements, and expert feedback. Chapter~6 maps these tests to the evaluation criteria and explains the limits of each evidence source.
+
+Where feasible, the controlled case is supplemented with an exploratory case using telemetry from a second environment. This provides evidence about data compatibility and connection effort, but does not replace controlled experiments when fault injection or reliable ground truth is unavailable.
+
+\section{Data \& validity}
+This study uses Online Boutique, deployed in a local Minikube cluster, as a controlled evaluation environment for CloudSentinel. Prometheus collects pod-level monitoring data while synthetic workload and controlled fault injections are used to create known operational disturbances. This setup makes it possible to record the affected component and the timing of each intervention.
+
+The controlled environment was chosen for two reasons. First, it allows fault injection and detailed observation without affecting production systems or customer data. Second, it provides a reproducible environment in which CloudSentinel can be deployed, configured, and examined under known conditions.
+
+The main evidence collected in this environment concerns the experimental workflow: metric collection, data preparation, training, comparison, anomaly indication, RCA triggering, output interpretation, and the manual effort required to configure these steps. The controlled fault injections provide a reference for whether the workflow responds to a known disturbance. They are not used to establish general performance claims about the embedded anomaly detection or RCA algorithms.
+
+Point-level metrics such as precision, recall, and F1 score are treated as supplementary diagnostic evidence. They are interpreted only when the relationship between the input data, preprocessing, timestamps, labels, and model outputs can be sufficiently verified. In particular, these metrics are not treated as directly comparable to live-monitoring results when the underlying processing paths differ.
+
+A controlled demo application cannot fully represent a production environment. Its workload, topology, available telemetry, and failure behaviour differ from those of a real operational system. This limits the external validity of the findings.
+
+A second operational environment may also be used as an exploratory portability case. Read-only access can provide evidence about telemetry compatibility, data preparation, and configuration effort, but it does not demonstrate a live in-cluster deployment. Since controlled fault injection and reliable ground-truth labels may be unavailable, such a case cannot support controlled detection- or RCA-accuracy claims.
+
+The study combines several forms of evidence because no single test answers all four research questions. Literature and practitioner input inform the activity analysis; the baseline case reveals concrete workflow problems; implementation evidence demonstrates technical realisation; controlled tests assess behaviour under known conditions; and expert feedback assesses clarity and perceived usefulness. Conclusions are limited to what these evidence sources directly support.
+
+
+
+
+
+
+
+
+
+
+
+% Gebruik van synthetische data i.p.v. echte klantdata (privacy/beleid).
+% Beperkingen van synthetische workloads, etc.
+
+% ---------------------------------------
+% In this chapter, you described the design of your research: which methods and procedures you used as a step towards answering the research questions.
+% A well-written methods chapter highlights the plausibility of your research methods.
+% You should clarify to the reader \emph{why} you have chosen specific methods and how they are justified for your research.
+% To garner more credibility, you can include the pitfalls and difficulties associated with your approach.
+
+% Depending on the nature of your research, you may, for example, want to describe the exact procedure you use to collect the data, how it is analysed, and how you plan to validate the data and results. 
+% On the other hand, when you develop a new framework, you want to describe in detail the requirements and the design, and the motivation behind them (\ie{} the decision you made and why).
+% Make sure to discuss all ethical aspects of your research.
+% This is more important when dealing with (datasets of) people or (trained) AI models.

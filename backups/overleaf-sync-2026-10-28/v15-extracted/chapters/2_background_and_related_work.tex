@@ -1,0 +1,114 @@
+\chapter{Background \& Related Work}%
+\label{ch:background}
+
+This chapter provides the background needed to investigate RQ1: the activities and practical challenges involved in experimental work with anomaly-detection (AD) and root-cause-analysis (RCA) methods for Kubernetes-based microservices. It combines research literature with a scoped comparison of representative tools. The purpose is not to catalogue every AIOps product. Instead, the comparison identifies which parts of the experimental lifecycle are already well supported and where researchers still have to connect separate tools and preserve context themselves.
+
+\section{AIOps and operational diagnosis}
+
+AIOps applies artificial-intelligence and machine-learning techniques to the work of building and operating software services. This work includes monitoring, detecting abnormal behaviour, diagnosing incidents, and supporting mitigation. Dang et al. describe AIOps as a way to help engineers operate increasingly large and complex services, while reducing repeated manual work such as collecting information from several sources during an investigation \parencite{dang2019aiops}.
+
+This operational setting matters because an anomaly is not meaningful without context. High CPU usage may be expected during a load test but suspicious during otherwise stable traffic. The affected service, workload, deployment state, time window, and available telemetry all influence how a detector result should be interpreted. An industry study by Steidl et al., based on interviews with fifteen practitioners and a literature review, likewise found substantial variation in how runtime anomalies are understood and which monitoring parameters are useful \parencite{steidl2024industry}. The study also reports that practitioners commonly combine metrics, logs, and traces and often retain rule-based approaches because applying AI reliably requires sufficient understanding of the monitored data. A recent ACM Computing Surveys article likewise identifies generalisability, the use of diverse failure data, and integration with existing AIOps toolchains as continuing challenges \parencite{zhang2026aiopsllm}.
+
+The role of an experimental AIOps workflow is therefore narrower than replacing an organisation's incident-management platform. It should let researchers and technically oriented practitioners construct and repeat controlled experiments, compare methods under recorded conditions, and investigate how offline results relate to behaviour on telemetry from an operating system.
+
+\section{Telemetry and experiment context}
+
+Distributed microservice systems emit several complementary forms of telemetry. Metrics record numerical measurements over time; logs record events; and traces follow requests across services. OpenTelemetry treats these as different signals that can be correlated to observe the same system from different perspectives \parencite{opentelemetrySignals}. Prometheus is commonly used for numeric time-series collection and querying in dynamic service environments, while Grafana turns queried data into dashboards and visualisations \parencite{prometheusOverview,grafanaDashboards}.
+
+These tools make system behaviour observable, but observed telemetry is not yet an experimental dataset. A researcher must still decide which entities and signals are relevant, select a time range, record the workload or injected fault, align labels with observations, handle missing or irregular samples, and define training and test partitions. These choices can change the meaning of the resulting scores. Consequently, dataset provenance includes more than a file name: it includes the source environment, query, time interval, labels, preprocessing, partitioning, and the operational context in which the data was produced.
+
+The implementation evaluated in this thesis focuses primarily on Prometheus metrics. Logs and traces remain relevant to the wider workflow and to future multimodal extensions, but the evaluation must not imply that the current implementation already provides equal support for all three modalities.
+
+\section{Experimental evaluation of AD and RCA methods}
+
+AD research contains many algorithms, datasets, and evaluation choices. ADBench evaluates thirty algorithms across fifty-seven datasets and shows that relative performance depends on factors including supervision, anomaly type, and data corruption \parencite{han2022adbench}. TimeEval addresses the same reproducibility problem for time-series anomaly detection by providing standardised dataset handling, algorithm execution, and evaluation over a large collection of algorithms and datasets \parencite{wenig2022timeeval}. These projects demonstrate that a detector should not be judged from one aggregate score on one dataset. The dataset characteristics, anomaly type, labels, parameters, runtime, and evaluation method form part of the result.
+
+RCA evaluation adds further context. The expected output may be a service, metric, component, or ranked list, and a method may depend on metrics, logs, traces, topology, or a known anomaly time. PyRCA provides a common Python interface for several metric-based causal-graph and root-cause-scoring methods \parencite{liu2023pyrca}. RCAEval provides datasets from several microservice systems, multiple fault types, and reproducible RCA baselines over metric, log, and trace data \parencite{pham2025rcaeval}. RCAEval was created partly because earlier studies used different systems, fault types, modalities, and evaluation settings, making comparison difficult.
+
+Experiment tracking addresses another part of the lifecycle. MLflow, for example, records runs, parameters, metrics, datasets, code versions, and model artefacts and allows runs to be searched and compared \parencite{mlflowTracking}. This is useful for reproducibility, but it is domain-neutral: it does not itself define how Kubernetes telemetry becomes a labelled dataset, when a fault is injected, when RCA should run, or how a detected anomaly is connected to an operational cause.
+
+Controlled fault injection can provide the missing reference event. Chaos Mesh can apply Kubernetes faults such as CPU or memory stress, pod failure, network delay, and packet loss, and can describe repeatable experiments as Kubernetes resources or workflows \parencite{chaosMeshDocs}. Fault injection makes it possible to record what was deliberately changed and when. It does not, on its own, collect a training dataset, execute AD or RCA methods, or preserve the full evaluation chain.
+
+Together, this literature indicates that experimental AD and RCA work involves at least the following activities:
+
+\begin{enumerate}
+    \item connect to and inspect a monitored environment;
+    \item select telemetry, a time window, and the operational context;
+    \item construct, label, preprocess, and partition a dataset;
+    \item integrate and configure an AD or RCA method;
+    \item train where necessary and preserve the produced model artefact;
+    \item evaluate and compare methods across recorded contexts;
+    \item validate a selected artefact against recent or live telemetry; and
+    \item interpret anomaly and RCA output while retaining its provenance.
+\end{enumerate}
+
+These activities answer the first part of RQ1. They also show why the workflow cannot be reduced to a benchmark table or a monitoring dashboard: both are useful, but they cover different parts of the lifecycle.
+
+\section{Representative tool landscape}
+
+Table~\ref{tab:tool-landscape} compares representative tool categories. The table is a scoped functional comparison based on primary publications and official documentation; it is not a systematic market review. `Yes' indicates direct support, `Partial' indicates partial or generic support that requires additional integration, and `No' indicates that the capability is outside the tool's main purpose.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Representative tools cover different parts of an experimental AIOps lifecycle.}
+    \label{tab:tool-landscape}
+    \begin{tabularx}{\textwidth}{p{2.7cm} X p{1.65cm} p{1.65cm} p{1.65cm}}
+        \toprule
+        Category and examples & Main strength & Experiment context and artefacts & Controlled method comparison & Live AD-to-RCA workflow \\
+        \midrule
+        Observability: Prometheus, Grafana, OpenTelemetry & Collect, query, correlate, and visualise operational telemetry & Partial & No & No \\
+        AD benchmarks: ADBench, TimeEval & Repeatable offline execution and comparison of detectors and datasets & Yes & Yes & No \\
+        RCA libraries and benchmarks: PyRCA, RCAEval & Common RCA interfaces, datasets, baselines, and scoring & Yes & Yes & Partial \\
+        Experiment tracking: MLflow & Store runs, parameters, metrics, datasets, and model artefacts & Yes & Yes & No \\
+        Fault injection: Chaos Mesh & Execute and record controlled Kubernetes disturbances & Partial & No & No \\
+        Original CloudSentinel & Connect Prometheus data, AD, monitoring, and RCA in one prototype & Partial & Partial & Yes \\
+        \bottomrule
+    \end{tabularx}
+
+    \vspace{0.4em}
+    \footnotesize Yes = direct support; Partial = partial or generic support; No = outside the primary scope.
+\end{table}
+
+The comparison does not imply that every capability must be reimplemented. Prometheus and Grafana remain appropriate for detailed telemetry inspection, MLflow demonstrates mature experiment-provenance concepts, and benchmark frameworks provide valuable datasets and baselines. The relevant gap is the integration work between these concerns. Moving between tools can require scripts, copied identifiers, manual configuration, and undocumented assumptions. If the dataset, model artefact, workload context, monitoring run, and RCA result cannot be linked, a technically successful run may still be difficult to reproduce or interpret.
+
+Commercial observability and AIOps platforms are not treated as direct research-platform alternatives in this comparison. Their main purpose is production monitoring and incident response within their supported ecosystems. They can offer mature operational functionality, but their internal method integration, experimental controls, and reproducibility mechanisms are not generally exposed in the same way as an open research prototype. This thesis therefore does not claim to compete with such products.
+
+\section{The original CloudSentinel as predecessor}
+
+CloudSentinel was developed by Van Gaalen as a proof-of-concept AIOps framework that connected Prometheus-based data collection, model training, anomaly detection, monitoring, and RCA in a Kubernetes setting \parencite{vangaalen2024cloudsentinel}. Its importance to this study is that it already crossed boundaries that the specialised tools in Table~\ref{tab:tool-landscape} usually treat separately. It therefore provides a useful implementation vehicle for studying the end-to-end workflow.
+
+The original evaluation and discussion also identify limitations that are directly relevant to the present research. The datasets and environments used were limited in size and diversity, and the proof of concept was primarily validated in one cloud setting. Automated training, user-driven labelling, and advanced response mechanisms were proposed but not fully implemented. Expert feedback requested less manual input, stronger automation, Prometheus-integrated training, support for custom models, and clearer cause-and-effect visualisation \parencite{vangaalen2024cloudsentinel}. The thesis also describes several technical, architectural, and operational conditions for adding new algorithms, including standard interfaces, data handling, containerisation, documentation, and resource efficiency.
+
+These findings do not prove that every AIOps framework has the same shortcomings. They provide case-specific evidence about where the original workflow was difficult to extend and reproduce. Chapters~4 and~7 add a second source of case evidence by transferring CloudSentinel to Online Boutique and recording the work required to make its pipeline function in a different microservice environment.
+
+\section{Synthesis for RQ1 and implications for RQ2}
+
+Table~\ref{tab:rq1-synthesis} combines the literature and tool analysis with the predecessor case. It summarises the recurring activities, the practical challenge attached to each activity, and the resulting design implication. These implications are translated into formal requirements in Chapter~\ref{ch:requirements_for_framework}.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Synthesis of experimental activities, challenges, and workflow implications.}
+    \label{tab:rq1-synthesis}
+    \begin{tabularx}{\textwidth}{p{3.0cm} X X}
+        \toprule
+        Activity & Practical challenge & Workflow implication \\
+        \midrule
+        Inspect environment and select telemetry & Signals, queries, entities, and time windows differ between systems & Configurable connections and explicit source context \\
+        Create and partition datasets & Labels, preprocessing, gaps, and partitions can silently change results & Versioned dataset metadata and inspectable partitions \\
+        Integrate and configure methods & Algorithms use different inputs, parameters, outputs, and lifecycles & Pluggable contracts with validation and documented custom fields \\
+        Train and store models & A score can become detached from its parameters, input data, or artefact & Persistent links between run, data, configuration, result, and artefact \\
+        Compare across contexts & One aggregate score hides sensitivity to workloads and anomaly types & Shared evaluation conditions and context-aware comparison \\
+        Perform live validation & Offline execution and monitoring often use different paths or preprocessing & Reuse the same stored artefact and make preprocessing explicit \\
+        Interpret RCA evidence & Rankings or scores are difficult to trust without timing, source, and target context & Preserve trigger, method, configuration, evidence source, and result provenance \\
+        Repeat or transfer an experiment & Endpoints, namespaces, schemas, and deployment assumptions are environment-specific & Reproducible deployment and configurable environment mappings \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The answer to RQ1 is therefore not that researchers lack tools. They perform a connected set of activities using tools that are individually capable but specialised. The recurring challenges arise at the boundaries: telemetry must become an explained dataset; a dataset must remain linked to training and comparison; an offline artefact must remain identifiable during live validation; and an anomaly must remain linked to interpretable RCA evidence.
+
+This leads to a deliberately scoped research gap. Existing observability, benchmarking, experiment-tracking, fault-injection, and RCA tools each solve substantial parts of the problem. What remains useful to investigate is how these parts can be organised as one traceable experimental workflow for Kubernetes telemetry, with interchangeable AD and RCA methods and with continuity from data collection to live diagnosis. The novelty claim of this thesis concerns the design and evaluated integration of that workflow in the CloudSentinel case, not the invention of each individual capability.
+
+CloudSentinel repository: \path{https://github.com/ThomasGITH/fork_cloudsentinel}

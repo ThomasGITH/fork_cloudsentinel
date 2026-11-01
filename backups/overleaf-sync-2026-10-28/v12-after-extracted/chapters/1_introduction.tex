@@ -1,0 +1,56 @@
+\chapter{Introduction}\label{ch:introduction}
+This is the template to use for your master thesis Software Engineering.
+It provides you with a structure that we expect you to follow, with guidelines on the contents of each section.
+Depending on your research you can deviate from this structure, usually by renaming or adding some chapters in the middle.
+Do discuss this with your academic supervisor first!
+Be sure to change the variables under the \verb|Options| banner set in \verb|main.tex|, such as title, subtitle, author, supervisor, company, \etc{}.
+
+The Introduction chapter itself is to provide your reader with the context of your research, the problem you are trying to solve.
+
+\section{Context}
+Provide the context of your research, and explain the importance and relevance of your topic within the field of software engineering.
+
+% TODO:
+% Keep: Kubernetes operations, fragmented observability, AIOps motivation.
+
+\section{Problem Statement}
+Give a concise description of the challenge you aim to address.
+The goal is to define the problem in clear terms, establish its significance, and provides a foundation for developing objectives, methods, and potential solutions.
+Be specific and avoid vague language. 
+
+% TODO:
+% Shift from “does the model detect anomalies accurately?” to:
+% " Existing research-oriented AIOps frameworks may combine anomaly detection and RCA, yet it remains unclear how readily they transfer to new Kubernetes environments, how much manual data and configuration work they require, and whether their outputs support an operator-facing diagnostic workflow."
+
+\section{Research Questions}
+This thesis investigates how the activities surrounding anomaly-detection (AD) and root-cause-analysis (RCA) experiments can be organised as one connected workflow. CloudSentinel is used as the case and implementation vehicle for this investigation. The main research question is:
+
+\begin{quote}
+\textbf{How can an end-to-end experimental workflow be designed to support the reproducible, extensible, and traceable evaluation of anomaly-detection and root-cause-analysis methods in Kubernetes-based microservice environments?}
+\end{quote}
+
+The main question is divided into four research questions:
+
+\begin{description}
+    \item[RQ1.] What activities and practical challenges do researchers and AIOps practitioners encounter when preparing, executing, and interpreting experiments with anomaly-detection and root-cause-analysis methods?
+    \item[RQ2.] What requirements for an end-to-end experimental workflow follow from these activities and challenges?
+    \item[RQ3.] How can these requirements be translated into a coherent workflow and supporting software architecture?
+    \item[RQ4.] To what extent does the implemented workflow support end-to-end execution, reproducibility, extensibility, traceability, and interpretation in the evaluated Kubernetes environments?
+\end{description}
+
+RQ1 and RQ2 establish the problem and the workflow requirements. RQ3 concerns the workflow design and its implementation through a redesign of CloudSentinel. RQ4 evaluates the resulting prototype and defines the boundaries of the evidence that can be claimed from the study.
+
+\section{Approach}
+Give a brief overview of the approach you will take to answer the research questions.
+Define the research methods you used (\eg{} case study, systematic literature review, action research, \etc{}), and the general steps you will take to conduct your research.
+This will provide the reader with a high-level roadmap.
+
+% TODO:
+% Explain four phases:
+% 1. analyse CloudSentinel and elicit framework requirements;
+% 2. evaluate the baseline in Online Boutique;
+% 3. use NaaVRE as an exploratory portability case if feasible;
+% 4. design, implement and evaluate one focused improvement.
+
+\section{Outline}
+Give the reader a short overview of the structure of your thesis, and what to find in each chapter.

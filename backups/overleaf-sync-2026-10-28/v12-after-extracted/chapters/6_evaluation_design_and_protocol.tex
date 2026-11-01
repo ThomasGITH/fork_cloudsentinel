@@ -1,0 +1,188 @@
+\chapter{Evaluation Design and Protocol}
+\label{ch:evaluation_design}
+
+\section{Evaluation strategy and evidence boundaries}
+This chapter explains how the study collects evidence for the four research questions. Two evaluations must be kept separate. First, the original CloudSentinel workflow is evaluated as a baseline. This identifies the work and problems that inform RQ1 and RQ2. Second, the redesigned workflow is evaluated for RQ4 using the five criteria from Chapter~5. Baseline observations may provide context, but they are not treated as proof that the later redesign worked.
+
+The main controlled environment is Online Boutique, a Kubernetes application made up of several small services and deployed in Minikube. It is used to evaluate both versions of CloudSentinel. The tested path starts with Prometheus monitoring data and continues through dataset preparation, model training, Model Comparisons, Live Monitoring, anomaly detection, and root-cause analysis (RCA).
+
+The Online Boutique case provides controlled workflow evidence. Known fault injections make it possible to record the affected component and the fault interval before the experiment is executed. The evaluation therefore examines whether CloudSentinel responds to a known disturbance, whether RCA is triggered, and whether the output represents the affected component in an interpretable way. This is not equivalent to a broad benchmark of the embedded anomaly detection and RCA algorithms.
+
+Where individual detector outputs can be matched to a recorded fault period, precision, recall, and F1 are reported as supporting evidence. Precision describes how many reported anomalies were correct, recall describes how much of the labelled fault period was found, and F1 combines both. These scores are interpreted cautiously because they depend on consistent data preparation, timestamps, labels, and input handling.
+
+A published Train Ticket benchmark is used as a second, historically recorded microservice environment. Its role and limitations are described in Section~\ref{sec:external_benchmark_case}. It tests whether data, models, Model Comparisons, and RCA results can be handled with a different data format. Because the benchmark contains saved data, it is not used to claim that CloudSentinel monitored a second live cluster.
+
+NaaVRE provides a complementary operational case. A read-only Grafana account gives access to its Prometheus data source, but not to the cluster itself. This case tests whether CloudSentinel can retrieve recent monitoring data from an independently managed environment and later construct a compatible recent window. It does not test deployment inside NaaVRE, fault injection, or detection accuracy.
+A separate Online Boutique application-scaling test changes the number of Deployment replicas and replaces pod identities while CloudSentinel remains running. It records application health, node CPU and memory, host memory, and Data Catalogue behaviour at each stage. A service-oriented Prometheus query is compared with the older exact-pod assumption. An attempted second Minikube worker is reported only if it becomes a healthy Kubernetes node. Because both nodes would share one EC2 host, this part tests how the workflow handles deployment changes rather than added physical capacity or production throughput.
+
+
+
+\section{Mapping research questions to evidence}
+Table~\ref{tab:rq_evidence_mapping} summarises how each research question is answered. The mapping prevents implementation success alone from being treated as the complete research result.
+
+\begin{table}[H]
+    \centering
+    \caption{Mapping from research questions to evidence.}
+    \label{tab:rq_evidence_mapping}
+    \small
+    \begin{tabular}{@{}p{0.08\textwidth} p{0.40\textwidth} p{0.40\textwidth}@{}}
+        \toprule
+        \textbf{RQ} & \textbf{Evidence} & \textbf{Role in the study} \\
+        \midrule
+        RQ1 & Literature and tooling analysis, practitioner and supervisor input, analysis of the original CloudSentinel design, and the Online Boutique baseline evaluation. & Identifies the activities and practical challenges involved in preparing, executing, and interpreting anomaly-detection and root-cause-analysis experiments. \\
+        RQ2 & Synthesis of the RQ1 findings into functional, non-functional, and interaction requirements in Chapter~5. & Explains why the workflow needs dataset context, defined method inputs and outputs, traceable files and records, comparable evaluation contexts, guided continuation, and live validation. \\
+        RQ3 & The workflow design, architecture, implementation decisions, and realised CloudSentinel components described in Chapter~9. & Demonstrates how the requirements were translated into a coherent workflow and supporting software architecture. \\
+        RQ4 & Functional and integration tests, repeated-experiment and traceability checks, detector onboarding, controlled monitoring and RCA scenarios, portability observations, resource measurements, and expert feedback. & Assesses to what extent the implemented workflow satisfies C1--C5 and records the limits of that evidence. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The baseline evidence mainly supports RQ1 and RQ2 because it was used to understand the problem and derive requirements. It is used for RQ4 only when an activity before and after the redesign is sufficiently similar to compare fairly.
+
+\section{Mapping RQ4 to criteria and evaluation tests}
+RQ4 is operationalised through C1--C5. Table~\ref{tab:rq4_test_mapping} links each criterion to the planned tests and clarifies what a successful result can and cannot demonstrate.
+
+\begin{table}[H]
+    \centering
+    \caption{Mapping from RQ4 criteria to evaluation tests.}
+    \label{tab:rq4_test_mapping}
+    \scriptsize
+    \begin{tabular}{@{}p{0.18\textwidth} p{0.34\textwidth} p{0.34\textwidth}@{}}
+        \toprule
+        \textbf{Criterion} & \textbf{Main evaluation evidence} & \textbf{Interpretation boundary} \\
+        \midrule
+        C1 (end-to-end experimental workflow adequacy) & Dataset creation and partitioning; training and Saved Model handling; comparisons across workload contexts; continuation into Live Monitoring; successful completion and retained context across stages. & Shows that the workflow can be executed and inspected in the evaluated setup; it does not prove that every model is accurate or that every monitoring source is supported. \\
+        C2 (RCA workflow adequacy and interpretability) & Controlled faults; anomaly and RCA triggering; identification of affected services or metrics; stored RCA context; expert interpretation of the presented evidence. & Shows how RCA behaves for the tested disturbances; it is not a general benchmark of RCA accuracy. \\
+        C3 (portability and deployment ease) & Connection to Online Boutique; application scaling and pod replacement; top import of a published second microservice dataset; required address, namespace, metric-mapping, deployment, and data-format changes; and, where feasible, a second operational monitoring source. & Historical data can reveal data-format and workflow portability, but cannot establish deployment or live-connection portability. A small number of environments cannot establish universal portability. \\
+        C4 (configurability, reproducibility, and extensibility) & Repeated execution using stored context and files; manifest- and adapter-based detector onboarding; integration of multiple detector types; inspection of the records for datasets, training, Model Comparisons, monitoring, and RCA. & Demonstrates implemented extension and repetition paths; it does not show that every future anomaly-detection or RCA method will fit the defined interfaces unchanged. \\
+        C5 (operational overhead) & Execution time, CPU and memory observations during representative training, comparison, and monitoring tasks, including increased historical inputs and application replica counts where feasible. & Provides bounded measurements for the evaluated EC2/Minikube setup, not a production-scale capacity claim. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The expert walkthroughs provide qualitative evidence, mainly for C1--C4. Experienced technical users commented on the workflow order, terminology, configuration, and presentation of results. The sessions took place during final development, so later navigation and presentation details were not all present. The evidence therefore applies to the workflow and screens discussed in each session, not automatically to every later change. The researcher demonstrated the application while the participants commented. The sessions are therefore described as expert walkthroughs, not as independent usability tests. They do not show organisational adoption or production readiness.
+
+\section{Controlled environment: Online Boutique}
+The controlled experiments were conducted on a local Kubernetes cluster deployed with Minikube. The cluster contained Online Boutique, Prometheus, Grafana, and CloudSentinel. Prometheus was used as the metrics backend, Grafana was used to inspect system behaviour and validate metric changes during experiments, and CloudSentinel was configured to retrieve relevant Prometheus data for training, anomaly detection, and RCA.
+
+Online Boutique is a cloud-native e-commerce demo application composed of multiple communicating microservices, including frontend, product catalogue, cart, recommendation, payment, shipping, currency, email, and checkout services. A synthetic load generator continuously issued representative user requests, such as browsing products and completing checkout-related actions.
+
+This environment was suitable for controlled workflow observation for three reasons. First, individual services could be subjected to known disturbances without affecting a production system. Second, Prometheus exposed Kubernetes-level resource and availability metrics that could be used as CloudSentinel input. Third, the workload and fault intervals could be recorded, providing a reference for interpreting anomaly indications and RCA outputs.
+
+The cluster was a constrained local environment rather than a production-scale deployment. Its purpose was therefore to evaluate framework integration, configuration effort, and workflow behaviour, not to provide general throughput, scalability, or algorithm-benchmark results.
+
+\section{Online Boutique scenarios}
+The baseline evaluation of the original workflow used two controlled CPU-stress scenarios in Online Boutique. In each scenario, a temporary BusyBox debug container ran a CPU-intensive \texttt{yes} process inside the selected pod. Synthetic users continued to access the application. Prometheus data, Live Monitoring results, RCA triggers, RCA output, and relevant settings were retained for each scenario.
+
+\subsection{Single-pod CPU stress}
+The first scenario applied CPU stress to the \texttt{paymentservice} pod. The stress process was active from approximately 17:20 to 17:45 local time. The expected observable effect was increased CPU usage and, where applicable, CPU throttling for the affected pod. The scenario was intended to assess whether an isolated resource disturbance could pass through the CloudSentinel workflow: Prometheus collection, anomaly indication, threshold-based RCA triggering, and presentation of RCA results.
+
+In addition to the Live Monitoring output, the recorded data were exported for manual replay where possible. This allowed individual detector decisions to be compared with labels derived from the recorded fault period. CPU pressure on one pod may be a small signal among all monitored metrics, and knowing which pod was stressed does not guarantee that RCA has one uniquely identifiable causal root cause. These points limit what the scenario can prove.
+
+\subsection{Sequential multi-pod CPU stress}
+The second scenario applied CPU stress independently to five pods in sequence: \texttt{paymentservice}, \texttt{shippingservice}, \texttt{emailservice}, \texttt{cartservice}, and \texttt{checkoutservice}. The stress processes were started five minutes apart. The first injection started at approximately 15:40 local time, and the injected processes were terminated sequentially in reverse order. The expected effect was a stronger and more distributed resource-pressure signal across several services.
+
+This scenario was used to observe whether CloudSentinel produced a stronger anomaly indication under distributed stress, whether RCA was triggered, and whether the rankings represented the affected services or related metrics. Historical data were also exported for manual replay where feasible.
+
+The sequence was chosen to resemble the order of services involved in the Online Boutique user workflow. However, the CPU stress was injected independently into each pod and did not represent an actual application-level propagation mechanism. The scenario therefore does not test whether RCA can reconstruct a genuine causal chain. It only provides evidence about the framework's response and the interpretability of RCA output during a distributed disturbance.
+
+Other fault types, including memory exhaustion, dependency failure, and resource contention, were considered during planning but were not completed within the baseline evaluation. They are therefore not reported as executed experiments.
+
+\section{Data preparation and execution workflow}
+This section describes data preparation for the original baseline workflow, before the Data Catalogue was implemented. Before each scenario, Online Boutique ran under synthetic workload without an injected fault. This produced normal monitoring data for training. The selected pod-level metrics covered CPU use, CPU throttling, memory use, and pod restarts. The load-generator pod was excluded because it created the workload rather than representing an application service to diagnose.
+
+The original CloudSentinel workflow could not use the selected Prometheus data directly. Custom scripts exported the metrics, aligned their timestamps, created the required training and test files, and labelled the recorded fault periods. The selected metrics, queries, sampling interval, preparation steps, and configuration changes were documented for each run.
+
+The anomaly detection model was trained on baseline data representing normal workload behaviour. During live monitoring, CloudSentinel periodically retrieved and processed recent Prometheus data, produced an anomaly indication, and triggered RCA when the configured threshold was crossed. This path was used to assess end-to-end operational workflow behaviour.
+
+Where possible, saved historical data were also processed through manual replay. When timestamps and data preparation could be checked, each detector decision was compared with the recorded fault label and used to calculate precision, recall, and F1. Manual replay is not treated as equivalent to Live Monitoring. Live Monitoring reports a percentage for repeated recent windows, whereas manual replay evaluates individual observations in one prepared dataset. Differences between these paths are reported as framework limitations.
+
+For each scenario, the evaluation retained the fault mechanism and timing, selected metrics, CloudSentinel configuration, anomaly indications, threshold crossings, RCA outputs, and manual-replay outputs where available. The manual configuration steps, scripts, and technical issues encountered during onboarding and execution were also recorded as evidence for portability, configurability, and reproducibility. CPU and memory consumption of the CloudSentinel components were observed where possible during idle and active operation; these observations are interpreted as local overhead evidence only.
+
+\subsection{Interpretation of live-monitoring output}
+CloudSentinel uses a forecasting-based anomaly detector. For every Live Monitoring update, it receives a recent window of metrics and uses earlier observations to predict the following values. The difference between predicted and observed values becomes the anomaly score for each timestamp that the model can evaluate.
+
+The model stores an anomaly cut-off, called \texttt{epsilon} in the implementation. A timestamp is marked anomalous when its score reaches this cut-off. The percentage shown in Live Monitoring is the share of evaluated timestamps in the current window that were marked anomalous. RCA starts when this percentage exceeds the configured RCA trigger.
+
+The first part of every input window is needed as earlier context. It is therefore not evaluated. For example, with a lookback of 100 timestamps, the model cannot produce a prediction for the first 100 timestamps in that window. These are the warm-up observations.
+
+Input values are not rescaled consistently. Training determines its scale from the training data and reuses it for the accompanying test data. A later detection request instead determines a new scale from its own input window. A Live Monitoring update can therefore use a different value range from training and from other updates. Chapter~7 takes this limitation into account.
+
+\section{External benchmark validation using RCAEval Train Ticket}
+\label{sec:external_benchmark_case}
+
+The second-environment test uses historical Train Ticket monitoring data from RCAEval, a published benchmark for RCA in microservice systems~\cite{pham2025rcaeval}. RCAEval records the fault type, the fault-start time, and the affected service. The expected answer is therefore known.
+
+The case contains three tests:
+\begin{enumerate}
+    \item A target-context test, in which each detector receives normal training data from the context that it will evaluate.
+    \item A transfer test, in which one fitted Isolation Forest model and one fitted Local Outlier Factor (LOF) model are reused unchanged in other contexts.
+    \item A BARO ranking test, in which BARO receives the known fault-start time and ranks the services that changed afterwards.
+\end{enumerate}
+
+The target-context test uses five fault types: CPU stress, network delay, disk stress, packet loss, and memory stress. A separate recording is used to choose the Isolation Forest and LOF settings. The final recording is kept separate. Its normal beginning is used for training, while the later normal and faulty observations form the evaluation period. CGNN uses the same settings in all five cases and trains for 20 epochs. The known fault labels are used only to calculate the final scores.
+
+The transfer test is deliberately harder. It reuses one fitted Isolation Forest model and one fitted LOF model across 25 combinations of services and fault types. Unlike the target-context test, the models do not first receive normal training data from each new context.
+
+The original files contain 198--238 metric columns. Because the Data Catalogue currently imports at most 100 columns from a CSV file, one fixed set of 100 metrics is used for every case. A fixed rule also fills gaps in the historical data. The exact feature list, gap-handling rule, settings, and file hashes are retained in the evidence. The need for this preparation is counted as evidence about C3 (portability and deployment ease).
+
+The detector evaluation retains precision, recall, F1, false-positive rate, balanced accuracy, runtime, and the underlying counts of correct and incorrect classifications. No single measure is treated as the complete result. In particular, a high recall or F1 value can still be misleading when a detector also marks almost all normal observations as anomalous.
+
+BARO is evaluated separately from anomaly detection. It is given the published fault-start time and asked to rank the services that changed. The evaluation records whether the affected service appears first, in the top three, or in the top five. This does not test whether Live Monitoring can discover the fault-start time automatically.
+
+The complete settings and outputs are retained under \texttt{evaluation\_evidence/rcaeval\_train\_ticket}. The case provides evidence for:
+\begin{itemize}
+    \item C1 (end-to-end experimental workflow adequacy), through the historical data-to-Model Comparison path;
+    \item C2 (RCA workflow adequacy and interpretability), through service ranking when the correct fault-start time is supplied;
+    \item C3 (portability and deployment ease), through the documented preparation needed for a different data schema;
+    \item C4 (configurability, reproducibility, and extensibility), through fixed inputs, model identities, settings, and retained results; and
+    \item part of C5 (operational overhead), through recorded training and evaluation times.
+\end{itemize}
+The case does not test Live Monitoring or deployment into Train Ticket because RCAEval contains historical data rather than access to a running Train Ticket cluster.
+
+\section{Read-only operational validation using NaaVRE}
+\label{sec:naavre_protocol}
+
+The NaaVRE case answers a practical portability question: can CloudSentinel use recent monitoring data from an independently managed environment? NaaVRE exposes Prometheus monitoring data through Grafana. The available account is read-only. CloudSentinel is therefore not installed in NaaVRE, and the experiment does not change the environment or introduce faults.
+
+CloudSentinel normally contacts Prometheus directly. That route was not available for NaaVRE. A small adapter was therefore used on a separate evaluation branch. The adapter sent queries through Grafana and converted the response into the time-series format already used by CloudSentinel. After this conversion, the normal Data Catalogue and Live Monitoring input code was used without modification.
+
+The adapter is not presented as a completed CloudSentinel feature. Instead, the extra work needed to create it is part of the portability result for C3 (portability and deployment ease).
+
+The test has three steps:
+\begin{enumerate}
+    \item Check that the read-only Grafana connection works.
+    \item Retrieve 24 hours of CPU, memory, disk-I/O, and network data and store it as a Data Catalogue dataset.
+    \item Reuse the saved retrieval settings to build a recent 15-minute input window for Live Monitoring.
+\end{enumerate}
+
+The dataset and the later input window must contain the same five measurements in the same order. They must also contain no missing values. This checks whether data collected at one moment can be prepared again in a compatible form later.
+
+No confirmed incident time or fault labels were available. The test can therefore show that the connection and data-preparation path work, but it cannot show whether a detector or RCA method produced a correct answer. It mainly supports C3 (portability and deployment ease) and C4 (configurability, reproducibility, and extensibility). It gives partial support for C1 (end-to-end experimental workflow adequacy) and limited timing evidence for C5 (operational overhead). It provides no evidence for C2 (RCA workflow adequacy and interpretability).
+
+\section{Analysis method}
+The results are interpreted using the five evaluation criteria from Chapter~5. These criteria concern the complete experimental workflow, not only detector accuracy. Every completed test reports what was tested, what happened, what evidence was retained, and what the test cannot demonstrate. Missing or inconclusive evidence is not counted as a successful result.
+
+For C1 (end-to-end experimental workflow adequacy), the main question is whether the workflow steps connect. This includes creating a dataset, preparing training and evaluation data, training and saving a model, comparing models, and continuing with a selected model in Live Monitoring. A high detector score alone does not answer this workflow question.
+
+For C2 (RCA workflow adequacy and interpretability), the analysis asks whether RCA started, whether the known affected service or metric appeared in the result, and whether the stored explanation was understandable. An RCA run that merely completes is not automatically a correct diagnosis.
+
+For C3 (portability and deployment ease), the analysis records the work needed to use a different environment or data source. Online Boutique shows the work needed for a new local application. Train Ticket shows whether external historical data can be imported. NaaVRE adds a recent read-only connection. Together, these cases reveal required configuration, conversion, and source-specific work. They do not show that CloudSentinel can be installed unchanged in every Kubernetes environment.
+
+For C4 (configurability, reproducibility, and extensibility), the analysis checks whether inputs, models, settings, and results can be traced and reused. It also examines whether several detectors can follow the same workflow. Any scripts or settings that still have to be managed separately are reported as limitations.
+
+For C5 (operational overhead), the analysis reports duration, CPU use, and memory use for selected tasks. These measurements come from one small cluster. They describe that setup and are not used as production-capacity claims.
+
+The baseline results are presented in Chapter~7 and synthesised in Chapter~8 as problem and requirement evidence for RQ1 and RQ2. The workflow design, implementation, and its evaluation are presented in Chapter~9 for RQ3 and RQ4. The conclusion combines these findings while preserving the stated evidence boundaries.
+
+
+% -----------------------------------------------
+% If your method is to do an experiment, in this chapter you explain how you set up your experiments, what parameters you consider, and the results you got.
+% You can also call this chapter ``Design'' or ``Implementation'', if you are designing a framework or building a prototype.
+% Describe the architecture and design of the software systems you developed.
+% Provide details about the implementation process, and the technologies and tools you have used.
+% Describe the testing process and results, to show the validity and performance of the system.
+% You can then use these results in the next chapter to prove that your system meets the requirements presented in the previous chapter.
+% Be sure to provide a detailed description of the environment, tools, and procedures used in your experiments.
+% This is crucial for reproducibility.
+% follow some of the repro standards? 
