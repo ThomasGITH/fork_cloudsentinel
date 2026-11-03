@@ -1,0 +1,31 @@
+CloudSentinel workflow recheck
+Recorded: 2026-10-24
+
+Automated tests
+- Backend and workflow: 116 tests passed.
+- Deployed monitoring interface: 91 tests passed.
+- Tests checked whether existing functions still worked after recent changes.
+- Covered the Data Catalogue, delivery of workflow tasks and results, data collection, training runs, Isolation Forest, external LOF, model comparison, adding detectors, Live Monitoring and automatic RCA.
+
+Basic page checks
+- The following pages returned HTTP 200 and showed the expected content:
+  /, /config/, /data-catalogue/, /models/, /models/detectors/add/,
+  /comparison/, /comparison/new/, /monitoring-home/ and /monitoring/.
+- Also checked:
+  - Navigation labels for the workflow.
+  - Authentication settings and connection checks.
+  - Links to Grafana and Prometheus.
+  - Adding detectors using YAML settings and adapter code.
+  - Controls for continuing from a model comparison.
+  - Links and controls for opening monitoring and RCA.
+
+Prometheus connection
+- Testing the saved Prometheus settings returned `connected`.
+- Prometheus reported 17 configured targets to collect metrics from.
+- Authentication was set to `none`.
+- A record for storing login details existed, but no login details were sent for this connection inside the cluster.
+
+Take-away from the resutls:
+- The tested functions still worked after the recent workflow and interface changes in the deployed evaluation version.
+- These checks do not show whether the models are accurate or whether CloudSentinel works in other environments.
+- They also do not guarantee that every browser or possible input works without errors.
