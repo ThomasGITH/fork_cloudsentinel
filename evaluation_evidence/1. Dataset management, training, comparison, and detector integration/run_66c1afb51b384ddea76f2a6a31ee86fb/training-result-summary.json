@@ -1,0 +1,58 @@
+{
+  "run_id": "run_66c1afb51b384ddea76f2a6a31ee86fb",
+  "status": "completed",
+  "created_at": "2026-10-22T14:57:09.241354+00:00",
+  "completed_at": "2026-10-22T15:04:50.646898+00:00",
+  "elapsed_seconds": 461.405544,
+  "snapshot_id": "snapshot_b0f88a8461a94b4798278d800c4ab6ff",
+  "snapshot_sha256": "7ddadeae5fadd43b0d605523c3ccf5c250484fdd491e962917ea5f7e7a1234d6",
+  "physical_parallelism_guaranteed": false,
+  "child_summary": {
+    "completed": 3,
+    "failed": 0,
+    "validation_failed": 0,
+    "dispatch_failed": 0
+  },
+  "models": [
+    {
+      "detector_id": "cgnn",
+      "detector_version": "1.0.0",
+      "source": "builtin",
+      "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+      "status": "available",
+      "started_at": "2026-10-22T14:57:09.489034+00:00",
+      "completed_at": "2026-10-22T15:04:45.659682+00:00",
+      "elapsed_seconds": 456.170648,
+      "manifest_sha256": "70d57bbaf09fc463be2a4e73099e2884d8279681ff7b4655b66cd2a1a3c693c9",
+      "package_sha256": "45411ed1db06e4815af21b8d02d16bee56140dd1c994fd100c691c36951984eb",
+      "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638"
+    },
+    {
+      "detector_id": "isolation-forest",
+      "detector_version": "1.0.0",
+      "source": "builtin",
+      "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-isolation-forest-fad33f26",
+      "status": "available",
+      "started_at": "2026-10-22T15:04:47.835200+00:00",
+      "completed_at": "2026-10-22T15:04:48.770782+00:00",
+      "elapsed_seconds": 0.935582,
+      "manifest_sha256": "72360e093194959179b317169638f4ee28eb8b513802532507aee00ec9edd8dd",
+      "package_sha256": "09d2c88ae0bdf208be24e5277f2630090634aa09a927c273e8f8d7d6aa787690",
+      "artifact_manifest_sha256": "822bb7d77a927293789064b4bee243082f97a5a094ce298d09e0a809a0207f04"
+    },
+    {
+      "detector_id": "local-outlier-factor",
+      "detector_version": "1.0.1",
+      "source": "external",
+      "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-local-outlier-factor-6c13a321",
+      "status": "available",
+      "started_at": "2026-10-22T15:04:49.884487+00:00",
+      "completed_at": "2026-10-22T15:04:50.646898+00:00",
+      "elapsed_seconds": 0.762411,
+      "manifest_sha256": "afcabc6412ab41db5c4da80d96e8399d09010eec01a49b040d9bbd995c31e2e0",
+      "package_sha256": "a7d59efbe591125937dd42965d167491edd70da6e75e8b8a8f305510131c68e1",
+      "artifact_manifest_sha256": "1a0d32730347e534490633c3d52f0613d4ef967cc1ca151436ec0beb230f4832"
+    }
+  ]
+}
+

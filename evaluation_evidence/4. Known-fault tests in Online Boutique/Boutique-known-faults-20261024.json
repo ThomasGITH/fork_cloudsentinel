@@ -1,0 +1,657 @@
+{
+  "completed_at": "2026-10-24T17:54:35.316769Z",
+  "faults": [
+    {
+      "after": {
+        "data": {
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792863842.523,
+                "0.20037854077253214"
+              ]
+            }
+          ],
+          "resultType": "vector"
+        },
+        "status": "success"
+      },
+      "before": {
+        "data": {
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792863660.171,
+                "0.0011459831599713055"
+              ]
+            }
+          ],
+          "resultType": "vector"
+        },
+        "status": "success"
+      },
+      "command": {
+        "returncode": 0,
+        "stderr": "Warning: Non-root user is configured for the entire target Pod, and some capabilities granted by debug profile may not work. Please consider using \"--custom\" with a custom profile that specifies \"securityContext.runAsUser: 0\".",
+        "stdout": ""
+      },
+      "container": "eval-cpu-174100",
+      "ended_at": "2026-10-24T17:44:02.513676Z",
+      "id": "B1-CPU",
+      "started_at": "2026-10-24T17:41:00.154320Z",
+      "target": "checkoutservice",
+      "termination": {
+        "containerID": "docker://088422b42bbf9c1bc1bc7fbe35d84f4f52557301cd61f15817d96683c437bd5e",
+        "exitCode": 143,
+        "finishedAt": "2026-10-24T17:44:00Z",
+        "reason": "Error",
+        "startedAt": "2026-10-24T17:41:00Z"
+      }
+    },
+    {
+      "after": {
+        "data": {
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792864144.786,
+                "126312448"
+              ]
+            }
+          ],
+          "resultType": "vector"
+        },
+        "status": "success"
+      },
+      "before": {
+        "data": {
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792863962.535,
+                "78630912"
+              ]
+            }
+          ],
+          "resultType": "vector"
+        },
+        "status": "success"
+      },
+      "command": {
+        "returncode": 0,
+        "stderr": "Warning: Non-root user is configured for the entire target Pod, and some capabilities granted by debug profile may not work. Please consider using \"--custom\" with a custom profile that specifies \"securityContext.runAsUser: 0\".",
+        "stdout": ""
+      },
+      "container": "eval-memory-174602",
+      "ended_at": "2026-10-24T17:49:04.777389Z",
+      "id": "B2-MEMORY",
+      "started_at": "2026-10-24T17:46:02.525051Z",
+      "target": "cartservice",
+      "termination": {
+        "containerID": "docker://d58dfc6f4c437906afe01598876d3db8a21f257f80b1cd8f14d8333f86487b88",
+        "exitCode": 0,
+        "finishedAt": "2026-10-24T17:49:02Z",
+        "reason": "OOMKilled",
+        "startedAt": "2026-10-24T17:46:02Z"
+      }
+    },
+    {
+      "after": {
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "20"
+      },
+      "before": {
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "20"
+      },
+      "command": {
+        "returncode": 0,
+        "stderr": "",
+        "stdout": ""
+      },
+      "ended_at": "2026-10-24T17:51:35.284668Z",
+      "id": "B3-RESTART",
+      "started_at": "2026-10-24T17:51:04.788435Z",
+      "target": "paymentservice"
+    }
+  ],
+  "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+  "schema_version": 1,
+  "session_results": [
+    {
+      "cycles": {
+        "items": [
+          {
+            "anomaly_count": 21,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+              "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638"
+            },
+            "committed_at": "2026-10-24T17:39:31.486818Z",
+            "completed_at": "2026-10-24T17:39:31.464917Z",
+            "cycle_id": "cycle_f7456f9c5aff65c9c3ac6fbf8a7b1278",
+            "inference_window": {
+              "end": "2026-10-24T17:39:30Z",
+              "observation_count": 121,
+              "start": "2026-10-24T17:09:30Z"
+            },
+            "input_sha256": "e9ac446da028f25c0bcb0952546bcb2b10d11c22eb38de1c8a8c31250f823903",
+            "prediction_count": 21,
+            "prediction_window": {
+              "end": "2026-10-24T17:39:30Z",
+              "start": "2026-10-24T17:34:30Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T17:39:30Z",
+              "start": "2026-10-24T17:09:30Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "first_analysis",
+              "episode_attempt_budget": 6,
+              "episode_state": "triggered",
+              "execution_attempt_number": 1,
+              "previous_run_id": null,
+              "reason_code": "first_analysis_started",
+              "run_id": "rca_f3793e74a50deec7074aaf16bf651055",
+              "status": "started",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "102bac03764196442f8679549e56b53d44c7c33c0809c724a4a204b3a5999f68",
+            "started_at": "2026-10-24T17:39:30.101739Z",
+            "status": "completed",
+            "warmup_observations": 100,
+            "warnings": []
+          }
+        ],
+        "page": 1,
+        "page_size": 50,
+        "pages": 1,
+        "total": 1,
+        "truncated": false
+      },
+      "provenance": {
+        "artifact_format": "cgnn-state-dict-v1",
+        "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+        "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "recipe_contract": "cloudsentinel.live-input/v1",
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15
+      },
+      "rca_runs": {
+        "items": [
+          {
+            "algorithm": {
+              "configuration_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+              "id": "cloudsentinel.causal-rca/legacy-v1"
+            },
+            "analysis_input_sha256": "1081795014399f4d1ad63b8e8d64c60cbb7d7a6b0f944d97e934fa298afb8f42",
+            "analysis_kind": "first_analysis",
+            "analysis_window": {
+              "end": "2026-10-24T17:39:30Z",
+              "requested_seconds": 600,
+              "start": "2026-10-24T17:29:30Z"
+            },
+            "completed_at": "2026-10-24T17:41:20.941675Z",
+            "context_window": {
+              "end": "2026-10-24T17:39:30Z",
+              "observation_count": 121,
+              "start": "2026-10-24T17:09:30Z"
+            },
+            "cooldown_until": "2026-10-24T17:41:01.464917Z",
+            "created_at": "2026-10-24T17:39:31.507140Z",
+            "cycle_id": "cycle_f7456f9c5aff65c9c3ac6fbf8a7b1278",
+            "dispatch_status": "submitted",
+            "episode_attempt_budget": 6,
+            "episode_id": "rca_f3793e74a50deec7074aaf16bf651055",
+            "execution_attempt_number": 1,
+            "feature_count": 44,
+            "feature_identity": {
+              "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+              "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d"
+            },
+            "graph_count": 1,
+            "input_sha256": "ab007f920309aae881203f148c1883286d4111250fae0623166f6f52b902d9eb",
+            "intent_created_at": "2026-10-24T17:39:31.510438Z",
+            "method": "cloudsentinel.causal-rca/legacy-v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+              "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638",
+              "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7"
+            },
+            "new_observation_count": 41,
+            "observation_count": 41,
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "f627dd968ad844a6064db704e8c4d1380c3c55e621b101eb6f1fcc881a086632",
+              "contract": "cloudsentinel.crca-minmax/v1"
+            },
+            "previous_analysis_end": null,
+            "previous_run_id": null,
+            "ranking_count": 44,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "result_sha256": "ce4d8d224c2b0b1fffd1b4c4619515bd20cb7a253b29ede305b97c9663da739e",
+            "run_id": "rca_f3793e74a50deec7074aaf16bf651055",
+            "session_id": "monitor_09612d862c024a8c963c8e28d8f0b4ba",
+            "started_at": "2026-10-24T17:39:31.550536Z",
+            "status": "completed",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T17:39:30Z",
+              "start": "2026-10-24T17:34:30Z"
+            },
+            "updated_at": "2026-10-24T17:41:20.941702Z"
+          }
+        ],
+        "page": 1,
+        "page_size": 20,
+        "pages": 1,
+        "total": 1,
+        "truncated": false
+      },
+      "session": {
+        "artifact_format": "cgnn-state-dict-v1",
+        "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+        "buffered_observations": 121,
+        "completed_at": "2026-10-24T17:39:46.682380Z",
+        "created_at": "2026-10-24T17:39:30.063260Z",
+        "cycle_count": 1,
+        "detector_id": "cgnn",
+        "detector_version": "1.0.0",
+        "display_name": "Known-fault evaluation - CausalRCA",
+        "error": {
+          "message": "live window contains 1 missing values; the pinned policy rejects it",
+          "type": "monitoring_error"
+        },
+        "execution_state": "unavailable",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "last_successful_update": "2026-10-24T17:39:31.486818Z",
+        "latest_cycle": {
+          "anomaly_count": 21,
+          "anomaly_percentage": 100.0,
+          "artifact_identity": {
+            "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+            "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638"
+          },
+          "committed_at": "2026-10-24T17:39:31.486818Z",
+          "completed_at": "2026-10-24T17:39:31.464917Z",
+          "cycle_id": "cycle_f7456f9c5aff65c9c3ac6fbf8a7b1278",
+          "inference_window": {
+            "end": "2026-10-24T17:39:30Z",
+            "observation_count": 121,
+            "start": "2026-10-24T17:09:30Z"
+          },
+          "prediction_count": 21,
+          "prediction_window": {
+            "end": "2026-10-24T17:39:30Z",
+            "start": "2026-10-24T17:34:30Z"
+          },
+          "query_window": {
+            "end": "2026-10-24T17:39:30Z",
+            "start": "2026-10-24T17:09:30Z"
+          },
+          "started_at": "2026-10-24T17:39:30.101739Z",
+          "status": "completed",
+          "warmup_observations": 100,
+          "warnings": []
+        },
+        "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+        "poll_interval_seconds": 15,
+        "rca": {
+          "active_run_id": "rca_f3793e74a50deec7074aaf16bf651055",
+          "algorithm_config_sha256": "c420dc953081c1ede25c8022b9503c90534e2c0b3e2b11cd75976e41689cf6ce",
+          "algorithm_id": "cloudsentinel.causal-rca/legacy-v1",
+          "analysis_window_seconds": 600,
+          "attempt_count": 1,
+          "contract": "cloudsentinel.monitoring-rca/v1",
+          "cooldown_seconds": 90,
+          "cooldown_until": "2026-10-24T17:41:01.464917Z",
+          "enabled": true,
+          "episode_id": "rca_f3793e74a50deec7074aaf16bf651055",
+          "episode_state": "triggered",
+          "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+          "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+          "input_contract": "cloudsentinel.crca-input/v1",
+          "last_analysis_end": "2026-10-24T17:39:30Z",
+          "last_input_sha256": "1081795014399f4d1ad63b8e8d64c60cbb7d7a6b0f944d97e934fa298afb8f42",
+          "last_intent_at": "2026-10-24T17:39:31.510438Z",
+          "last_run_id": "rca_f3793e74a50deec7074aaf16bf651055",
+          "last_triggered_at": "2026-10-24T17:39:31.464917Z",
+          "max_attempts_per_episode": 6,
+          "method": "cloudsentinel.causal-rca/legacy-v1",
+          "minimum_baseline_observations": 0,
+          "minimum_features": 2,
+          "minimum_observations": 2,
+          "minimum_post_change_observations": 0,
+          "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+          "preprocessing_contract": "cloudsentinel.crca-minmax/v1",
+          "readiness": {
+            "reason": null,
+            "reason_code": null,
+            "status": "ready"
+          },
+          "reanalysis_min_interval_seconds": 90,
+          "reanalysis_min_new_observations": 4,
+          "reanalyze_within_episode": true,
+          "recovered_at": null,
+          "threshold_percentage": 50.0
+        },
+        "sampling_interval_seconds": 15,
+        "session_id": "monitor_09612d862c024a8c963c8e28d8f0b4ba",
+        "started_at": "2026-10-24T17:39:30.063260Z",
+        "status": "failed",
+        "updated_at": "2026-10-24T17:39:46.682438Z",
+        "warmup_observations": 100,
+        "warnings": [],
+        "window_seconds": 1800
+      }
+    },
+    {
+      "cycles": {
+        "items": [
+          {
+            "anomaly_count": 21,
+            "anomaly_percentage": 100.0,
+            "artifact_identity": {
+              "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+              "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638"
+            },
+            "committed_at": "2026-10-24T17:39:33.132818Z",
+            "completed_at": "2026-10-24T17:39:33.114406Z",
+            "cycle_id": "cycle_0decec1870bd75911bc2c4dd5f8385fd",
+            "inference_window": {
+              "end": "2026-10-24T17:39:31Z",
+              "observation_count": 121,
+              "start": "2026-10-24T17:09:31Z"
+            },
+            "input_sha256": "8d9ef954ad1e81f94c24bf7a33ec9677b81127f7fa5505b8fe3f78fbef90a290",
+            "prediction_count": 21,
+            "prediction_window": {
+              "end": "2026-10-24T17:39:31Z",
+              "start": "2026-10-24T17:34:31Z"
+            },
+            "query_window": {
+              "end": "2026-10-24T17:39:31Z",
+              "start": "2026-10-24T17:09:31Z"
+            },
+            "rca_trigger": {
+              "analysis_kind": "first_analysis",
+              "episode_attempt_budget": 6,
+              "episode_state": "triggered",
+              "execution_attempt_number": 1,
+              "previous_run_id": null,
+              "reason_code": "first_analysis_started",
+              "run_id": "rca_96a6d1911ef342d9a03d0aa5a0624675",
+              "status": "started",
+              "threshold_percentage": 50.0
+            },
+            "result_sha256": "56c42c18572d12ecbc77861078100b60e8dddeaa95efc0a8440a9d08601fc764",
+            "started_at": "2026-10-24T17:39:31.588089Z",
+            "status": "completed",
+            "warmup_observations": 100,
+            "warnings": []
+          }
+        ],
+        "page": 1,
+        "page_size": 50,
+        "pages": 1,
+        "total": 1,
+        "truncated": false
+      },
+      "provenance": {
+        "artifact_format": "cgnn-state-dict-v1",
+        "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+        "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638",
+        "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "recipe_contract": "cloudsentinel.live-input/v1",
+        "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+        "sampling_interval_seconds": 15
+      },
+      "rca_runs": {
+        "items": [
+          {
+            "algorithm": {
+              "configuration_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+              "id": "cloudsentinel.baro-robust-scorer/v1"
+            },
+            "analysis_input_sha256": "d802e5452b8b578124c3ddc7e3443adfaa96a21b4ae19c9c97943160b9749da1",
+            "analysis_kind": "first_analysis",
+            "analysis_window": {
+              "end": "2026-10-24T17:39:31Z",
+              "requested_seconds": 600,
+              "start": "2026-10-24T17:29:31Z"
+            },
+            "change_point_evidence": {
+              "anomalous_observation_count": 21,
+              "baseline_observation_count": 20,
+              "cycle_id": "cycle_0decec1870bd75911bc2c4dd5f8385fd",
+              "cycle_result_sha256": "56c42c18572d12ecbc77861078100b60e8dddeaa95efc0a8440a9d08601fc764",
+              "detected_change_point": "2026-10-24T17:34:31Z",
+              "index": 20,
+              "source": "stored_monitoring_cycle_result"
+            },
+            "completed_at": "2026-10-24T17:41:21.107059Z",
+            "context_window": {
+              "end": "2026-10-24T17:39:31Z",
+              "observation_count": 121,
+              "start": "2026-10-24T17:09:31Z"
+            },
+            "cooldown_until": "2026-10-24T17:41:03.114406Z",
+            "created_at": "2026-10-24T17:39:33.155971Z",
+            "cycle_id": "cycle_0decec1870bd75911bc2c4dd5f8385fd",
+            "dispatch_status": "submitted",
+            "episode_attempt_budget": 6,
+            "episode_id": "rca_96a6d1911ef342d9a03d0aa5a0624675",
+            "execution_attempt_number": 1,
+            "feature_count": 44,
+            "feature_identity": {
+              "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+              "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d"
+            },
+            "graph_count": 0,
+            "input_sha256": "c36cb39d31dac18ebb0c09300f7441df0995a6a32e04a08923441871b505ac96",
+            "intent_created_at": "2026-10-24T17:39:33.166561Z",
+            "method": "cloudsentinel.baro-robust-scorer/v1",
+            "model_identity": {
+              "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+              "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638",
+              "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7"
+            },
+            "new_observation_count": 41,
+            "observation_count": 41,
+            "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+            "preprocessing": {
+              "configuration_sha256": "63a737e657feb764420aa95d1714f562a1af308f0bcb64201c56d2ac365138c7",
+              "contract": "cloudsentinel.baro-robust-scorer-raw/v1"
+            },
+            "previous_analysis_end": null,
+            "previous_run_id": null,
+            "ranking_count": 23,
+            "recipe_identity": {
+              "contract": "cloudsentinel.live-input/v1",
+              "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+              "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f"
+            },
+            "result_sha256": "eab78449b6b674eb84b3103ee2ece41c0671d8fd4459546b917f02c55de41a7a",
+            "run_id": "rca_96a6d1911ef342d9a03d0aa5a0624675",
+            "session_id": "monitor_c6dce54b0e284a87b1ca1734901fadac",
+            "started_at": "2026-10-24T17:41:20.949575Z",
+            "status": "completed",
+            "threshold_percentage": 50.0,
+            "trigger_percentage": 100.0,
+            "trigger_window": {
+              "end": "2026-10-24T17:39:31Z",
+              "start": "2026-10-24T17:34:31Z"
+            },
+            "updated_at": "2026-10-24T17:41:21.107083Z"
+          }
+        ],
+        "page": 1,
+        "page_size": 20,
+        "pages": 1,
+        "total": 1,
+        "truncated": false
+      },
+      "session": {
+        "artifact_format": "cgnn-state-dict-v1",
+        "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+        "buffered_observations": 121,
+        "completed_at": "2026-10-24T17:39:48.335689Z",
+        "created_at": "2026-10-24T17:39:30.128382Z",
+        "cycle_count": 1,
+        "detector_id": "cgnn",
+        "detector_version": "1.0.0",
+        "display_name": "Known-fault evaluation - BARO",
+        "error": {
+          "message": "live window contains 2 missing values; the pinned policy rejects it",
+          "type": "monitoring_error"
+        },
+        "execution_state": "unavailable",
+        "inference_contract": "cloudsentinel.inference/v1",
+        "last_successful_update": "2026-10-24T17:39:33.132818Z",
+        "latest_cycle": {
+          "anomaly_count": 21,
+          "anomaly_percentage": 100.0,
+          "artifact_identity": {
+            "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+            "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638"
+          },
+          "committed_at": "2026-10-24T17:39:33.132818Z",
+          "completed_at": "2026-10-24T17:39:33.114406Z",
+          "cycle_id": "cycle_0decec1870bd75911bc2c4dd5f8385fd",
+          "inference_window": {
+            "end": "2026-10-24T17:39:31Z",
+            "observation_count": 121,
+            "start": "2026-10-24T17:09:31Z"
+          },
+          "prediction_count": 21,
+          "prediction_window": {
+            "end": "2026-10-24T17:39:31Z",
+            "start": "2026-10-24T17:34:31Z"
+          },
+          "query_window": {
+            "end": "2026-10-24T17:39:31Z",
+            "start": "2026-10-24T17:09:31Z"
+          },
+          "started_at": "2026-10-24T17:39:31.588089Z",
+          "status": "completed",
+          "warmup_observations": 100,
+          "warnings": []
+        },
+        "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+        "poll_interval_seconds": 15,
+        "rca": {
+          "active_run_id": "rca_96a6d1911ef342d9a03d0aa5a0624675",
+          "algorithm_config_sha256": "3d1431122dc8bb60bc48b79056fab0f88b6b778736504f37f903c3cf58c9dd6a",
+          "algorithm_id": "cloudsentinel.baro-robust-scorer/v1",
+          "analysis_window_seconds": 600,
+          "attempt_count": 1,
+          "contract": "cloudsentinel.monitoring-rca/v1",
+          "cooldown_seconds": 90,
+          "cooldown_until": "2026-10-24T17:41:03.114406Z",
+          "enabled": true,
+          "episode_id": "rca_96a6d1911ef342d9a03d0aa5a0624675",
+          "episode_state": "triggered",
+          "feature_metadata_contract": "cloudsentinel.crca-feature-metadata/v1",
+          "feature_metadata_sha256": "cf720277c3ffbdf590e2de02a6d7edda775ba633a5a2dc480fdf79b62a0e8413",
+          "input_contract": "cloudsentinel.baro-input/v1",
+          "last_analysis_end": "2026-10-24T17:39:31Z",
+          "last_input_sha256": "d802e5452b8b578124c3ddc7e3443adfaa96a21b4ae19c9c97943160b9749da1",
+          "last_intent_at": "2026-10-24T17:39:33.166561Z",
+          "last_run_id": "rca_96a6d1911ef342d9a03d0aa5a0624675",
+          "last_triggered_at": "2026-10-24T17:39:33.114406Z",
+          "max_attempts_per_episode": 6,
+          "method": "cloudsentinel.baro-robust-scorer/v1",
+          "minimum_baseline_observations": 2,
+          "minimum_features": 2,
+          "minimum_observations": 4,
+          "minimum_post_change_observations": 2,
+          "policy_version": "cloudsentinel.monitoring-rca-reanalysis/v1",
+          "preprocessing_contract": "cloudsentinel.baro-robust-scorer-raw/v1",
+          "readiness": {
+            "reason": null,
+            "reason_code": null,
+            "status": "ready"
+          },
+          "reanalysis_min_interval_seconds": 90,
+          "reanalysis_min_new_observations": 4,
+          "reanalyze_within_episode": true,
+          "recovered_at": null,
+          "threshold_percentage": 50.0
+        },
+        "sampling_interval_seconds": 15,
+        "session_id": "monitor_c6dce54b0e284a87b1ca1734901fadac",
+        "started_at": "2026-10-24T17:39:30.128382Z",
+        "status": "failed",
+        "updated_at": "2026-10-24T17:39:48.335702Z",
+        "warmup_observations": 100,
+        "warnings": [],
+        "window_seconds": 1800
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "artifact_format": "cgnn-state-dict-v1",
+      "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+      "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638",
+      "buffered_observations": 0,
+      "created_at": "2026-10-24T17:39:30.063260Z",
+      "detector_id": "cgnn",
+      "detector_version": "1.0.0",
+      "display_name": "Known-fault evaluation - CausalRCA",
+      "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+      "inference_contract": "cloudsentinel.inference/v1",
+      "iteration": 0,
+      "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+      "poll_interval_seconds": 15,
+      "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+      "sampling_interval_seconds": 15,
+      "session_id": "monitor_09612d862c024a8c963c8e28d8f0b4ba",
+      "started_at": "2026-10-24T17:39:30.063260Z",
+      "status": "queued",
+      "updated_at": "2026-10-24T17:39:30.093460Z",
+      "window_seconds": 1800
+    },
+    {
+      "artifact_format": "cgnn-state-dict-v1",
+      "artifact_id": "artifact_run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+      "artifact_manifest_sha256": "07d2adc183e0a2a41d9f9ebe87060e91a51543f8f41060b138f74da33269f638",
+      "buffered_observations": 0,
+      "created_at": "2026-10-24T17:39:30.128382Z",
+      "detector_id": "cgnn",
+      "detector_version": "1.0.0",
+      "display_name": "Known-fault evaluation - BARO",
+      "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+      "inference_contract": "cloudsentinel.inference/v1",
+      "iteration": 0,
+      "model_id": "run_66c1afb51b384ddea76f2a6a31ee86fb-cgnn-51b1afe7",
+      "poll_interval_seconds": 15,
+      "recipe_sha256": "aa28ea0af234ef3bfcfa2696c07d057243c215da33fc142b15bc48e1f8d4228f",
+      "sampling_interval_seconds": 15,
+      "session_id": "monitor_c6dce54b0e284a87b1ca1734901fadac",
+      "started_at": "2026-10-24T17:39:30.128382Z",
+      "status": "queued",
+      "updated_at": "2026-10-24T17:39:30.150898Z",
+      "window_seconds": 1800
+    }
+  ],
+  "started_at": "2026-10-24T17:39:29.476412Z",
+  "stopped_at": "2026-10-24T17:54:35.366330Z"
+}

@@ -1,0 +1,56 @@
+Known-fault test summary
+Recorded on: 2026-10-24
+IMPORTNAT NOTE: All times below are in UTC.
+
+Final settings
+- Model: run_8b85069aa897402eb8218a480143ee2b-isolation-forest-1341f402
+- Live Monitoring used a 600-second data window and checked for new data every 15 seconds.
+- Automatic RCA started when the anomaly percentage exceeded 50%.
+- Two monitoring sessions ran at the same time: one using CausalRCA legacy-v1, the other using BARO RobustScorer v1.
+- Detector settings and thresholds stayed the same after the final trial started.
+
+B1 -- CPU stress on checkoutservice
+- Fault active: 18:03:38–18:06:40.
+- Prometheus CPU measurements ranged from 0.000351 to 0.200136 cores.
+- CPU use immediately before the fault: 0.001508 cores.
+- The temporary container stopped after the planned test period (exit code 143).
+- The detector marked 100% of evaluated timestamps as anomalous, both before and during the fault.
+- CausalRCA ranked checkout CPU 26th and 28th in the results produced during the fault.
+- BARO was skipped because there were not enough normal observations to use as a baseline.
+
+B2 -- Increased memory use on cartservice
+- Fault active: 18:08:40–18:11:43.
+- Prometheus memory measurements ranged from 70,926,336 to 134,107,136 bytes.
+- The temporary container finished after the planned test period.
+- The detector continued to mark 100% of evaluated timestamps as anomalous.
+- CausalRCA ranked cart CPU 1st, but cart memory 26th during the fault.
+- BARO was skipped because there were not enough normal observations to use as a baseline.
+
+B3 -- Replacement of the paymentservice pod
+- Replacement period: 18:18:08–18:18:28.
+- Old pod UID: 1fca3e8e-38c8-42d5-8e6d-cd9b29737a04.
+- New pod UID: 256ede41-d3dd-4f92-b5da-160b5c60200c.
+- Kubernetes reported the new pod as ready (Ready=true).
+- While the pod was absent, one required live input value was missing.
+- Both monitoring sessions failed because the configured policy does not allow missing values to be filled in automatically.
+- Last available CausalRCA result: frontend CPU ranked 1st, payment CPU 7th, and payment restart rate 12th.
+- BARO was skipped because there were not enough normal observations to use as a baseline.
+
+What the results show
+- Separate checks confirmed that all three planned faults actually occurred.
+- The detector already marked all evaluated timestamps as anomalous during the normal period before the faults. These were false alarms.
+- Because of this, exceeding the RCA threshold and running RCA during the faults does not show that the detector reacted to those faults.
+- CausalRCA ran and saved its rankings, but did not reliably rank the deliberately affected metric highly.
+- BARO did not produce a ranking because it lacked a usable normal baseline.
+- Under the current missing-data policy, even a temporary missing value during pod replacement stops monitoring.
+
+Original records
+- Boutique-known-faults-cpu-memory-20261024.json
+- Boutique-known-faults-cpu-memory-sessions-20261024.json
+- Boutique-payment-replacement-20261024.json
+- Boutique-fault-prometheus-verification-20261024.json
+- Boutique-known-faults-rca-details-20261024.json
+
+Other test attempts
+- Preliminary runs and setup checks stopped before completion were saved separately.
+- They are not counted as completed known-fault tests.

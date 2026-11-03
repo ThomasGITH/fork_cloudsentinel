@@ -1,0 +1,11 @@
+pair_id,role,case,root_cause_service,fault,repetition,inject_time
+ts-auth-service_cpu,validation,re1tt_ts-auth-service_cpu_2,ts-auth-service,cpu,2,1693224546
+ts-auth-service_cpu,test,re1tt_ts-auth-service_cpu_1,ts-auth-service,cpu,1,1693187418
+ts-order-service_delay,validation,re1tt_ts-order-service_delay_4,ts-order-service,delay,4,1693297416
+ts-order-service_delay,test,re1tt_ts-order-service_delay_3,ts-order-service,delay,3,1693272698
+ts-route-service_disk,validation,re1tt_ts-route-service_disk_1,ts-route-service,disk,1,1702382226
+ts-route-service_disk,test,re1tt_ts-route-service_disk_5,ts-route-service,disk,5,1702397991
+ts-train-service_loss,validation,re1tt_ts-train-service_loss_3,ts-train-service,loss,3,1693265327
+ts-train-service_loss,test,re1tt_ts-train-service_loss_2,ts-train-service,loss,2,1693238896
+ts-travel-service_mem,validation,re1tt_ts-travel-service_mem_5,ts-travel-service,mem,5,1693363187
+ts-travel-service_mem,test,re1tt_ts-travel-service_mem_4,ts-travel-service,mem,4,1693349332

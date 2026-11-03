@@ -1,0 +1,68 @@
+{
+  "protocol_version": "cloudsentinel-rcaeval-train-ticket/v1",
+  "frozen_before_outcome_analysis": true,
+  "benchmark": {
+    "name": "RCAEval",
+    "suite": "RE1",
+    "system": "Train Ticket",
+    "source_repository": "https://github.com/phamquiluan/RCAEval",
+    "dataset_repository": "https://huggingface.co/datasets/phamquiluan/RCAEval",
+    "case_index": "cases.parquet"
+  },
+  "selection": {
+    "root_cause_services": [
+      "ts-auth-service",
+      "ts-order-service",
+      "ts-route-service",
+      "ts-train-service",
+      "ts-travel-service"
+    ],
+    "faults": ["cpu", "delay", "disk", "loss", "mem"],
+    "case_count": 25,
+    "repetition_rule": "((service_index + fault_index) mod 5) + 1",
+    "rationale": "One case per service-fault pair, with repetitions balanced across the 5x5 Latin-square selection."
+  },
+  "preprocessing": {
+    "timestamp_column": "timestamp",
+    "label_column": "label",
+    "label_rule": "0 before inject_time; 1 at or after inject_time",
+    "train_split_percent": 30,
+    "feature_limit": 100,
+    "feature_scope": "intersection across all selected cases, with at least one finite observation in every case",
+    "feature_priority": [
+      "root-service workload and latency metrics",
+      "root-service CPU and memory metrics",
+      "other service workload and latency metrics",
+      "service error metrics",
+      "other service CPU and memory metrics",
+      "remaining shared metrics"
+    ],
+    "missing_value_rule": "Per case, linear interpolation in time followed by forward and backward fill.",
+    "normalisation_before_cloudsentinel": "none"
+  },
+  "diagnostic_models": {
+    "isolation_forest": {
+      "implementation": "scikit-learn",
+      "n_estimators": 100,
+      "contamination": "auto",
+      "random_state": 42
+    },
+    "local_outlier_factor": {
+      "implementation": "scikit-learn",
+      "n_neighbors": 20,
+      "contamination": "auto",
+      "novelty": true
+    }
+  },
+  "rca": {
+    "method": "BARO RobustScorer",
+    "change_point": "published inject_time",
+    "measures": ["service top-1", "service top-3", "service top-5", "reciprocal rank"]
+  },
+  "evidence_boundaries": [
+    "The benchmark is a historical, controlled microservice dataset, not a live production deployment.",
+    "Local diagnostic detector results are kept separate from results produced by the deployed CloudSentinel workflow.",
+    "Using the published injection time for RCA evaluates ranking with a known change point; it does not evaluate change-point detection.",
+    "The fixed 100-feature profile is an adaptation to CloudSentinel's current CSV import contract and is reported as such."
+  ]
+}

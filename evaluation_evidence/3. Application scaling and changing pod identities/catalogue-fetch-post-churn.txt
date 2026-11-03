@@ -1,0 +1,1129 @@
+== Create response ==
+{
+  "created_at": "2026-10-26T14:40:29.875150Z",
+  "created_by": null,
+  "dataset_id": "topology-scale-post-churn-20261026",
+  "description": "Service-level CPU and memory telemetry across a change from one to three replicas for five stateless services.",
+  "display_name": "Online Boutique topology scaling transition",
+  "ground_truth": {
+    "known_incident_count": 0,
+    "labels_available": false
+  },
+  "ground_truth_annotations": [],
+  "latest_version": 1,
+  "metadata_history": [],
+  "metadata_revision": 1,
+  "purpose": [
+    "training",
+    "evaluation"
+  ],
+  "schema_version": 1,
+  "status": "draft",
+  "tags": [],
+  "technical_schema": {
+    "feature_count": 0,
+    "feature_identity": "named",
+    "feature_order": [],
+    "imputation": "none",
+    "missing_values": {
+      "by_feature": {},
+      "total": 0
+    },
+    "modality": "metrics",
+    "normalization": "none",
+    "observation_count": 0,
+    "timestamp_column": "timestamp",
+    "timestamp_timezone": "UTC"
+  },
+  "usages": {
+    "labeled_evaluation": {
+      "reasons": [
+        "No row-level labels or incident-derived labels are available",
+        "No explicit train/test partition is defined",
+        "Dataset version is not available"
+      ],
+      "supported": false
+    },
+    "unsupervised_training": {
+      "reasons": [
+        "Dataset version is not available",
+        "At least two observations are required",
+        "At least one feature is required"
+      ],
+      "supported": false
+    }
+  },
+  "version": {
+    "artifacts": {},
+    "checksums": {},
+    "created_at": "2026-10-26T14:40:29.875150Z",
+    "dataset_id": "topology-scale-post-churn-20261026",
+    "ground_truth": {
+      "known_incident_windows": [],
+      "label_semantics": {},
+      "labels_available": false
+    },
+    "incident_context": [],
+    "live_input_recipe": null,
+    "partition": {
+      "checksum": "f094e8e1c93b17125e466febea9206fc5f21b0ef27e471978707033ee3464422",
+      "mode": "none",
+      "schema_version": 1
+    },
+    "provenance": {
+      "configuration_frozen": false,
+      "fetch_errors": [],
+      "query_results": [],
+      "query_warnings": [],
+      "resolved_queries": []
+    },
+    "schema_version": 1,
+    "source": {
+      "application": "Online Boutique",
+      "end_time": "2026-10-26T14:40:00Z",
+      "fetch_timestamp": null,
+      "namespace": "boutique-scale-test",
+      "prometheus_source_id": "cluster-default",
+      "queries": [
+        {
+          "display_name": "Service CPU use",
+          "execution_mode": "per_target",
+          "feature_name": "cpu_cores",
+          "identity_labels": [],
+          "parameters": {},
+          "promql": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+          "promql_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+          "query_id": "service_cpu",
+          "required": true,
+          "status": "not_executed",
+          "target_context": {},
+          "target_type": "service"
+        },
+        {
+          "display_name": "Service memory use",
+          "execution_mode": "per_target",
+          "feature_name": "memory_bytes",
+          "identity_labels": [],
+          "parameters": {},
+          "promql": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+          "promql_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+          "query_id": "service_memory",
+          "required": true,
+          "status": "not_executed",
+          "target_context": {},
+          "target_type": "service"
+        }
+      ],
+      "requested_targets": {
+        "label_selectors": [
+          "stable service-name regex"
+        ],
+        "pods": [],
+        "services": [
+          "currencyservice",
+          "frontend",
+          "paymentservice",
+          "productcatalogservice",
+          "shippingservice"
+        ]
+      },
+      "resolved_targets": {
+        "label_selectors": [],
+        "pods": [],
+        "services": []
+      },
+      "sampling_interval_seconds": 30,
+      "start_time": "2026-10-26T14:38:00Z",
+      "type": "prometheus"
+    },
+    "status": "draft",
+    "technical_schema": {
+      "feature_count": 0,
+      "feature_identity": "named",
+      "feature_order": [],
+      "imputation": "none",
+      "missing_values": {
+        "by_feature": {},
+        "total": 0
+      },
+      "modality": "metrics",
+      "normalization": "none",
+      "observation_count": 0,
+      "timestamp_column": "timestamp",
+      "timestamp_timezone": "UTC"
+    },
+    "validation": {
+      "errors": [],
+      "status": "not_run",
+      "warnings": []
+    },
+    "version": 1,
+    "workload_context": {
+      "anomaly_scenario": "Normal operation",
+      "dominant_workload_characteristic": "Mixed",
+      "workload_intensity": "Variable"
+    }
+  },
+  "versions": [
+    {
+      "created_at": "2026-10-26T14:40:29.875150Z",
+      "feature_count": 0,
+      "labels_available": false,
+      "modality": "metrics",
+      "observation_count": 0,
+      "partition_mode": "none",
+      "source_type": "prometheus",
+      "status": "draft",
+      "version": 1
+    }
+  ],
+  "workload_context": {
+    "anomaly_scenario": "Normal operation",
+    "dominant_workload_characteristic": "Mixed",
+    "workload_intensity": "Variable"
+  }
+}
+== Fetch start response ==
+{
+  "attempt_id": "attempt-efdb95b21a50440dbffecfc563868d3e",
+  "dataset_id": "topology-scale-post-churn-20261026",
+  "fetch_task_id": "catalogue-fetch-d2e4b5c2524a4b32a21986c20d0a145a",
+  "status": "fetching",
+  "version": 1
+}
+== Final fetch status ==
+{
+  "attempt_id": "attempt-efdb95b21a50440dbffecfc563868d3e",
+  "dataset_id": "topology-scale-post-churn-20261026",
+  "error": null,
+  "fetch_task_id": "catalogue-fetch-d2e4b5c2524a4b32a21986c20d0a145a",
+  "phase": "available",
+  "progress": {
+    "completed": 10,
+    "total": 10
+  },
+  "status": "available",
+  "version": 1,
+  "warnings": []
+}
+== Stored version ==
+{
+  "artifacts": {
+    "attempt.json": {
+      "bytes": 505,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/attempt.json",
+      "sha256": "ef6676f1d8ec0cd2046a554feeb9bf733501657c9b46d11c04a397a283768ee5"
+    },
+    "canonical/feature_matrix.csv": {
+      "bytes": 1251,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/canonical/feature_matrix.csv",
+      "sha256": "4fa02e81086115cd4da0d8e6ab9a1625ee8b58a522d5ea1e6c901ada18d9b66a"
+    },
+    "canonical/observations.csv": {
+      "bytes": 1366,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/canonical/observations.csv",
+      "sha256": "d792106e91d7d13546a2ed49c57e6f52258ab1570c828ddfdcac8ccc7fb416b7"
+    },
+    "canonical/timestamps.csv": {
+      "bytes": 121,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/canonical/timestamps.csv",
+      "sha256": "9de82efaa7d2ba204bcaa24465728450ef7e538cd6ef1bba3dd8f77f0fda0c1e"
+    },
+    "checksums.json": {
+      "bytes": 1779,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/checksums.json"
+    },
+    "fetch_request.json": {
+      "bytes": 1473,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/fetch_request.json",
+      "sha256": "dc517d2c9f63a6e9e8ee99edceaa6e00f1c3e44ff9a5ba3c77e174737330e99a"
+    },
+    "live_input_recipe.json": {
+      "bytes": 8729,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/live_input_recipe.json",
+      "sha256": "4d1c616d02d17bc93c60942deaa7216c53b34e61a9d0bfdb7c22943c8c7d1178"
+    },
+    "provenance.json": {
+      "bytes": 7019,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/provenance.json",
+      "sha256": "a4a12ac93373854831a797cd640b7a30d84d8a652f0e228bbf2e6bfa5b32d20e"
+    },
+    "raw/q0000-t0000.json": {
+      "bytes": 580,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0000-t0000.json",
+      "sha256": "3328b55b8990022e09b35e2da1ddc2be405a7e8541064d2f0766495527a19ecb"
+    },
+    "raw/q0000-t0001.json": {
+      "bytes": 583,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0000-t0001.json",
+      "sha256": "023293b8ab7419e814a8fda50d7192627e0f442eeb708f693a045faa30ef6f02"
+    },
+    "raw/q0000-t0002.json": {
+      "bytes": 579,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0000-t0002.json",
+      "sha256": "b87f5dc7a738e0f79b59262d5ba8feca4fb2f2701f643729b2d88767c1c0e514"
+    },
+    "raw/q0000-t0003.json": {
+      "bytes": 583,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0000-t0003.json",
+      "sha256": "677f8956e932d2ae1ace0afb2dbc7834af03f153fd6e7c7b411e448e55d98307"
+    },
+    "raw/q0000-t0004.json": {
+      "bytes": 584,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0000-t0004.json",
+      "sha256": "5e1284586dad9437b92fd1130d52c628a9dfb3e2fbc4e69d87823776bc475fbf"
+    },
+    "raw/q0001-t0000.json": {
+      "bytes": 524,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0001-t0000.json",
+      "sha256": "8c18755b21f34134e07072a9b35a69c96a892288e7279d8cf694871b1b44c387"
+    },
+    "raw/q0001-t0001.json": {
+      "bytes": 519,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0001-t0001.json",
+      "sha256": "e079f7713c5a80e370641050536667e270d321fede7992ea990944607c78d27d"
+    },
+    "raw/q0001-t0002.json": {
+      "bytes": 524,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0001-t0002.json",
+      "sha256": "e26a83dd182faae4f5b664b4dbef6cd61b5a6c0422897a7bbebb6b43d5639b7e"
+    },
+    "raw/q0001-t0003.json": {
+      "bytes": 519,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0001-t0003.json",
+      "sha256": "53b2a8f412f4aba7225253fae0bc0d6b2e7265902967508a2bd77e43a378ab90"
+    },
+    "raw/q0001-t0004.json": {
+      "bytes": 519,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/raw/q0001-t0004.json",
+      "sha256": "e7d44cceb451f593c431008664f43d8149a0abf57fc7e0d603ced29377953028"
+    },
+    "schema.json": {
+      "bytes": 1372,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/schema.json",
+      "sha256": "abaf69cefc2b02b93d9f550caf487cee00922d956157f5fdb25fc5b6b40d506b"
+    },
+    "validation.json": {
+      "bytes": 58,
+      "path": "datasets/topology-scale-post-churn-20261026/artifacts/000001/validation.json",
+      "sha256": "99a779bbb1910cdda386717943559d2821f6423ccbb5b296806f9ed8e6a7c849"
+    }
+  },
+  "checksums": {
+    "attempt.json": "ef6676f1d8ec0cd2046a554feeb9bf733501657c9b46d11c04a397a283768ee5",
+    "canonical/feature_matrix.csv": "4fa02e81086115cd4da0d8e6ab9a1625ee8b58a522d5ea1e6c901ada18d9b66a",
+    "canonical/observations.csv": "d792106e91d7d13546a2ed49c57e6f52258ab1570c828ddfdcac8ccc7fb416b7",
+    "canonical/timestamps.csv": "9de82efaa7d2ba204bcaa24465728450ef7e538cd6ef1bba3dd8f77f0fda0c1e",
+    "fetch_request.json": "dc517d2c9f63a6e9e8ee99edceaa6e00f1c3e44ff9a5ba3c77e174737330e99a",
+    "live_input_recipe.json": "4d1c616d02d17bc93c60942deaa7216c53b34e61a9d0bfdb7c22943c8c7d1178",
+    "provenance.json": "a4a12ac93373854831a797cd640b7a30d84d8a652f0e228bbf2e6bfa5b32d20e",
+    "raw/q0000-t0000.json": "3328b55b8990022e09b35e2da1ddc2be405a7e8541064d2f0766495527a19ecb",
+    "raw/q0000-t0001.json": "023293b8ab7419e814a8fda50d7192627e0f442eeb708f693a045faa30ef6f02",
+    "raw/q0000-t0002.json": "b87f5dc7a738e0f79b59262d5ba8feca4fb2f2701f643729b2d88767c1c0e514",
+    "raw/q0000-t0003.json": "677f8956e932d2ae1ace0afb2dbc7834af03f153fd6e7c7b411e448e55d98307",
+    "raw/q0000-t0004.json": "5e1284586dad9437b92fd1130d52c628a9dfb3e2fbc4e69d87823776bc475fbf",
+    "raw/q0001-t0000.json": "8c18755b21f34134e07072a9b35a69c96a892288e7279d8cf694871b1b44c387",
+    "raw/q0001-t0001.json": "e079f7713c5a80e370641050536667e270d321fede7992ea990944607c78d27d",
+    "raw/q0001-t0002.json": "e26a83dd182faae4f5b664b4dbef6cd61b5a6c0422897a7bbebb6b43d5639b7e",
+    "raw/q0001-t0003.json": "53b2a8f412f4aba7225253fae0bc0d6b2e7265902967508a2bd77e43a378ab90",
+    "raw/q0001-t0004.json": "e7d44cceb451f593c431008664f43d8149a0abf57fc7e0d603ced29377953028",
+    "schema.json": "abaf69cefc2b02b93d9f550caf487cee00922d956157f5fdb25fc5b6b40d506b",
+    "validation.json": "99a779bbb1910cdda386717943559d2821f6423ccbb5b296806f9ed8e6a7c849"
+  },
+  "created_at": "2026-10-26T14:40:29.875150Z",
+  "dataset_id": "topology-scale-post-churn-20261026",
+  "fetch": {
+    "attempt_id": "attempt-efdb95b21a50440dbffecfc563868d3e",
+    "completed_at": "2026-10-26T14:40:30.273213Z",
+    "error": null,
+    "phase": "available",
+    "progress": {
+      "completed": 10,
+      "total": 10
+    },
+    "started_at": "2026-10-26T14:40:29.902308Z",
+    "status": "available",
+    "task_id": "catalogue-fetch-d2e4b5c2524a4b32a21986c20d0a145a",
+    "updated_at": "2026-10-26T14:40:30.304334Z",
+    "warnings": []
+  },
+  "ground_truth": {
+    "known_incident_windows": [],
+    "label_semantics": {},
+    "labels_available": false
+  },
+  "incident_context": [],
+  "live_input_recipe": {
+    "alignment": {
+      "grid": "inclusive_utc_range",
+      "off_grid_samples": "drop_with_warning",
+      "timestamp_match": "exact_microsecond"
+    },
+    "contract": "cloudsentinel.live-input/v1",
+    "feature_order": [
+      "cpu_cores|target.service=currencyservice",
+      "cpu_cores|target.service=frontend",
+      "cpu_cores|target.service=paymentservice",
+      "cpu_cores|target.service=productcatalogservice",
+      "cpu_cores|target.service=shippingservice",
+      "memory_bytes|target.service=currencyservice",
+      "memory_bytes|target.service=frontend",
+      "memory_bytes|target.service=paymentservice",
+      "memory_bytes|target.service=productcatalogservice",
+      "memory_bytes|target.service=shippingservice"
+    ],
+    "feature_order_sha256": "24a30eb7cbbeea37f0d88834b2e07a37b5eda7a6385700798ace2d53db58df01",
+    "missing_data": {
+      "imputation": "none",
+      "live_policy": "reject_window",
+      "offline_representation": "empty"
+    },
+    "prometheus_source_id": "cluster-default",
+    "query_executions": [
+      {
+        "display_name": "Service CPU use",
+        "execution_id": "q0000-t0000",
+        "execution_mode": "per_target",
+        "feature_name": "cpu_cores",
+        "identity_labels": [],
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "required": true,
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"currencyservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "currencyservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service CPU use",
+        "execution_id": "q0000-t0001",
+        "execution_mode": "per_target",
+        "feature_name": "cpu_cores",
+        "identity_labels": [],
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "required": true,
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"frontend(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "frontend"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service CPU use",
+        "execution_id": "q0000-t0002",
+        "execution_mode": "per_target",
+        "feature_name": "cpu_cores",
+        "identity_labels": [],
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "required": true,
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"paymentservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "paymentservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service CPU use",
+        "execution_id": "q0000-t0003",
+        "execution_mode": "per_target",
+        "feature_name": "cpu_cores",
+        "identity_labels": [],
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "required": true,
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"productcatalogservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "productcatalogservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service CPU use",
+        "execution_id": "q0000-t0004",
+        "execution_mode": "per_target",
+        "feature_name": "cpu_cores",
+        "identity_labels": [],
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "required": true,
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"shippingservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "shippingservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service memory use",
+        "execution_id": "q0001-t0000",
+        "execution_mode": "per_target",
+        "feature_name": "memory_bytes",
+        "identity_labels": [],
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "required": true,
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"currencyservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "currencyservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service memory use",
+        "execution_id": "q0001-t0001",
+        "execution_mode": "per_target",
+        "feature_name": "memory_bytes",
+        "identity_labels": [],
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "required": true,
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"frontend(-.*)?\"})",
+        "resolved_target": {
+          "service": "frontend"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service memory use",
+        "execution_id": "q0001-t0002",
+        "execution_mode": "per_target",
+        "feature_name": "memory_bytes",
+        "identity_labels": [],
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "required": true,
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"paymentservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "paymentservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service memory use",
+        "execution_id": "q0001-t0003",
+        "execution_mode": "per_target",
+        "feature_name": "memory_bytes",
+        "identity_labels": [],
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "required": true,
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"productcatalogservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "productcatalogservice"
+        },
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service memory use",
+        "execution_id": "q0001-t0004",
+        "execution_mode": "per_target",
+        "feature_name": "memory_bytes",
+        "identity_labels": [],
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "required": true,
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"shippingservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "shippingservice"
+        },
+        "target_type": "service"
+      }
+    ],
+    "recipe_sha256": "2bee98584a38ff2054314d41a19c92401e3fbda283c4a19b50f24366a8e90723",
+    "sampling_interval_seconds": 30,
+    "schema_version": 1,
+    "series_mapping": [
+      {
+        "execution_id": "q0000-t0000",
+        "feature_id": "cpu_cores|target.service=currencyservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0000-t0001",
+        "feature_id": "cpu_cores|target.service=frontend",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0000-t0002",
+        "feature_id": "cpu_cores|target.service=paymentservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0000-t0003",
+        "feature_id": "cpu_cores|target.service=productcatalogservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0000-t0004",
+        "feature_id": "cpu_cores|target.service=shippingservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0001-t0000",
+        "feature_id": "memory_bytes|target.service=currencyservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0001-t0001",
+        "feature_id": "memory_bytes|target.service=frontend",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0001-t0002",
+        "feature_id": "memory_bytes|target.service=paymentservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0001-t0003",
+        "feature_id": "memory_bytes|target.service=productcatalogservice",
+        "metric_labels": {}
+      },
+      {
+        "execution_id": "q0001-t0004",
+        "feature_id": "memory_bytes|target.service=shippingservice",
+        "metric_labels": {}
+      }
+    ]
+  },
+  "partition": {
+    "checksum": "f094e8e1c93b17125e466febea9206fc5f21b0ef27e471978707033ee3464422",
+    "mode": "none",
+    "schema_version": 1
+  },
+  "provenance": {
+    "configuration_frozen": true,
+    "fetch_errors": [],
+    "query_results": [
+      {
+        "execution_id": "q0000-t0000",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0000-t0001",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0000-t0002",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0000-t0003",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0000-t0004",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0001-t0000",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0001-t0001",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0001-t0002",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0001-t0003",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      },
+      {
+        "execution_id": "q0001-t0004",
+        "sample_count": 5,
+        "series_count": 1,
+        "status": "success"
+      }
+    ],
+    "query_warnings": [],
+    "resolved_queries": [
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0000-t0000",
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"currencyservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "currencyservice"
+        },
+        "response_bytes": 268,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0000-t0001",
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"frontend(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "frontend"
+        },
+        "response_bytes": 271,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0000-t0002",
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"paymentservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "paymentservice"
+        },
+        "response_bytes": 267,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0000-t0003",
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"productcatalogservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "productcatalogservice"
+        },
+        "response_bytes": 271,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0000-t0004",
+        "query_id": "service_cpu",
+        "query_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "resolved_query": "sum(rate(container_cpu_usage_seconds_total{namespace=\"boutique-scale-test\",pod=~\"shippingservice(-.*)?\"}[1m]))",
+        "resolved_target": {
+          "service": "shippingservice"
+        },
+        "response_bytes": 272,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0001-t0000",
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"currencyservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "currencyservice"
+        },
+        "response_bytes": 212,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0001-t0001",
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"frontend(-.*)?\"})",
+        "resolved_target": {
+          "service": "frontend"
+        },
+        "response_bytes": 207,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0001-t0002",
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"paymentservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "paymentservice"
+        },
+        "response_bytes": 212,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0001-t0003",
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"productcatalogservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "productcatalogservice"
+        },
+        "response_bytes": 207,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      },
+      {
+        "duration_seconds": 120.0,
+        "end_time": "2026-10-26T14:40:00Z",
+        "execution_id": "q0001-t0004",
+        "query_id": "service_memory",
+        "query_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "resolved_query": "sum(container_memory_usage_bytes{namespace=\"boutique-scale-test\",pod=~\"shippingservice(-.*)?\"})",
+        "resolved_target": {
+          "service": "shippingservice"
+        },
+        "response_bytes": 207,
+        "sample_count": 5,
+        "series_count": 1,
+        "start_time": "2026-10-26T14:38:00Z",
+        "status": "success",
+        "step_seconds": 30,
+        "warnings": []
+      }
+    ]
+  },
+  "schema_version": 1,
+  "source": {
+    "application": "Online Boutique",
+    "end_time": "2026-10-26T14:40:00Z",
+    "fetch_timestamp": "2026-10-26T14:40:30.272786Z",
+    "namespace": "boutique-scale-test",
+    "prometheus_source_id": "cluster-default",
+    "queries": [
+      {
+        "display_name": "Service CPU use",
+        "execution_mode": "per_target",
+        "feature_name": "cpu_cores",
+        "identity_labels": [],
+        "parameters": {},
+        "promql": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "promql_template": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"}[1m]))",
+        "query_id": "service_cpu",
+        "required": true,
+        "status": "not_executed",
+        "target_context": {},
+        "target_type": "service"
+      },
+      {
+        "display_name": "Service memory use",
+        "execution_mode": "per_target",
+        "feature_name": "memory_bytes",
+        "identity_labels": [],
+        "parameters": {},
+        "promql": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "promql_template": "sum(container_memory_usage_bytes{namespace=\"${namespace}\",pod=~\"${service}(-.*)?\"})",
+        "query_id": "service_memory",
+        "required": true,
+        "status": "not_executed",
+        "target_context": {},
+        "target_type": "service"
+      }
+    ],
+    "requested_targets": {
+      "label_selectors": [
+        "stable service-name regex"
+      ],
+      "pods": [],
+      "services": [
+        "currencyservice",
+        "frontend",
+        "paymentservice",
+        "productcatalogservice",
+        "shippingservice"
+      ]
+    },
+    "resolved_targets": {
+      "label_selectors": [],
+      "pods": [],
+      "services": [
+        "currencyservice",
+        "frontend",
+        "paymentservice",
+        "productcatalogservice",
+        "shippingservice"
+      ]
+    },
+    "sampling_interval_seconds": 30,
+    "start_time": "2026-10-26T14:38:00Z",
+    "type": "prometheus"
+  },
+  "status": "available",
+  "technical_schema": {
+    "feature_count": 10,
+    "feature_identity": "named",
+    "feature_order": [
+      "cpu_cores|target.service=currencyservice",
+      "cpu_cores|target.service=frontend",
+      "cpu_cores|target.service=paymentservice",
+      "cpu_cores|target.service=productcatalogservice",
+      "cpu_cores|target.service=shippingservice",
+      "memory_bytes|target.service=currencyservice",
+      "memory_bytes|target.service=frontend",
+      "memory_bytes|target.service=paymentservice",
+      "memory_bytes|target.service=productcatalogservice",
+      "memory_bytes|target.service=shippingservice"
+    ],
+    "imputation": "none",
+    "missing_values": {
+      "by_feature": {
+        "cpu_cores|target.service=currencyservice": 0,
+        "cpu_cores|target.service=frontend": 0,
+        "cpu_cores|target.service=paymentservice": 0,
+        "cpu_cores|target.service=productcatalogservice": 0,
+        "cpu_cores|target.service=shippingservice": 0,
+        "memory_bytes|target.service=currencyservice": 0,
+        "memory_bytes|target.service=frontend": 0,
+        "memory_bytes|target.service=paymentservice": 0,
+        "memory_bytes|target.service=productcatalogservice": 0,
+        "memory_bytes|target.service=shippingservice": 0
+      },
+      "total": 0
+    },
+    "modality": "metrics",
+    "normalization": "none",
+    "observation_count": 5,
+    "schema_version": 1,
+    "timestamp_column": "timestamp",
+    "timestamp_timezone": "UTC"
+  },
+  "usages": {
+    "labeled_evaluation": {
+      "reasons": [
+        "No row-level labels or incident-derived labels are available",
+        "No explicit train/test partition is defined"
+      ],
+      "supported": false
+    },
+    "unsupervised_training": {
+      "reasons": [],
+      "supported": true
+    }
+  },
+  "validation": {
+    "errors": [],
+    "status": "passed",
+    "warnings": []
+  },
+  "version": 1,
+  "workload_context": {
+    "anomaly_scenario": "Normal operation",
+    "dominant_workload_characteristic": "Mixed",
+    "workload_intensity": "Variable"
+  }
+}
+== Preview ==
+{
+  "dataset_id": "topology-scale-post-churn-20261026",
+  "feature_count": 10,
+  "feature_names": [
+    "cpu_cores|target.service=currencyservice",
+    "cpu_cores|target.service=frontend",
+    "cpu_cores|target.service=paymentservice",
+    "cpu_cores|target.service=productcatalogservice",
+    "cpu_cores|target.service=shippingservice",
+    "memory_bytes|target.service=currencyservice",
+    "memory_bytes|target.service=frontend",
+    "memory_bytes|target.service=paymentservice",
+    "memory_bytes|target.service=productcatalogservice",
+    "memory_bytes|target.service=shippingservice"
+  ],
+  "observation_count": 5,
+  "returned_rows": 5,
+  "rows": [
+    {
+      "missing": {
+        "cpu_cores|target.service=currencyservice": false,
+        "cpu_cores|target.service=frontend": false,
+        "cpu_cores|target.service=paymentservice": false,
+        "cpu_cores|target.service=productcatalogservice": false,
+        "cpu_cores|target.service=shippingservice": false,
+        "memory_bytes|target.service=currencyservice": false,
+        "memory_bytes|target.service=frontend": false,
+        "memory_bytes|target.service=paymentservice": false,
+        "memory_bytes|target.service=productcatalogservice": false,
+        "memory_bytes|target.service=shippingservice": false
+      },
+      "timestamp": "2026-10-26T14:38:00Z",
+      "values": {
+        "cpu_cores|target.service=currencyservice": 0.0052129393236817825,
+        "cpu_cores|target.service=frontend": 0.0011978798131320194,
+        "cpu_cores|target.service=paymentservice": 0.003174025386305196,
+        "cpu_cores|target.service=productcatalogservice": 0.0016569362109287336,
+        "cpu_cores|target.service=shippingservice": 0.0016981905759067815,
+        "memory_bytes|target.service=currencyservice": 113872896.0,
+        "memory_bytes|target.service=frontend": 25763840.0,
+        "memory_bytes|target.service=paymentservice": 107438080.0,
+        "memory_bytes|target.service=productcatalogservice": 34041856.0,
+        "memory_bytes|target.service=shippingservice": 23556096.0
+      }
+    },
+    {
+      "missing": {
+        "cpu_cores|target.service=currencyservice": false,
+        "cpu_cores|target.service=frontend": false,
+        "cpu_cores|target.service=paymentservice": false,
+        "cpu_cores|target.service=productcatalogservice": false,
+        "cpu_cores|target.service=shippingservice": false,
+        "memory_bytes|target.service=currencyservice": false,
+        "memory_bytes|target.service=frontend": false,
+        "memory_bytes|target.service=paymentservice": false,
+        "memory_bytes|target.service=productcatalogservice": false,
+        "memory_bytes|target.service=shippingservice": false
+      },
+      "timestamp": "2026-10-26T14:38:30Z",
+      "values": {
+        "cpu_cores|target.service=currencyservice": 0.003818044519740876,
+        "cpu_cores|target.service=frontend": 0.0012041741072660616,
+        "cpu_cores|target.service=paymentservice": 0.002081983658430918,
+        "cpu_cores|target.service=productcatalogservice": 0.001202634208602029,
+        "cpu_cores|target.service=shippingservice": 0.0012834478924050375,
+        "memory_bytes|target.service=currencyservice": 114544640.0,
+        "memory_bytes|target.service=frontend": 26841088.0,
+        "memory_bytes|target.service=paymentservice": 107827200.0,
+        "memory_bytes|target.service=productcatalogservice": 34803712.0,
+        "memory_bytes|target.service=shippingservice": 24182784.0
+      }
+    },
+    {
+      "missing": {
+        "cpu_cores|target.service=currencyservice": false,
+        "cpu_cores|target.service=frontend": false,
+        "cpu_cores|target.service=paymentservice": false,
+        "cpu_cores|target.service=productcatalogservice": false,
+        "cpu_cores|target.service=shippingservice": false,
+        "memory_bytes|target.service=currencyservice": false,
+        "memory_bytes|target.service=frontend": false,
+        "memory_bytes|target.service=paymentservice": false,
+        "memory_bytes|target.service=productcatalogservice": false,
+        "memory_bytes|target.service=shippingservice": false
+      },
+      "timestamp": "2026-10-26T14:39:00Z",
+      "values": {
+        "cpu_cores|target.service=currencyservice": 0.002570156033587697,
+        "cpu_cores|target.service=frontend": 0.0015208863866751196,
+        "cpu_cores|target.service=paymentservice": 0.0024081142123549303,
+        "cpu_cores|target.service=productcatalogservice": 0.0012264350030563888,
+        "cpu_cores|target.service=shippingservice": 0.0017328215111906671,
+        "memory_bytes|target.service=currencyservice": 114282496.0,
+        "memory_bytes|target.service=frontend": 26177536.0,
+        "memory_bytes|target.service=paymentservice": 107831296.0,
+        "memory_bytes|target.service=productcatalogservice": 35012608.0,
+        "memory_bytes|target.service=shippingservice": 24813568.0
+      }
+    },
+    {
+      "missing": {
+        "cpu_cores|target.service=currencyservice": false,
+        "cpu_cores|target.service=frontend": false,
+        "cpu_cores|target.service=paymentservice": false,
+        "cpu_cores|target.service=productcatalogservice": false,
+        "cpu_cores|target.service=shippingservice": false,
+        "memory_bytes|target.service=currencyservice": false,
+        "memory_bytes|target.service=frontend": false,
+        "memory_bytes|target.service=paymentservice": false,
+        "memory_bytes|target.service=productcatalogservice": false,
+        "memory_bytes|target.service=shippingservice": false
+      },
+      "timestamp": "2026-10-26T14:39:30Z",
+      "values": {
+        "cpu_cores|target.service=currencyservice": 0.004564583142105481,
+        "cpu_cores|target.service=frontend": 0.0020548279915215163,
+        "cpu_cores|target.service=paymentservice": 0.003443566502936063,
+        "cpu_cores|target.service=productcatalogservice": 0.0013739867452708112,
+        "cpu_cores|target.service=shippingservice": 0.0017092903180477086,
+        "memory_bytes|target.service=currencyservice": 114917376.0,
+        "memory_bytes|target.service=frontend": 26857472.0,
+        "memory_bytes|target.service=paymentservice": 107286528.0,
+        "memory_bytes|target.service=productcatalogservice": 35139584.0,
+        "memory_bytes|target.service=shippingservice": 25829376.0
+      }
+    },
+    {
+      "missing": {
+        "cpu_cores|target.service=currencyservice": false,
+        "cpu_cores|target.service=frontend": false,
+        "cpu_cores|target.service=paymentservice": false,
+        "cpu_cores|target.service=productcatalogservice": false,
+        "cpu_cores|target.service=shippingservice": false,
+        "memory_bytes|target.service=currencyservice": false,
+        "memory_bytes|target.service=frontend": false,
+        "memory_bytes|target.service=paymentservice": false,
+        "memory_bytes|target.service=productcatalogservice": false,
+        "memory_bytes|target.service=shippingservice": false
+      },
+      "timestamp": "2026-10-26T14:40:00Z",
+      "values": {
+        "cpu_cores|target.service=currencyservice": 0.011747301011070473,
+        "cpu_cores|target.service=frontend": 0.005464071588375881,
+        "cpu_cores|target.service=paymentservice": 0.00293545401109236,
+        "cpu_cores|target.service=productcatalogservice": 0.0013980674474238283,
+        "cpu_cores|target.service=shippingservice": 0.0012264707519143879,
+        "memory_bytes|target.service=currencyservice": 116822016.0,
+        "memory_bytes|target.service=frontend": 10936320.0,
+        "memory_bytes|target.service=paymentservice": 107569152.0,
+        "memory_bytes|target.service=productcatalogservice": 35557376.0,
+        "memory_bytes|target.service=shippingservice": 25882624.0
+      }
+    }
+  ],
+  "version": 1
+}

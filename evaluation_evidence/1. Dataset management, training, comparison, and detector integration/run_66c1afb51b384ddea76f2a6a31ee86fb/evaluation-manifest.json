@@ -1,0 +1,98 @@
+{
+  "counts": {
+    "features": 44,
+    "labels": 921,
+    "observations": 921
+  },
+  "dataset_id": "ds_317be8f795914aaaa95be455f457ba8e",
+  "dataset_version": 8,
+  "feature_order": [
+    "cpu_usage|pod=adservice",
+    "cpu_usage|pod=cartservice",
+    "cpu_usage|pod=checkoutservice",
+    "cpu_usage|pod=currencyservice",
+    "cpu_usage|pod=emailservice",
+    "cpu_usage|pod=frontend",
+    "cpu_usage|pod=paymentservice",
+    "cpu_usage|pod=productcatalogservice",
+    "cpu_usage|pod=recommendationservice",
+    "cpu_usage|pod=redis-cart",
+    "cpu_usage|pod=shippingservice",
+    "mem_usage|pod=adservice",
+    "mem_usage|pod=cartservice",
+    "mem_usage|pod=checkoutservice",
+    "mem_usage|pod=currencyservice",
+    "mem_usage|pod=emailservice",
+    "mem_usage|pod=frontend",
+    "mem_usage|pod=paymentservice",
+    "mem_usage|pod=productcatalogservice",
+    "mem_usage|pod=recommendationservice",
+    "mem_usage|pod=redis-cart",
+    "mem_usage|pod=shippingservice",
+    "cpu_throttling|pod=adservice",
+    "cpu_throttling|pod=cartservice",
+    "cpu_throttling|pod=checkoutservice",
+    "cpu_throttling|pod=currencyservice",
+    "cpu_throttling|pod=emailservice",
+    "cpu_throttling|pod=frontend",
+    "cpu_throttling|pod=paymentservice",
+    "cpu_throttling|pod=productcatalogservice",
+    "cpu_throttling|pod=recommendationservice",
+    "cpu_throttling|pod=redis-cart",
+    "cpu_throttling|pod=shippingservice",
+    "pod_restarts|pod=adservice",
+    "pod_restarts|pod=cartservice",
+    "pod_restarts|pod=checkoutservice",
+    "pod_restarts|pod=currencyservice",
+    "pod_restarts|pod=emailservice",
+    "pod_restarts|pod=frontend",
+    "pod_restarts|pod=paymentservice",
+    "pod_restarts|pod=productcatalogservice",
+    "pod_restarts|pod=recommendationservice",
+    "pod_restarts|pod=redis-cart",
+    "pod_restarts|pod=shippingservice"
+  ],
+  "feature_order_sha256": "c5ceab3784231f6b53bb39c683c061eda99e8d9e1945515cd1ffd8e9c0e9fd1d",
+  "files": {
+    "labels.csv": {
+      "bytes": 2763,
+      "sha256": "8de00827f968b82bfcace6e9508a15c143244605dcfb6b7444744ecff111127d"
+    },
+    "matrix.csv": {
+      "bytes": 427903,
+      "sha256": "f2abd9afe3753ce0567a953358d78329dda83d346255a8e01563ef53d87a448c"
+    },
+    "timestamps.csv": {
+      "bytes": 20262,
+      "sha256": "49d0379ce2a2558009f16a0073f9117488b3496e3367f1f516682adcaae92593"
+    }
+  },
+  "ground_truth_available": true,
+  "known_incident_windows": [
+    {
+      "end_time": "2026-10-10T17:20:00Z",
+      "incident_id": "incident-f33683122df646a9ab8a6264e0a02d05",
+      "scenario": "CPU stress",
+      "start_time": "2026-10-10T17:00:00Z"
+    }
+  ],
+  "label_source": {
+    "sha256": "960b1a977a63c0e10f0cc24f923e288b7e3b0bf7aaf443b95b6e42778268c1c3",
+    "type": "incident_windows"
+  },
+  "modality": "metrics",
+  "partition_checksum": "665c8293bda13d41545cedd47c1d725d2dd2382410e4ef3eaa7e75e601a22090",
+  "partition_id": "partition-41d83a42121a46a1bfe2a0e0535be512",
+  "partition_mode": "time_range",
+  "profile": "metrics-evaluation/v1",
+  "schema_version": 1,
+  "source_artifact_checksums": {
+    "canonical/observations.csv": "cdfd6ab2946b0cefb28fda613c3fb6590921d109d83eedec02487734d75b2cbd",
+    "labels/row_labels.csv": "960b1a977a63c0e10f0cc24f923e288b7e3b0bf7aaf443b95b6e42778268c1c3"
+  },
+  "workload_context": {
+    "anomaly_scenario": "CPU stress",
+    "dominant_workload_characteristic": "CPU-intensive",
+    "workload_intensity": "High"
+  }
+}
